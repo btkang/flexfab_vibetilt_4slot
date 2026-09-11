@@ -1,0 +1,9 @@
+# 줄바꿈(EOL)을 CRLF로 고정 — 2026-06-11
+# 목적: Codex 등 외부 편집 도구가 LF로 저장해 VS2022 "일관성 없는 줄 끝" 팝업이
+#       매번 뜨는 것을 방지. .editorconfig는 VS2022/대부분 편집기·에이전트가 따르는 표준.
+# 범위: VS가 편집하는 소스 파일 확장자에만 지정 (.sh 등 LF가 필요한 파일은 건드리지 않음).
+#       end_of_line 만 설정 → 기존 파일 대량 변경/재정규화 없음.
+root = true
+
+[*.{cs,csproj,props,targets,sln,json,xml,config,resx,xaml,manifest}]
+end_of_line = crlf

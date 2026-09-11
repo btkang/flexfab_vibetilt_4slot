@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>롱런 250회 결과 보고서 (2026-04-07~08)</title>
+<style>
+  body { font-family: 'Malgun Gothic', 'Segoe UI', sans-serif; margin: 30px; background: #f8f9fa; color: #333; line-height: 1.6; }
+  h1 { color: #1a73e8; border-bottom: 3px solid #1a73e8; padding-bottom: 8px; }
+  h2 { color: #333; margin-top: 30px; border-left: 4px solid #1a73e8; padding-left: 10px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 20px 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: center; }
+  th { background: #e8f0fe; font-weight: bold; }
+  td:first-child { text-align: center; }
+  .pass { color: #0d7c3d; font-weight: bold; }
+  .fail { color: #d93025; font-weight: bold; }
+  .warn { color: #e37400; font-weight: bold; }
+  .highlight { background: #fff9c4; }
+  .note { background: #e8f5e9; padding: 12px; border-radius: 6px; margin: 10px 0; }
+  .info { background: #e3f2fd; padding: 12px; border-radius: 6px; margin: 10px 0; }
+  .section-summary { font-size: 0.9em; color: #666; margin-top: -8px; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 25px 0; }
+  .bar { display: inline-block; height: 16px; background: #4285f4; border-radius: 3px; vertical-align: middle; }
+  .bar-container { display: inline-block; width: 200px; background: #e0e0e0; border-radius: 3px; height: 16px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<h1>롱런 테스트 결과 보고서</h1>
+
+<h2>기본 정보</h2>
+<table>
+  <tr><th style="width:180px">항목</th><th>내용</th></tr>
+  <tr><td>테스트명</td><td>모션지그 검사 (RS-232) 롱런 듀얼</td></tr>
+  <tr><td>기간</td><td>2026-04-07 20:04 ~ 2026-04-08 07:45</td></tr>
+  <tr><td>총 소요</td><td>11시간 33분 28초</td></tr>
+  <tr><td>설정 반복</td><td>250회</td></tr>
+  <tr><td>완료 사이클</td><td>250회 (결과 로그 249회 + 마지막 1회 종료)</td></tr>
+  <tr><td>FAIL</td><td class="pass">0건 (ALL PASS)</td></tr>
+  <tr><td>검사 항목 수</td><td>13개 / 사이클</td></tr>
+  <tr><td>워크스페이스</td><td>longrun_motion_232_dual.json</td></tr>
+  <tr><td>시리얼</td><td>X축: 00778, Y축: 00777</td></tr>
+</table>
+
+<hr>
+
+<h2>사이클 시간</h2>
+<table>
+  <tr><th style="width:180px">항목</th><th>값</th></tr>
+  <tr><td>평균</td><td><strong>167.1초 (2분 47초)</strong></td></tr>
+  <tr><td>최소</td><td>161초</td></tr>
+  <tr><td>최대</td><td>172초</td></tr>
+  <tr><td>편차</td><td>11초 (안정적)</td></tr>
+</table>
+
+<hr>
+
+<h2>항목별 검사 시간 (내림차순)</h2>
+<p class="section-summary">TILT 기울기 측정이 전체의 ~60% 차지 (50초 x 2축 / 167초)</p>
+<table>
+  <tr><th>#</th><th>검사 항목</th><th>평균</th><th>최소</th><th>최대</th><th>횟수</th><th>시간 비중</th></tr>
+  <tr class="highlight">
+    <td>4</td><td style="text-align:left">X축 기울기 (-20, -45, +20, +45도)</td>
+    <td><strong>50.1초</strong></td><td>46초</td><td>53초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:60%"></span></span> 30%</td>
+  </tr>
+  <tr class="highlight">
+    <td>10</td><td style="text-align:left">Y축 기울기 (+20, +45, -20, -45도)</td>
+    <td><strong>50.1초</strong></td><td>47초</td><td>53초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:60%"></span></span> 30%</td>
+  </tr>
+  <tr>
+    <td>1</td><td style="text-align:left">X축 영점 초기화 (0도)</td>
+    <td>18.8초</td><td>17초</td><td>21초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:22%"></span></span> 11%</td>
+  </tr>
+  <tr>
+    <td>7</td><td style="text-align:left">Y축 영점 초기화 (0도)</td>
+    <td>17.6초</td><td>17초</td><td>19초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:21%"></span></span> 11%</td>
+  </tr>
+  <tr>
+    <td>2</td><td style="text-align:left">X축 Calibration (0도)</td>
+    <td>7.7초</td><td>7초</td><td>10초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:9%"></span></span> 5%</td>
+  </tr>
+  <tr>
+    <td>8</td><td style="text-align:left">Y축 Calibration (0도)</td>
+    <td>7.7초</td><td>7초</td><td>10초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:9%"></span></span> 5%</td>
+  </tr>
+  <tr>
+    <td>11</td><td style="text-align:left">X축 진동 (-90도)</td>
+    <td>4.0초</td><td>3초</td><td>5초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:5%"></span></span> 2%</td>
+  </tr>
+  <tr>
+    <td>5</td><td style="text-align:left">Y축 진동 (+90도)</td>
+    <td>3.9초</td><td>3초</td><td>4초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:5%"></span></span> 2%</td>
+  </tr>
+  <tr>
+    <td>12</td><td style="text-align:left">Z축 진동 (0도)</td>
+    <td>3.7초</td><td>3초</td><td>4초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:4%"></span></span> 2%</td>
+  </tr>
+  <tr>
+    <td>0-Y</td><td style="text-align:left">FW 버전 확인 (Y축)</td>
+    <td>0.7초</td><td>0초</td><td>1초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:1%"></span></span> &lt;1%</td>
+  </tr>
+  <tr>
+    <td>0</td><td style="text-align:left">FW 버전 확인</td>
+    <td>0.6초</td><td>0초</td><td>1초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:1%"></span></span> &lt;1%</td>
+  </tr>
+  <tr>
+    <td>3</td><td style="text-align:left">X축 파라미터 저장</td>
+    <td>0.6초</td><td>0초</td><td>1초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:1%"></span></span> &lt;1%</td>
+  </tr>
+  <tr>
+    <td>9</td><td style="text-align:left">Y축 파라미터 저장</td>
+    <td>0.6초</td><td>0초</td><td>1초</td><td>250</td>
+    <td><span class="bar-container"><span class="bar" style="width:1%"></span></span> &lt;1%</td>
+  </tr>
+</table>
+
+<hr>
+
+<h2>TILT 오차 통계 (자이로-VL 차이)</h2>
+<table>
+  <tr><th>각도</th><th>평균 오차</th><th>최대 오차</th><th>SPEC</th><th>샘플수</th><th>마진</th></tr>
+  <tr><td>-20도</td><td>0.0175</td><td>0.0490</td><td>&plusmn;0.2</td><td>500</td><td class="pass">75%</td></tr>
+  <tr><td>+20도</td><td>0.0383</td><td>0.0800</td><td>&plusmn;0.2</td><td>500</td><td class="pass">60%</td></tr>
+  <tr><td>-45도</td><td>0.0383</td><td>0.0890</td><td>&plusmn;0.5</td><td>500</td><td class="pass">82%</td></tr>
+  <tr class="highlight"><td>+45도</td><td>0.1179</td><td class="warn">0.2350</td><td>&plusmn;0.5</td><td>500</td><td>53%</td></tr>
+</table>
+<div class="info">
+  <strong>분석:</strong> +45도가 오차가 가장 크지만 SPEC 내 (최대 0.235 / 허용 0.5, 마진 53%).<br>
+  -20도가 가장 정밀 (평균 0.018도).
+</div>
+
+<hr>
+
+<h2>VIBE GAC 통계</h2>
+<table>
+  <tr><th>축</th><th>평균</th><th>최소</th><th>최대</th><th>SPEC</th><th>샘플수</th></tr>
+  <tr><td>X</td><td>0.9999</td><td>0.9900</td><td>1.0000</td><td>0.99~1.01</td><td>750</td></tr>
+  <tr><td>Y</td><td>1.0002</td><td>0.9900</td><td>1.0100</td><td>0.99~1.01</td><td>750</td></tr>
+  <tr><td>Z</td><td>1.0000</td><td>1.0000</td><td>1.0000</td><td>0.99~1.01</td><td>750</td></tr>
+</table>
+<div class="info">
+  Z축 GAC 완벽 (0도 수평 측정).<br>
+  X/Y축 min 0.99는 SPEC 경계값 (3연속 PASS 조건으로 안정성 확보).
+</div>
+
+<hr>
+
+<h2>FineAdjust 수렴 통계</h2>
+<table>
+  <tr><th style="width:180px">항목</th><th>값</th></tr>
+  <tr><td>평균 오차</td><td>0.0167도</td></tr>
+  <tr><td>최대 오차</td><td>0.0720도</td></tr>
+  <tr><td>총 호출</td><td>2,750회</td></tr>
+</table>
+
+<hr>
+
+<h2>종합 판정</h2>
+<table>
+  <tr><th style="width:180px">항목</th><th>결과</th></tr>
+  <tr><td>안정성</td><td class="pass">250회 ALL PASS &mdash; 양산 투입 가능</td></tr>
+  <tr><td>검사 시간</td><td>1 사이클 평균 2분 47초 (듀얼 X+Y 포함)</td></tr>
+  <tr><td>TILT 정밀도</td><td>전 각도 SPEC 내, 마진 53%~82%</td></tr>
+  <tr><td>VIBE 정밀도</td><td>전 축 SPEC 내, Z축 완벽</td></tr>
+  <tr><td>모터 안정성</td><td>FineAdjust 2,750회 전체 수렴, 최대 오차 0.072도</td></tr>
+  <tr><td>수평 복귀</td><td>매 사이클 800 step 복귀 정상 동작</td></tr>
+</table>
+
+<div class="note">
+  <strong>누적 실적:</strong> 이전 롱런 (2026-04-06~07) 232회 + 본 테스트 250회 = <strong>총 482회 ALL PASS</strong><br>
+  <strong>빌드:</strong> error_table.json 코드 연동 포함 (커밋 d0543c6)<br>
+  <strong>로그:</strong> 2026-04-07.log (6,800줄) + 2026-04-08.log (13,464줄)
+</div>
+
+</body>
+</html>

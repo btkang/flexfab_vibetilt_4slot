@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>팀내 미니PC 최종결과 - 모션 (2026-04-21)</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; background:#f5f5f5; padding:30px; color:#222; line-height:1.55; }
+  .wrap { background:#fff; padding:40px 50px; max-width:1200px; margin:0 auto; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+  h1 { color:#1f4e79; border-bottom:3px solid #1f4e79; padding-bottom:10px; font-size:1.6em; }
+  h2 { color:#1f4e79; margin-top:34px; border-left:6px solid #1f4e79; padding-left:10px; font-size:1.25em; }
+  h3 { color:#2e5b8a; margin-top:24px; font-size:1.08em; }
+  table { border-collapse:collapse; margin:14px 0; font-size:13px; width:100%; }
+  th, td { border:1px solid #999; padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#1f4e79; color:#fff; font-weight:bold; text-align:center; }
+  td.c { text-align:center; }
+  td.num { text-align:right; font-family:Consolas, monospace; }
+  .pass { color:#2e7d32; font-weight:bold; }
+  .fail { color:#c62828; font-weight:bold; background:#ffebee; }
+  .warn { color:#e65100; font-weight:bold; }
+  .tag { display:inline-block; padding:3px 10px; border-radius:3px; font-size:12px; font-weight:bold; }
+  .tag-ok { background:#e8f5e9; color:#2e7d32; border:1px solid #2e7d32; }
+  .tag-fail { background:#ffebee; color:#c62828; border:1px solid #c62828; }
+  .tag-stop { background:#fff3e0; color:#e65100; border:1px solid #e65100; }
+  .tag-team { background:#e3f2fd; color:#1565c0; border:1px solid #1565c0; }
+  .tag-prod { background:#fce4ec; color:#c2185b; border:1px solid #c2185b; }
+  .box { border:1px solid #ccc; border-left:5px solid #1f4e79; background:#fafafa; padding:12px 16px; margin:14px 0; }
+  .box-ok { border-left-color:#2e7d32; background:#e8f5e9; }
+  .box-warn { border-left-color:#ed7d31; background:#fff4e6; }
+  .meta { background:#f0f4f8; padding:14px 18px; border:1px solid #d0dae4; border-radius:4px; margin-bottom:20px; font-size:14px; }
+  .meta div { margin:3px 0; }
+  .meta b { color:#1f4e79; display:inline-block; min-width:140px; }
+  pre { background:#2b2b2b; color:#e8e8e8; padding:12px 14px; border-radius:4px; font-size:12px; overflow-x:auto; line-height:1.4; }
+  code { background:#eef1f5; color:#c7254e; padding:2px 5px; border-radius:3px; font-size:12px; }
+  .kpi { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin:14px 0 22px; }
+  .kpi-box { background:#fff; border-radius:8px; padding:14px; box-shadow:0 1px 4px rgba(0,0,0,0.08); text-align:center; border:1px solid #d0dae4; }
+  .kpi-box .num { font-size:1.8em; font-weight:700; color:#1f4e79; }
+  .kpi-box .label { font-size:0.85em; color:#666; margin-top:4px; }
+  .kpi-box.pass .num { color:#2e7d32; }
+  .version { display:inline-block; background:#1f4e79; color:#fff; padding:4px 12px; border-radius:4px; font-size:13px; margin-left:10px; }
+  .port-card { background:#f0f4f8; border:2px solid #1f4e79; border-radius:6px; padding:14px 18px; margin:12px 0; font-size:14px; }
+  .port-card h4 { margin:0 0 8px; color:#1f4e79; font-size:1em; }
+  ul { padding-left:22px; }
+  .td-pass { background:#e8f5e9; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>팀내 미니PC 최종결과 — 모션 검사 <span class="version">v01</span></h1>
+
+<div class="meta">
+  <div><b>문서 대상</b> VL10 모션 (RS-232) / VL20 모션 (RS-485) — 최종 통합 결과</div>
+  <div><b>검사 일자</b> 2026-04-20 ~ 2026-04-21 (2일간)</div>
+  <div><b>SW 버전</b> <code>ff_vibetilt.dll v0.6.4.60421</code> (최종)</div>
+  <div><b>배포 빌드</b> <code>260421_0.6.4_motion_232_485</code></div>
+  <div><b>문서 버전</b> v01 (2026-04-21 작성)</div>
+  <div><b>검사 장비</b> <span class="tag tag-team">팀 미니PC</span> + <span class="tag tag-prod">양산 미니PC</span></div>
+</div>
+
+<h2>0. 검사 장비 및 일정</h2>
+
+<table>
+  <tr>
+    <th>일자</th><th>검사 장비</th><th>대상</th><th>결과</th><th>비고</th>
+  </tr>
+  <tr>
+    <td class="c">2026-04-20</td>
+    <td class="c"><span class="tag tag-team">팀 미니PC</span></td>
+    <td>모션 232 + 모션 485</td>
+    <td class="c pass">PASS</td>
+    <td>#16 APPCFG 주소 오기입 이슈 발견 → 수정 후 PASS</td>
+  </tr>
+  <tr>
+    <td class="c">2026-04-21</td>
+    <td class="c"><span class="tag tag-prod">양산 미니PC</span></td>
+    <td>모션 232 + 모션 485</td>
+    <td class="c pass">PASS</td>
+    <td>각 2회 완전 저장 확보. Y축 FW 불일치 차단 확인</td>
+  </tr>
+</table>
+
+<h2>1. 최종 판정 요약</h2>
+
+<div class="kpi">
+  <div class="kpi-box pass">
+    <div class="num">17 / 17</div>
+    <div class="label">모션 232 PASS</div>
+  </div>
+  <div class="kpi-box pass">
+    <div class="num">17 / 17</div>
+    <div class="label">모션 485 PASS</div>
+  </div>
+  <div class="kpi-box pass">
+    <div class="num">6건</div>
+    <div class="label">완전 저장 JSON</div>
+  </div>
+  <div class="kpi-box pass">
+    <div class="num">100%</div>
+    <div class="label">PASS율</div>
+  </div>
+</div>
+
+<div class="box box-ok">
+  <b>✅ VL10 모션 (232) / VL20 모션 (485) 양산 투입 가능</b>
+  <ul style="margin-top:6px;">
+    <li>팀/양산 미니PC 양쪽에서 전체 17개 검사 항목 PASS 반복 확인</li>
+    <li>각 검사 대상별 <b>완전 저장 JSON (17항목)</b> 확보 완료</li>
+    <li>SW 버전 <code>0.6.4.60421</code>에서 모션 485 #16 APPCFG 주소 수정 포함</li>
+  </ul>
+</div>
+
+<h3>1.1 완전 저장 결과 파일 (6건)</h3>
+<table>
+  <tr>
+    <th>장비</th><th>검사 대상</th><th>S/N</th><th>크기</th><th>시간</th>
+  </tr>
+  <tr class="td-pass">
+    <td rowspan="2"><span class="tag tag-team">팀 미니PC (04-20)</span></td>
+    <td>VL10 모션 232</td><td class="c">VL1-00020</td><td class="c">22,285 B</td><td class="c">2m51s</td>
+  </tr>
+  <tr class="td-pass">
+    <td>VL20 모션 485</td><td class="c">VL2-00006</td><td class="c">22,310 B</td><td class="c">3m04s</td>
+  </tr>
+  <tr class="td-pass">
+    <td rowspan="4"><span class="tag tag-prod">양산 미니PC (04-21)</span></td>
+    <td rowspan="2">VL10 모션 232</td>
+    <td class="c">VL1-00001</td><td class="c">22,290 B</td><td class="c">2m56s</td>
+  </tr>
+  <tr class="td-pass">
+    <td class="c">VL1-00002</td><td class="c">22,274 B</td><td class="c">2m50s</td>
+  </tr>
+  <tr class="td-pass">
+    <td rowspan="2">VL20 모션 485</td>
+    <td class="c">VL2-00001</td><td class="c">22,312 B</td><td class="c">3m02s</td>
+  </tr>
+  <tr class="td-pass">
+    <td class="c">VL2-00002</td><td class="c">22,312 B</td><td class="c">3m01s</td>
+  </tr>
+</table>
+
+<h2>2. 양산 미니PC 포트 구성 (설치 참고)</h2>
+
+<div class="port-card">
+  <h4>📟 통신 포트 구성</h4>
+  <table>
+    <tr>
+      <th style="width:25%;">장비</th><th style="width:15%;">포트</th><th style="width:15%;">속도/설정</th><th>용도</th>
+    </tr>
+    <tr>
+      <td><b>VL10 모션 (RS-232) X축</b></td><td class="c"><code>COM13</code></td>
+      <td class="c">115200 bps</td><td>X축 VL 센서 통신 (uart_232)</td>
+    </tr>
+    <tr>
+      <td><b>VL10 모션 (RS-232) Y축</b></td><td class="c"><code>COM14</code></td>
+      <td class="c">115200 bps</td><td>Y축 VL 센서 통신 (uart_232_y)</td>
+    </tr>
+    <tr>
+      <td><b>VL20 모션 (RS-485) X축</b></td><td class="c"><code>COM11</code></td>
+      <td class="c">115200 bps</td><td>X축 VL 센서 통신 (uart_485)</td>
+    </tr>
+    <tr>
+      <td><b>VL20 모션 (RS-485) Y축</b></td><td class="c"><code>COM12</code></td>
+      <td class="c">115200 bps</td><td>Y축 VL 센서 통신 (uart_485_y)</td>
+    </tr>
+    <tr>
+      <td><b>자이로 (레퍼런스)</b></td><td class="c"><code>COM15</code></td>
+      <td class="c">38400 bps</td><td>SOLAR-360-420 (uart_gyro)</td>
+    </tr>
+    <tr>
+      <td><b>EMIO 모션 컨트롤러</b></td><td class="c"><code>TCP 100.100.100.70:2233</code></td>
+      <td class="c">Ethernet</td><td>지그 모터 제어 (tcp_emio)</td>
+    </tr>
+  </table>
+  <p style="margin:10px 0 0; font-size:12px; color:#666;">
+    UART 공통: 8N1 / 포트 변경 필요 시 프로그램의 "포트 변경" 버튼 → 자동 저장 후 재시작
+  </p>
+</div>
+
+<h2>3. 검사 항목 17개 — 모든 장비 PASS 확인</h2>
+<table>
+  <tr><th>#</th><th>검사명</th><th>역할</th><th>232 결과</th><th>485 결과</th></tr>
+  <tr><td class="c">#0</td><td>통신검사 (X/Y/자이로)</td><td class="c">공통</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#1-X</td><td>FW 버전 확인 (X)</td><td class="c">X</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#2</td><td>시리얼번호 설정 (X축)</td><td class="c">X</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#3</td><td>X축 영점 초기화 (0도)</td><td class="c">X</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#4</td><td>X축 Calibration (0도)</td><td class="c">X</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#5</td><td>X축 파라미터 저장</td><td class="c">X</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#6</td><td>X축 기울기 (±20°, ±45°)</td><td class="c">X</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#7</td><td>Y축 진동 (+90°)</td><td class="c">Y</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#8</td><td>FW 버전 확인 (Y)</td><td class="c">Y</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#9</td><td>시리얼번호 설정 (Y축)</td><td class="c">Y</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#10</td><td>Y축 영점 초기화</td><td class="c">Y</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#11</td><td>Y축 Calibration (0도)</td><td class="c">Y</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#12</td><td>Y축 파라미터 저장</td><td class="c">Y</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#13</td><td>Z축 진동 (0°)</td><td class="c">공통</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#14</td><td>Y축 기울기 (±20°, ±45°)</td><td class="c">Y</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#15</td><td>X축 진동 (-90°)</td><td class="c">X</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+  <tr><td class="c">#16</td><td>Config 확인 Y축 (APPCFG)</td><td class="c">Y</td><td class="c pass">OK</td><td class="c pass">OK</td></tr>
+</table>
+
+<h2>4. 기울기 측정값 비교 (장비별)</h2>
+
+<h3>4.1 VL10 모션 (RS-232)</h3>
+<table>
+  <tr>
+    <th>축 / 각도</th>
+    <th>팀 (VL1-00020)</th>
+    <th>양산 (VL1-00001)</th>
+    <th>양산 (VL1-00002)</th>
+    <th>spec</th>
+  </tr>
+  <tr><td>X -20°</td><td class="num">+0.087</td><td class="num">+0.049</td><td class="num">+0.057</td><td class="c">±0.2</td></tr>
+  <tr><td><b>X -45°</b></td><td class="num warn">+0.259</td><td class="num">+0.222</td><td class="num">+0.231</td><td class="c">±0.5</td></tr>
+  <tr><td>X +20°</td><td class="num">-0.020</td><td class="num">-0.008</td><td class="num">-0.019</td><td class="c">±0.2</td></tr>
+  <tr><td>X +45°</td><td class="num">-0.075</td><td class="num">-0.045</td><td class="num">-0.057</td><td class="c">±0.5</td></tr>
+  <tr><td>Y +20°</td><td class="num">-0.022</td><td class="num">-0.035</td><td class="num">-0.034</td><td class="c">±0.2</td></tr>
+  <tr><td>Y +45°</td><td class="num">-0.037</td><td class="num">-0.060</td><td class="num">-0.057</td><td class="c">±0.5</td></tr>
+  <tr><td>Y -20°</td><td class="num">+0.012</td><td class="num">-0.011</td><td class="num">-0.007</td><td class="c">±0.2</td></tr>
+  <tr><td>Y -45°</td><td class="num">+0.038</td><td class="num">-0.003</td><td class="num">+0.003</td><td class="c">±0.5</td></tr>
+</table>
+
+<div class="box box-warn">
+  <b>X -45° 반복 편차:</b> 3건 모두 +0.22 ~ +0.26° 오차로 spec 내 통과하나 50% 수준 여유.
+  보드 특성(VL 센서 비선형 혹은 지그 결합 편차) 추정 — 장기 모니터링 대상.
+</div>
+
+<h3>4.2 VL20 모션 (RS-485)</h3>
+<table>
+  <tr>
+    <th>축 / 각도</th>
+    <th>팀 (VL2-00006)</th>
+    <th>양산 (VL2-00001)</th>
+    <th>양산 (VL2-00002)</th>
+    <th>spec</th>
+  </tr>
+  <tr><td>X -20°</td><td class="num">+0.014</td><td class="num">+0.005</td><td class="num">+0.013</td><td class="c">±0.2</td></tr>
+  <tr><td>X -45°</td><td class="num">+0.088</td><td class="num">+0.086</td><td class="num">+0.091</td><td class="c">±0.5</td></tr>
+  <tr><td>X +20°</td><td class="num">+0.029</td><td class="num">+0.028</td><td class="num">+0.035</td><td class="c">±0.2</td></tr>
+  <tr><td>X +45°</td><td class="num">+0.087</td><td class="num">+0.086</td><td class="num">+0.096</td><td class="c">±0.5</td></tr>
+  <tr><td>Y +20°</td><td class="num">-0.018</td><td class="num">-0.011</td><td class="num">-0.005</td><td class="c">±0.2</td></tr>
+  <tr><td>Y +45°</td><td class="num">-0.126</td><td class="num">-0.057</td><td class="num">-0.054</td><td class="c">±0.5</td></tr>
+  <tr><td>Y -20°</td><td class="num">-0.041</td><td class="num">-0.033</td><td class="num">-0.026</td><td class="c">±0.2</td></tr>
+  <tr><td>Y -45°</td><td class="num">-0.089</td><td class="num">-0.116</td><td class="num">-0.122</td><td class="c">±0.5</td></tr>
+</table>
+
+<div class="box box-ok">
+  <b>485 기울기 매우 안정:</b> 모든 각도 spec 25% 이내. 232 X -45°(여유 52%) 대비 개선됨 (여유 최대 24%).
+</div>
+
+<h3>4.3 진동 GAC (모든 측정 안정)</h3>
+<table>
+  <tr><th>측정</th><th>232 (팀)</th><th>232 (양산 ×2)</th><th>485 (팀)</th><th>485 (양산 ×2)</th><th>spec</th></tr>
+  <tr><td>Y축 진동 (+90°)</td><td class="num">0.99</td><td class="num">1.00 / 0.99</td><td class="num">1.00</td><td class="num">1.00 / 1.00</td><td class="c">0.98 ~ 1.02</td></tr>
+  <tr><td>Z축 진동 (0°)</td><td class="num">1.00</td><td class="num">1.00 / 1.00</td><td class="num">1.00</td><td class="num">1.00 / 1.00</td><td class="c">0.98 ~ 1.02</td></tr>
+  <tr><td>X축 진동 (-90°)</td><td class="num">1.00</td><td class="num">1.00 / 1.00</td><td class="num">1.00</td><td class="num">1.00 / 0.99</td><td class="c">0.98 ~ 1.02</td></tr>
+</table>
+
+<h2>5. FW 버전 정보</h2>
+
+<table>
+  <tr>
+    <th>대상</th><th>FW 버전</th><th>UID 지원</th><th>비고</th>
+  </tr>
+  <tr>
+    <td>VL10 232 (CTS-IOT-VL10)</td>
+    <td class="c"><code>F/W ver.1.0.4.2</code></td>
+    <td class="c pass">✅ (RV=0)</td>
+    <td>UID 쓰기/덮어쓰기 정상</td>
+  </tr>
+  <tr>
+    <td>VL20 485 X축</td>
+    <td class="c"><code>F/W ver.2.0.2</code></td>
+    <td class="c pass">✅ 동작 확인</td>
+    <td>현 양산 가능</td>
+  </tr>
+  <tr>
+    <td>VL20 485 Y축</td>
+    <td class="c"><code>F/W ver.2.0.2.3</code></td>
+    <td class="c pass">✅ (RV=0)</td>
+    <td>Y축은 2.0.2.3 필수 (2.0.2는 UID 미구현)</td>
+  </tr>
+</table>
+
+<div class="box box-warn">
+  <b>양산 전제 조건:</b>
+  <ul style="margin-top:6px;">
+    <li>VL10 232 — 모든 보드 <code>F/W ver.1.0.4.2</code> 이상</li>
+    <li>VL20 485 X — <code>F/W ver.2.0.2</code> 이상</li>
+    <li>VL20 485 Y — <code>F/W ver.2.0.2.3</code> 이상</li>
+  </ul>
+</div>
+
+<h2>6. 주요 수정 및 개선사항 (v0.6.4.60421 기준)</h2>
+
+<table>
+  <tr><th>항목</th><th>수정 내용</th><th>결과</th></tr>
+  <tr>
+    <td>모션 485 #16 APPCFG 주소 오기입</td>
+    <td><code>uart_485 → uart_485_y</code>, <code>addr 2 → 1</code> (4 워크스페이스)</td>
+    <td class="c pass">실기기 PASS 검증</td>
+  </tr>
+  <tr>
+    <td>포트 변경 다이얼로그 저장 실패</td>
+    <td>JObject.Parse 기반 저장 (in-memory 순환참조 회피)</td>
+    <td class="c pass">COM113/114/115 테스트 성공</td>
+  </tr>
+  <tr>
+    <td>FW 버전 비교 로직</td>
+    <td>Contains → 완전 일치 (대소문자 구분)</td>
+    <td class="c pass">Y축 2.0.2 불일치 정상 차단</td>
+  </tr>
+  <tr>
+    <td>APPCFG 응답 비교</td>
+    <td>Contains → 완전 일치</td>
+    <td class="c pass">반영</td>
+  </tr>
+  <tr>
+    <td>serial_auto_increment 통일</td>
+    <td>전 모션/보드 워크스페이스 16개 true 통일</td>
+    <td class="c pass">통일 완료</td>
+  </tr>
+  <tr>
+    <td><code>_작업자_변경가능</code>에 <code>serial_auto_increment</code> 추가</td>
+    <td>모션 워크스페이스 8개</td>
+    <td class="c pass">완료</td>
+  </tr>
+</table>
+
+<h2>7. 관찰된 이슈 (양산 blocker 아님)</h2>
+
+<table>
+  <tr><th>#</th><th>이슈</th><th>우선순위</th><th>상태</th></tr>
+  <tr>
+    <td class="c">1</td>
+    <td>초기 자이로 통신 실패 (각 장비 첫 시도 1회씩)</td>
+    <td class="c">Low</td>
+    <td>재시도로 해결</td>
+  </tr>
+  <tr>
+    <td class="c">2</td>
+    <td>pending 시리얼 불일치 경고 (VL1→VL2 전환 시)</td>
+    <td class="c">Low</td>
+    <td>무해, 개선 TODO 등재</td>
+  </tr>
+  <tr>
+    <td class="c">3</td>
+    <td>VL10 232 X -45° 편차 (+0.22~0.26°)</td>
+    <td class="c">Low</td>
+    <td>spec 52% 여유, 장기 모니터링</td>
+  </tr>
+  <tr>
+    <td class="c">4</td>
+    <td>APPCFG SAVE RV=7 (flash 변경 없음)</td>
+    <td class="c">수동 처리</td>
+    <td>FW 정상 동작. 리워크 시 운영 가이드 필요</td>
+  </tr>
+  <tr>
+    <td class="c">5</td>
+    <td>dual 모드 JSON merge — fail 재검사 섞이면 파편화</td>
+    <td class="c">Low</td>
+    <td>버그 아님, 연속 full cycle 2회로 완전 저장 가능</td>
+  </tr>
+</table>
+
+<h2>8. 최종 결론</h2>
+
+<div class="box box-ok">
+  <p><b>✅ 모션 검사 (232/485) 양산 투입 판정: PASS</b></p>
+  <ul>
+    <li>팀 미니PC, 양산 미니PC 양쪽에서 모든 검사 항목 반복 PASS</li>
+    <li>완전 저장 결과 JSON 6건 (17항목 완비) 확보</li>
+    <li>양산 SW <code>v0.6.4.60421</code> 배포 준비 완료</li>
+    <li>FW 버전 매칭 로직 강화로 불량 보드 자동 차단 확인</li>
+  </ul>
+</div>
+
+<h2>9. 참고 자료</h2>
+
+<ul>
+  <li>원본 테스트 결과:
+    <ul>
+      <li>팀 미니PC (04-20): <code>docs/.../2026-0420-0421/VL1-00020_모션232 올패스결과.json</code></li>
+      <li>팀 미니PC (04-20): <code>docs/.../2026-0420-0421/VL2-00006_모션485 올패스결과.json</code></li>
+      <li>양산 미니PC (04-21): <code>docs/.../양산용_미니피씨_테스트/TEST_RESULT/1.모션232/</code></li>
+      <li>양산 미니PC (04-21): <code>docs/.../양산용_미니피씨_테스트/TEST_RESULT/2.모션485/</code></li>
+    </ul>
+  </li>
+  <li>세부 리포트:
+    <ul>
+      <li><code>REPORT_미니PC모션검사결과_20260420_v01.html</code> (팀 미니PC 상세)</li>
+      <li><code>REPORT_모션검사결과_232_485_양산검증_20260421_v01.html</code> (양산 검증)</li>
+      <li><code>양산미니피씨_설치_검사결과서_모션_2회씩_20260421_v01.html</code> (양산 미니PC 설치)</li>
+    </ul>
+  </li>
+  <li>배포: <code>10.실행파일배포/260421_0.6.4_motion_232_485/</code></li>
+  <li>워크스페이스: <code>output/Release/net8.0-windows/MP_workspace_VL*_motion_*.json</code></li>
+</ul>
+
+</div>
+</body>
+</html>

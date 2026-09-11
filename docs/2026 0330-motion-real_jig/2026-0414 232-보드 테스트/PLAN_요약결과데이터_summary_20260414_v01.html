@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>PLAN: 요약결과데이터(summary) 추가 + 패턴 분석 가이드 (생산팀 인수인계용)</title>
+<style>
+body{font-family:'Malgun Gothic',sans-serif;max-width:1000px;margin:20px auto;padding:20px;background:#f5f5f5}
+h1{color:#1a237e;border-bottom:3px solid #1a237e;padding-bottom:10px}
+h2{color:#283593;margin-top:30px}
+h3{color:#3949ab}
+table{border-collapse:collapse;width:100%;margin:10px 0}
+th,td{border:1px solid #ccc;padding:8px 12px;text-align:center}
+th{background:#e8eaf6;font-weight:bold}
+.section{background:#fff;padding:20px;border-radius:8px;margin:15px 0;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+code{background:#eceff1;padding:2px 6px;border-radius:3px;font-size:0.9em}
+pre{background:#263238;color:#eee;padding:15px;border-radius:5px;overflow-x:auto;font-size:0.85em}
+.pass{background:#c8e6c9;color:#2e7d32;font-weight:bold}
+.warn{background:#fff9c4;color:#f57f17;font-weight:bold}
+.danger{background:#ffcdd2;color:#c62828;font-weight:bold}
+.info{background:#e3f2fd;color:#1565c0}
+.highlight{background:#fff3e0;color:#e65100}
+</style>
+</head>
+<body>
+
+<h1>PLAN: 요약결과데이터(summary) 추가 + 패턴 분석 가이드 (생산팀 인수인계용)</h1>
+<p><strong>날짜:</strong> 2026-04-14 | <strong>브랜치:</strong> step6-motion-jig-test | <strong>상태:</strong> 미착수</p>
+
+<!-- ============================== -->
+<div class="section">
+<h2>1. 목적</h2>
+<ul>
+<li>기존 판정 로직 <strong>변경 없이</strong>, 결과 JSON에 요약값(summary)을 추가</li>
+<li>생산 중 품질 추세를 파악하여 <strong class="danger">PASS인데도 FAIL 날 징후를 사전 감지</strong></li>
+<li>로컬 JSON 저장 → USB 복사 → 분석 프로그램으로 시각화</li>
+<li>나중에 DB 연결 시 실시간 분석으로 확장</li>
+</ul>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>2. 요약값 항목 및 정상 범위</h2>
+
+<h3>2-1. TILT(기울기) summary</h3>
+<table>
+<tr><th>요약값</th><th>타입</th><th class="pass">정상</th><th class="warn">주의</th><th class="danger">위험</th><th>의미</th></tr>
+<tr><td><code>median</code></td><td>double</td><td class="pass">±20도: ±0.15<br>±45도: ±0.4</td><td class="warn">spec 75%</td><td class="danger">spec 초과</td><td>tail 10개 중앙값 — 측정 대표값</td></tr>
+<tr><td><code>std</code></td><td>double</td><td class="pass">&lt; 0.01</td><td class="warn">0.01~0.03</td><td class="danger">&gt; 0.03</td><td>tail 10개 표준편차 — 산포, 흔들림</td></tr>
+<tr><td><code>p2p</code></td><td>double</td><td class="pass">&lt; 0.03</td><td class="warn">0.03~0.08</td><td class="danger">&gt; 0.08</td><td>tail 10개 Max-Min — 노이즈 폭</td></tr>
+<tr><td><code>sample_count</code></td><td>int</td><td class="pass">100~115</td><td class="warn">80~99</td><td class="danger">&lt; 80</td><td>수집된 총 샘플 수 — 통신 상태</td></tr>
+<tr><td><code>tail_count</code></td><td>int</td><td>10</td><td>-</td><td>-</td><td>판정에 사용된 샘플 수</td></tr>
+<tr><td><code>retry_used</code></td><td>int</td><td class="pass">0</td><td class="warn">1</td><td class="danger">2~3</td><td>실제 리트라이 횟수</td></tr>
+</table>
+
+<h3>2-2. VIBE(진동) summary</h3>
+<table>
+<tr><th>요약값</th><th>타입</th><th class="pass">정상</th><th class="warn">주의</th><th class="danger">위험</th><th>의미</th></tr>
+<tr><td><code>median</code></td><td>double</td><td class="pass">0.99~1.01<br>(Y축: 0.98~1.02)</td><td class="warn">spec 경계 90%</td><td class="danger">spec 초과</td><td>tail 5개 GAC 중앙값</td></tr>
+<tr><td><code>std</code></td><td>double</td><td class="pass">&lt; 0.005</td><td class="warn">0.005~0.01</td><td class="danger">&gt; 0.01</td><td>tail 5개 표준편차 — GAC 안정성</td></tr>
+<tr><td><code>p2p</code></td><td>double</td><td class="pass">&lt; 0.01</td><td class="warn">0.01~0.02</td><td class="danger">&gt; 0.02</td><td>tail 5개 Max-Min — GAC 흔들림</td></tr>
+<tr><td><code>norm</code></td><td>double</td><td class="pass">0.99~1.01</td><td class="warn">0.98~0.99<br>1.01~1.02</td><td class="danger">&lt; 0.98<br>&gt; 1.02</td><td>√(x²+y²+z²) — 3축 합력</td></tr>
+<tr><td><code>non_target_max</code></td><td>double</td><td class="pass">&lt; 0.03</td><td class="warn">0.03~0.05</td><td class="danger">&gt; 0.05</td><td>비측정축 절대값 최대 — 축 정렬</td></tr>
+<tr><td><code>sample_count</code></td><td>int</td><td class="pass">100~115</td><td class="warn">80~99</td><td class="danger">&lt; 80</td><td>수집된 총 샘플 수</td></tr>
+<tr><td><code>tail_count</code></td><td>int</td><td>5</td><td>-</td><td>-</td><td>판정에 사용된 샘플 수</td></tr>
+<tr><td><code>retry_used</code></td><td>int</td><td class="pass">0</td><td class="warn">1</td><td class="danger">2~3</td><td>실제 리트라이 횟수</td></tr>
+</table>
+</div>
+
+<!-- ============================== -->
+<div class="section" style="border-left:4px solid #1a237e">
+<h2>3. 패턴 분석 가이드 (생산팀 인수인계용)</h2>
+<p class="highlight" style="padding:10px;border-radius:5px"><strong>핵심:</strong> PASS인데도 "곧 FAIL 날 징후"를 미리 볼 수 있습니다.</p>
+
+<table>
+<tr><th style="width:30%">현상</th><th style="width:35%">원인 추정</th><th style="width:35%">조치</th></tr>
+<tr><td><strong>median</strong>이 서서히 한 방향으로 밀린다</td><td>지그 drift, 온도 변화, 자이로 drift</td><td>지그 점검, 영점 재확인</td></tr>
+<tr><td><strong>std</strong>가 특정 시간대에 커진다</td><td>지그 체결 풀림, 진동, 작업환경 변화</td><td>지그 볼트 체결 확인, 환경 점검</td></tr>
+<tr><td><strong>p2p</strong>가 갑자기 커진다</td><td>케이블 접촉 불량, 보드 노이즈</td><td>케이블 교체, 커넥터 점검</td></tr>
+<tr><td><strong>retry_used</strong>가 증가한다</td><td>경계값 제품 증가 or 지그 상태 악화</td><td>LOT 확인, 지그 상태 점검</td></tr>
+<tr><td><strong>sample_count</strong>가 줄어든다</td><td>USB 통신 지연, 보드 응답 지연</td><td>USB 허브/케이블 점검</td></tr>
+<tr><td><strong>non_target_max</strong>가 커진다</td><td>지그 축 정렬 틀어짐, 조립 편차</td><td>지그 정렬 재확인</td></tr>
+<tr><td><strong>norm</strong>이 1.00에서 벗어난다</td><td>센서 보정 문제, 기구 자세 틀어짐</td><td>센서 교정, 기구 점검</td></tr>
+</table>
+
+<h3>예시: 하루 생산 데이터 추세</h3>
+<table>
+<tr><th>시간</th><th>median (45도)</th><th>std</th><th>p2p</th><th>retry</th><th>판정</th><th>비고</th></tr>
+<tr><td>09:00</td><td>0.35</td><td>0.005</td><td>0.02</td><td>0</td><td class="pass">PASS</td><td>정상</td></tr>
+<tr><td>10:00</td><td>0.38</td><td>0.006</td><td>0.02</td><td>0</td><td class="pass">PASS</td><td>약간 증가</td></tr>
+<tr><td>11:00</td><td>0.42</td><td>0.008</td><td>0.03</td><td>0</td><td class="pass">PASS</td><td class="warn">추세 주의</td></tr>
+<tr><td>12:00</td><td>0.45</td><td>0.012</td><td>0.04</td><td>1</td><td class="pass">PASS</td><td class="warn">경계값 진입, retry 발생</td></tr>
+<tr><td>13:00</td><td>0.49</td><td>0.015</td><td>0.06</td><td>2</td><td class="pass">PASS</td><td class="danger">FAIL 임박 — 지그 점검 필요</td></tr>
+<tr><td>13:30</td><td>0.52</td><td>0.020</td><td>0.08</td><td>3</td><td class="danger">FAIL</td><td class="danger">spec 초과</td></tr>
+</table>
+<p>→ 09:00부터 median이 계속 밀리고 있었음. <strong>11:00에 조치했으면 FAIL 방지 가능.</strong></p>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>4. JSON 구조 (변경 부분)</h2>
+
+<h3>4-1. TILT 결과 (기존 + summary 추가)</h3>
+<pre>
+{
+  "item": "X축 기울기 -20도",
+  "value": 0.13,
+  "gyro": -19.97,
+  "vl": -19.84,
+  "min": -0.2,
+  "max": 0.2,
+  "judge_mode": "all_in_spec(엄격)",
+  "result": "OK",
+  <span style="color:#ff9800">"summary": {
+    "median": 0.128,
+    "std": 0.003,
+    "p2p": 0.012,
+    "sample_count": 110,
+    "tail_count": 10,
+    "retry_used": 0
+  }</span>
+}
+</pre>
+
+<h3>4-2. VIBE 결과 (기존 + summary 추가)</h3>
+<pre>
+{
+  "item": "Y축 진동 (-90도)",
+  "value": 0.98,
+  "min": 0.98,
+  "max": 1.02,
+  "judge_mode": "all_in_spec(엄격)",
+  "result": "OK",
+  <span style="color:#ff9800">"summary": {
+    "median": 0.98,
+    "std": 0.0,
+    "p2p": 0.01,
+    "norm": 1.0003,
+    "non_target_max": 0.02,
+    "sample_count": 106,
+    "tail_count": 5,
+    "retry_used": 0
+  }</span>
+}
+</pre>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>5. 코드 수정 범위</h2>
+
+<table>
+<tr><th>파일</th><th>수정 내용</th><th>영향</th></tr>
+<tr><td><code>MotionJig.cs</code> — RunTiltMeasure</td><td>tail 배열에서 median/std/p2p 계산, retry 카운터, summary 객체 생성</td><td>판정 로직 변경 없음</td></tr>
+<tr><td><code>MotionJig.cs</code> — RunVibeMeasure</td><td>tail 배열에서 median/std/p2p/norm/non_target 계산, summary 객체 생성</td><td>판정 로직 변경 없음</td></tr>
+<tr><td>워크스페이스 JSON</td><td colspan="2" class="pass">변경 없음</td></tr>
+<tr><td>판정 로직</td><td colspan="2" class="pass">변경 없음</td></tr>
+<tr><td>MongoDB 업로드</td><td colspan="2" class="pass">변경 없음 (JSON에 포함되면 자동 업로드)</td></tr>
+</table>
+
+<h3>계산 방법</h3>
+<pre>
+median         = tail 배열 정렬 후 중앙값
+std            = √(Σ(xi - mean)² / N)
+p2p            = Max(tail) - Min(tail)
+norm           = √(gac_x² + gac_y² + gac_z²)        ← VIBE만
+non_target_max = max(|비측정축1|, |비측정축2|)         ← VIBE만
+retry_used     = 실제 리트라이 발생 횟수 (0~3)
+sample_count   = 스트리밍으로 수집된 전체 샘플 수
+</pre>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>6. 운영 계획</h2>
+
+<table>
+<tr><th>단계</th><th>내용</th><th>환경</th><th>시기</th></tr>
+<tr><td><strong>1단계</strong></td><td>summary 추가 → 로컬 JSON 저장</td><td>생산PC (네트워크 없음)</td><td>지금</td></tr>
+<tr><td><strong>1-1</strong></td><td>분석 프로그램 (Python) — USB 복사 JSON → 추세 차트/시각화</td><td>사무실 PC</td><td>이후</td></tr>
+<tr><td><strong>2단계</strong></td><td>DB 연결 → 다른 PC에서 실시간 조회/시각화</td><td>네트워크 연결 후</td><td>추후</td></tr>
+</table>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>7. 영향도</h2>
+<table>
+<tr><th>항목</th><th>영향</th></tr>
+<tr><td>기존 판정 로직</td><td class="pass">변경 없음</td></tr>
+<tr><td>검사 시간</td><td class="pass">영향 없음 (이미 수집된 배열에서 계산만 추가)</td></tr>
+<tr><td>결과 JSON 크기</td><td class="pass">항목당 ~100바이트 증가 (무시할 수준)</td></tr>
+<tr><td>기존 DB 데이터</td><td class="pass">호환 (summary 없는 기존 문서와 공존 가능)</td></tr>
+</table>
+</div>
+
+<hr>
+<p style="color:#999;font-size:0.85em">
+작성: Claude | 날짜: 2026-04-14 | 브랜치: step6-motion-jig-test | 커밋: bb59c1c
+</p>
+
+</body>
+</html>

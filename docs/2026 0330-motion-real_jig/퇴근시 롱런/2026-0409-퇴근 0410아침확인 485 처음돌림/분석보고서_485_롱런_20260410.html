@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>485 모션지그 롱런 테스트 분석보고서 (2026-04-09~10)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', '맑은 고딕', sans-serif; background: #f5f5f5; color: #222; padding: 24px; line-height: 1.6; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.5em; border-bottom: 3px solid #1a73e8; padding-bottom: 8px; margin-bottom: 6px; }
+  .subtitle { color: #666; font-size: 0.9em; margin-bottom: 24px; }
+  h2 { font-size: 1.15em; margin: 28px 0 12px; padding: 6px 12px; background: #1a73e8; color: #fff; border-radius: 4px; }
+  h3 { font-size: 1em; margin: 18px 0 8px; color: #1a73e8; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 18px; font-size: 0.88em; }
+  th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: center; }
+  th { background: #e8eef7; font-weight: 600; }
+  tr:nth-child(even) { background: #fafafa; }
+  .ok { color: #0d7a0d; font-weight: 700; }
+  .fail { color: #d32f2f; font-weight: 700; }
+  .warn { color: #e65100; font-weight: 700; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; font-weight: 600; }
+  .tag-code { background: #fff3e0; color: #e65100; }
+  .tag-fw { background: #fce4ec; color: #c62828; }
+  .tag-comm { background: #e3f2fd; color: #1565c0; }
+  .summary-box { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 14px 0 22px; }
+  .sbox { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: center; }
+  .sbox .num { font-size: 2em; font-weight: 700; }
+  .sbox .label { font-size: 0.82em; color: #666; margin-top: 2px; }
+  .timeline { position: relative; padding-left: 24px; margin: 12px 0; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: #ccc; }
+  .tl-item { position: relative; margin-bottom: 12px; padding: 8px 14px; background: #fff; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .tl-item::before { content: ''; position: absolute; left: -20px; top: 14px; width: 10px; height: 10px; border-radius: 50%; }
+  .tl-ok::before { background: #0d7a0d; }
+  .tl-fail::before { background: #d32f2f; }
+  .tl-warn::before { background: #e65100; }
+  .tl-time { font-weight: 700; font-size: 0.85em; color: #555; }
+  .tl-desc { font-size: 0.88em; margin-top: 2px; }
+  .bar-row { display: flex; align-items: center; margin: 3px 0; font-size: 0.85em; }
+  .bar-label { width: 220px; text-align: right; padding-right: 10px; font-size: 0.82em; }
+  .bar-track { flex: 1; height: 18px; background: #eee; border-radius: 3px; overflow: hidden; display: flex; }
+  .bar-ok { background: #4caf50; height: 100%; }
+  .bar-fail { background: #ef5350; height: 100%; }
+  .bar-pct { width: 60px; text-align: right; font-size: 0.78em; color: #888; padding-left: 6px; }
+  .cause-box { background: #fff; border-left: 4px solid; padding: 12px 16px; margin: 8px 0; border-radius: 0 6px 6px 0; }
+  .cause-code { border-color: #e65100; }
+  .cause-comm { border-color: #1565c0; }
+  .cause-fw { border-color: #c62828; }
+  .footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 0.78em; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>RS-485 모션지그 롱런 테스트 분석보고서</h1>
+<div class="subtitle">
+  테스트 일시: 2026-04-09 20:13 ~ 2026-04-10 08:39 (약 12시간 26분) |
+  워크스페이스: workspace_motion_485_test.json |
+  모드: dual |
+  COM: X축=COM11, Y축=COM12, 자이로=COM15
+</div>
+
+<h2>1. 실행 요약</h2>
+<div class="summary-box">
+  <div class="sbox">
+    <div class="num">239 <span style="font-size:0.5em; color:#888">/ 450</span></div>
+    <div class="label">완료 라운드 (53%)</div>
+  </div>
+  <div class="sbox">
+    <div class="num ok">983</div>
+    <div class="label">OK 결과</div>
+  </div>
+  <div class="sbox">
+    <div class="num fail">2,126</div>
+    <div class="label">FAIL 결과</div>
+  </div>
+  <div class="sbox">
+    <div class="num warn">31.6%</div>
+    <div class="label">OK 비율</div>
+  </div>
+</div>
+
+<h2>2. 항목별 OK/FAIL 통계 (전체 합산)</h2>
+
+<table>
+  <tr>
+    <th>검사 항목</th>
+    <th>OK</th>
+    <th>FAIL</th>
+    <th>합계</th>
+    <th>OK%</th>
+    <th>FAIL 원인 분류</th>
+  </tr>
+  <tr>
+    <td style="text-align:left">#0 FW 버전 확인 (X축)</td>
+    <td class="ok">114</td><td class="fail">127</td><td>241</td><td>47%</td>
+    <td><span class="tag tag-comm">통신장애</span></td>
+  </tr>
+  <tr>
+    <td style="text-align:left">#1 X축 영점 초기화</td>
+    <td class="ok">237</td><td class="fail">2</td><td>239</td><td>99%</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td style="text-align:left">#2 X축 Calibration (OFFSET)</td>
+    <td>0</td><td class="fail">241</td><td>241</td><td class="fail">0%</td>
+    <td><span class="tag tag-code">코드버그</span></td>
+  </tr>
+  <tr>
+    <td style="text-align:left">#3 X축 파라미터 저장</td>
+    <td class="ok">108</td><td class="fail">132</td><td>240</td><td>45%</td>
+    <td><span class="tag tag-comm">통신장애</span></td>
+  </tr>
+  <tr>
+    <td style="text-align:left">#4 X축 기울기 측정</td>
+    <td>0</td><td class="fail">240</td><td>240</td><td class="fail">0%</td>
+    <td><span class="tag tag-code">코드버그</span> <span class="tag tag-fw">FW</span></td>
+  </tr>
+  <tr>
+    <td style="text-align:left">#5 Y축 진동 (GAC)</td>
+    <td class="ok">111</td><td class="fail">128</td><td>239</td><td>46%</td>
+    <td><span class="tag tag-comm">통신장애</span></td>
+  </tr>
+  <tr>
+    <td style="text-align:left">#0-Y FW 버전 확인 (Y축)</td>
+    <td class="ok">44</td><td class="fail">195</td><td>239</td><td>18%</td>
+    <td><span class="tag tag-comm">통신장애</span></td>
+  </tr>
+  <tr>
+    <td style="text-align:left">#7 Y축 영점 초기화</td>
+    <td class="ok">238</td><td class="fail">0</td><td>238</td><td class="ok">100%</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td style="text-align:left">#8 Y축 Calibration (OFFSET)</td>
+    <td>0</td><td class="fail">238</td><td>238</td><td class="fail">0%</td>
+    <td><span class="tag tag-code">코드버그</span></td>
+  </tr>
+  <tr>
+    <td style="text-align:left">#9 Y축 파라미터 저장</td>
+    <td class="ok">43</td><td class="fail">195</td><td>238</td><td>18%</td>
+    <td><span class="tag tag-comm">통신장애</span></td>
+  </tr>
+  <tr>
+    <td style="text-align:left">#12 Z축 진동 (GAC)</td>
+    <td class="ok">43</td><td class="fail">195</td><td>238</td><td>18%</td>
+    <td><span class="tag tag-comm">통신장애</span></td>
+  </tr>
+  <tr>
+    <td style="text-align:left">#10 Y축 기울기 측정</td>
+    <td>0</td><td class="fail">238</td><td>238</td><td class="fail">0%</td>
+    <td><span class="tag tag-code">코드버그</span> <span class="tag tag-fw">FW</span></td>
+  </tr>
+  <tr>
+    <td style="text-align:left">#11 X축 진동 (GAC)</td>
+    <td class="ok">43</td><td class="fail">195</td><td>238</td><td>18%</td>
+    <td><span class="tag tag-comm">통신장애</span></td>
+  </tr>
+</table>
+
+<h3>OK/FAIL 비율 차트</h3>
+<div style="background:#fff; padding:16px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+  <div class="bar-row"><div class="bar-label">#0 FW (X)</div><div class="bar-track"><div class="bar-ok" style="width:47%"></div><div class="bar-fail" style="width:53%"></div></div><div class="bar-pct">47%</div></div>
+  <div class="bar-row"><div class="bar-label">#1 영점 (X)</div><div class="bar-track"><div class="bar-ok" style="width:99%"></div><div class="bar-fail" style="width:1%"></div></div><div class="bar-pct ok">99%</div></div>
+  <div class="bar-row"><div class="bar-label">#2 OFFSET (X)</div><div class="bar-track"><div class="bar-fail" style="width:100%"></div></div><div class="bar-pct fail">0%</div></div>
+  <div class="bar-row"><div class="bar-label">#3 파라미터 (X)</div><div class="bar-track"><div class="bar-ok" style="width:45%"></div><div class="bar-fail" style="width:55%"></div></div><div class="bar-pct">45%</div></div>
+  <div class="bar-row"><div class="bar-label">#4 기울기 (X)</div><div class="bar-track"><div class="bar-fail" style="width:100%"></div></div><div class="bar-pct fail">0%</div></div>
+  <div class="bar-row"><div class="bar-label">#5 진동 GAC (Y)</div><div class="bar-track"><div class="bar-ok" style="width:46%"></div><div class="bar-fail" style="width:54%"></div></div><div class="bar-pct">46%</div></div>
+  <div class="bar-row"><div class="bar-label">#0-Y FW (Y)</div><div class="bar-track"><div class="bar-ok" style="width:18%"></div><div class="bar-fail" style="width:82%"></div></div><div class="bar-pct fail">18%</div></div>
+  <div class="bar-row"><div class="bar-label">#7 영점 (Y)</div><div class="bar-track"><div class="bar-ok" style="width:100%"></div></div><div class="bar-pct ok">100%</div></div>
+  <div class="bar-row"><div class="bar-label">#8 OFFSET (Y)</div><div class="bar-track"><div class="bar-fail" style="width:100%"></div></div><div class="bar-pct fail">0%</div></div>
+  <div class="bar-row"><div class="bar-label">#9 파라미터 (Y)</div><div class="bar-track"><div class="bar-ok" style="width:18%"></div><div class="bar-fail" style="width:82%"></div></div><div class="bar-pct fail">18%</div></div>
+  <div class="bar-row"><div class="bar-label">#12 진동 GAC (Z)</div><div class="bar-track"><div class="bar-ok" style="width:18%"></div><div class="bar-fail" style="width:82%"></div></div><div class="bar-pct fail">18%</div></div>
+  <div class="bar-row"><div class="bar-label">#10 기울기 (Y)</div><div class="bar-track"><div class="bar-fail" style="width:100%"></div></div><div class="bar-pct fail">0%</div></div>
+  <div class="bar-row"><div class="bar-label">#11 진동 GAC (X)</div><div class="bar-track"><div class="bar-ok" style="width:18%"></div><div class="bar-fail" style="width:82%"></div></div><div class="bar-pct fail">18%</div></div>
+</div>
+
+<h2>3. FAIL 원인 분류</h2>
+
+<h3>A. 코드 버그 (처음부터 100% FAIL)</h3>
+<div class="cause-box cause-code">
+  <strong>OFFSET 검증 (#2, #8) &mdash; VibeTilt.cs 485 주소 누락</strong><br>
+  VibeTilt.cs:940~958의 OFFSET 검증 코드에서 485일 때도 주소 없이 232 명령을 보냄.<br>
+  <code>&lt;MODE,06&gt;</code> 대신 <code>&lt;MODE,1,06&gt;</code>, <code>&lt;START&gt;</code> 대신 <code>&lt;START,1&gt;</code> 이어야 함.<br>
+  <strong>조치:</strong> isRs485 분기 추가 필요 (MotionJig.cs의 StartVlStreaming 참고)
+</div>
+
+<div class="cause-box cause-fw">
+  <strong>TILT 기울기 측정 (#4, #10) &mdash; START 에러코드 9</strong><br>
+  MotionJig.cs의 StartVlStreaming은 정상적으로 <code>&lt;START,1&gt;</code> 전송.<br>
+  FW 응답: <code>[START,9,1]</code> &mdash; 에러코드 9로 AN 스트리밍 자체가 시작되지 않음.<br>
+  <strong>조치:</strong> 485 FW에서 MODE 06 + START 스트리밍 지원 여부 확인 필요
+</div>
+
+<h3>B. 통신 장애 (중간부터 FAIL 전환)</h3>
+<div class="cause-box cause-comm">
+  <strong>Y축 COM12 통신 단절 &mdash; round 44 (21:58 경, 약 1시간 42분 후)</strong><br>
+  증상: GAC 응답 빈값 (<code>raw=</code>), VER 무응답, APPCFG FAIL<br>
+  영향 항목: #0-Y, #9, #12, #11 일제히 FAIL 전환<br>
+  <strong>특이사항:</strong> 영점 초기화(#7)는 EMIO+자이로만 사용하므로 계속 OK
+</div>
+<div class="cause-box cause-comm">
+  <strong>X축 COM11 통신 단절 &mdash; round 113 (01:32 경, 약 5시간 19분 후)</strong><br>
+  증상: 동일 패턴 &mdash; GAC 빈값, VER 무응답, APPCFG FAIL<br>
+  영향 항목: #0, #3, #5 FAIL 전환<br>
+  <strong>특이사항:</strong> 영점 초기화(#1)는 계속 OK
+</div>
+
+<h2>4. 통신 장애 타임라인</h2>
+
+<div class="timeline">
+  <div class="tl-item tl-ok">
+    <div class="tl-time">20:13:35 (4/9)</div>
+    <div class="tl-desc">롱런 시작 &mdash; X축(COM11), Y축(COM12) 정상 통신</div>
+  </div>
+  <div class="tl-item tl-ok">
+    <div class="tl-time">20:13 ~ 21:55 (round 1~43)</div>
+    <div class="tl-desc"><strong>정상 구간 (약 1시간 42분)</strong> &mdash; FW/GAC/APPCFG 모두 OK (OFFSET/TILT 제외)</div>
+  </div>
+  <div class="tl-item tl-fail">
+    <div class="tl-time">21:58:13 (4/9) &mdash; round 44</div>
+    <div class="tl-desc"><span class="fail">Y축(COM12) 통신 장애 시작</span> &mdash; #9 파라미터 저장 첫 FAIL, GAC 빈 응답</div>
+  </div>
+  <div class="tl-item tl-fail">
+    <div class="tl-time">22:00:44 (4/9)</div>
+    <div class="tl-desc"><span class="fail">Y축 FW 버전(#0-Y) FAIL 전환</span> &mdash; VER 명령 무응답</div>
+  </div>
+  <div class="tl-item tl-warn">
+    <div class="tl-time">22:00 ~ 01:26 (round 45~112)</div>
+    <div class="tl-desc"><span class="warn">Y축 죽은 상태로 계속 반복</span> &mdash; X축은 아직 정상 (FW OK, 영점 OK)</div>
+  </div>
+  <div class="tl-item tl-fail">
+    <div class="tl-time">01:26:14 (4/10) &mdash; round 113</div>
+    <div class="tl-desc"><span class="fail">X축(COM11) 통신 장애 시작</span> &mdash; #3 파라미터 저장 첫 FAIL</div>
+  </div>
+  <div class="tl-item tl-fail">
+    <div class="tl-time">01:32:16 (4/10)</div>
+    <div class="tl-desc"><span class="fail">X축 FW 버전(#0) FAIL 전환</span> &mdash; 양쪽 포트 모두 통신 불능</div>
+  </div>
+  <div class="tl-item tl-fail">
+    <div class="tl-time">08:38:59 (4/10)</div>
+    <div class="tl-desc">사용자 Stop &mdash; 239라운드에서 중단. 통신 미복구 상태</div>
+  </div>
+</div>
+
+<h2>5. 안정 항목 (100% OK)</h2>
+<table>
+  <tr><th>항목</th><th>OK</th><th>비고</th></tr>
+  <tr><td>#1 X축 영점 초기화</td><td class="ok">237/239 (99%)</td><td>EMIO + 자이로만 사용, VL 통신 무관</td></tr>
+  <tr><td>#7 Y축 영점 초기화</td><td class="ok">238/238 (100%)</td><td>동일</td></tr>
+</table>
+<p style="font-size:0.85em; color:#555; margin-top:6px;">
+  영점 초기화는 모터(EMIO TCP) + 자이로(COM15)만 사용하므로, VL 제품 통신(COM11/COM12)이 끊겨도 영향 없음.
+  <strong>EMIO TCP와 자이로 COM15는 12시간 내내 안정.</strong>
+</p>
+
+<h2>6. 결론 및 조치사항</h2>
+
+<table>
+  <tr><th style="width:40px">#</th><th>구분</th><th>내용</th><th>담당</th><th>우선순위</th></tr>
+  <tr>
+    <td>1</td>
+    <td><span class="tag tag-code">코드</span></td>
+    <td style="text-align:left">VibeTilt.cs OFFSET 검증 &mdash; 485 주소 분기 추가<br><code>VibeTilt.cs:940~958</code></td>
+    <td>SW</td>
+    <td class="fail">HIGH</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><span class="tag tag-fw">FW</span></td>
+    <td style="text-align:left">485 모드 START 에러코드 9 &mdash; AN 스트리밍 미지원 확인<br>232에서는 정상 동작, 485에서만 발생</td>
+    <td>FW</td>
+    <td class="fail">HIGH</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><span class="tag tag-comm">통신</span></td>
+    <td style="text-align:left">485 UART 장시간 통신 단절 원인 조사<br>
+      Y축: ~1.7시간 후, X축: ~5.3시간 후 단절<br>
+      가능 원인: USB-485 컨버터 버퍼 오버플로우, 드라이버 불안정, 케이블 접촉, FW 응답 지연 누적</td>
+    <td>HW/SW</td>
+    <td class="warn">MEDIUM</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><span class="tag tag-comm">통신</span></td>
+    <td style="text-align:left">통신 장애 자동 복구 로직 검토<br>
+      현재: 장애 발생 시 복구 없이 끝까지 FAIL 지속<br>
+      개선: 포트 재연결 또는 UART 재초기화 시도</td>
+    <td>SW</td>
+    <td>LOW</td>
+  </tr>
+</table>
+
+<div class="footer">
+  생성일: 2026-04-10 | 로그 경로: docs/2026 0330-motion-real_jig/퇴근시 롱런/2026-0409-퇴근 0410아침확인 485 처음돌림/
+</div>
+
+</div>
+</body>
+</html>

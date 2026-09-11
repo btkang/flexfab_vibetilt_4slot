@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>PLAN_자이로_누적드리프트_측정절차_20260715_v01</title>
+<style>
+body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+       max-width: 1000px; margin: 30px auto; padding: 0 25px;
+       line-height: 1.65; color: #333; background: #fafafa; }
+h1 { border-bottom: 3px solid #00695c; padding-bottom: 10px; color: #00695c; }
+h2 { border-left: 5px solid #00897b; padding-left: 12px; color: #00695c; margin-top: 35px; }
+h3 { color: #424242; margin-top: 22px; }
+h4 { color: #555; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background-color: #e0f2f1; font-weight: 600; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px;
+       font-family: 'Consolas', monospace; font-size: 0.92em; }
+pre { background: #263238; color: #aed581; padding: 15px; border-radius: 5px;
+      overflow-x: auto; font-size: 0.85em; line-height: 1.4; }
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote { border-left: 4px solid #00897b; padding: 6px 14px; color: #555;
+             background: #e0f2f1; margin: 12px 0; }
+a { color: #00695c; }
+ul, ol { margin: 6px 0 6px 22px; }
+li { margin: 3px 0; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1 id="plan____20260715_v01">PLAN_자이로_누적드리프트_측정절차_20260715_v01</h1>
+<ul>
+<li>작성: Claude (2026-07-15)</li>
+<li>상태: <strong>실행 대기</strong> — 지그가 제조팀에 있어 미실행</li>
+<li>소요: 약 5분. <strong>검사 프로그램·코드 수정 불필요, 터미널만 필요</strong></li>
+<li>목적: 자이로에 그동안 누적된 영점 이동량(D)을 <strong>1회 측정</strong>하여, 현행 양산 지속 여부를 판단</li>
+<li>배경 문서: <code>REF_검사순서_명령어정리_20260715_v01.md</code>,
+  <code>../2026 0714-검사항목검토_영점검토/REF_자이로_VL_영점검토_대화정리_20260714_v02.md</code></li>
+</ul>
+<hr />
+<h2 id="1">1. 왜 재야 하나 (요약)</h2>
+<p>검사 항목 <code>#3</code>/<code>#10</code>(영점 초기화)이 매 사이클 자이로에 <strong><code>setzcur</code></strong>(현재 자세를 0으로 등록)를 보낸다.
+이 명령은 <strong>비휘발</strong>이라 전원을 꺼도 유지된다(datasheet p.2, p.6).</p>
+<ul>
+<li>그래서 자이로의 "0도"는 <strong>최초 1회만 공장(중력) 기준</strong>이고, 이후로는 <strong>직전 사이클이 정한 자세</strong>다.</li>
+<li>제품 영점(<code>&lt;OFFSET,1&gt;</code>)은 그 자세를 그대로 물려받으므로, 자이로 0이 진짜 수평에서 <strong>D만큼 틀어져 있으면 전 제품이 D만큼 기울기 바이어스를 갖고 출하</strong>된다.</li>
+<li><strong>기존 검사망은 D를 검출하지 못한다</strong>:</li>
+<li><code>#6</code>/<code>#14</code> 기울기 판정 = <code>VL − 자이로</code> <strong>상대비교</strong> → D가 양쪽에 똑같이 들어가 상쇄 → 전량 PASS</li>
+<li><code>#4</code>/<code>#11</code>의 <code>verify_an</code> = OFFSET <strong>직후 VL 자기 출력</strong>을 보는 것 → 지그가 어디에 있든 항상 0.00x</li>
+</ul>
+<p>즉 <strong>D가 얼마든 검사는 통과한다.</strong> D의 실제 크기는 측정 외에는 알 방법이 없다.</p>
+<blockquote>
+<p>참고: <code>setzcur</code>는 지그제작요청서(2026-03-26)에 없는 명령이며, BG01 테스터 코드(<code>BoardLevelMo_BG01.cpp</code>)
+1:1 이식(2026-02-24) 때 딸려온 것이다. 원출처는 2019년 pCOM 테스터. 상세는 배경 문서 참조.</p>
+</blockquote>
+<h2 id="2">2. 측정 원리</h2>
+<p><code>setzfac</code> = "Cancels tare function and resets zero to factory setting" (datasheet p.6).
+<code>setzcur</code>로 누적된 tare를 취소하고 <strong>공장(중력) 기준으로 되돌린다.</strong></p>
+<pre><code>setzfac 직후 같은 자세에서 get---x 로 읽은 값  =  그동안 누적된 D
+</code></pre>
+<p>지그를 평소 "0도"라고 여기던 자세에 둔 채로 실행하면, 그 자세가 <strong>진짜 수평에서 얼마나 벗어나 있었는지</strong>가 그대로 숫자로 나온다.</p>
+<h2 id="3">3. 준비</h2>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>대상</td>
+<td>자이로 SOLAR-360-420</td>
+<td><strong>232/485 공용 1대</strong> (workspace 양쪽 다 동일 포트)</td>
+</tr>
+<tr>
+<td>포트</td>
+<td><strong>COM16</strong></td>
+<td>개발 PC 기준. <strong>양산 PC는 다를 수 있음 — 아래 확인 필수</strong></td>
+</tr>
+<tr>
+<td>통신</td>
+<td><strong>38400 / 8 / None / 1</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>개행</td>
+<td>명령 끝에 <strong>LF(<code>\n</code>)</strong></td>
+<td>코드가 <code>"setzcur\n"</code> 형태로 송신</td>
+</tr>
+<tr>
+<td>도구</td>
+<td>시리얼 터미널 아무거나</td>
+<td>TeraTerm, PuTTY, 하이퍼터미널 등</td>
+</tr>
+</tbody>
+</table>
+<p><strong>포트 확인 방법 (USB COM 드리프트 이슈 있음 — 반드시 실물 확인)</strong>
+- 검사 프로그램의 workspace JSON에서 <code>uart_gyro</code> → <code>config.port</code> 확인
+- 파일: <code>output\Release\net8.0-windows\MP_workspace_motion_232_VL10.json</code>
+- 또는 검사 프로그램 포트 설정 화면에서 확인</p>
+<p><strong>주의: 검사 프로그램을 먼저 종료할 것.</strong> 포트를 잡고 있으면 터미널이 못 연다.</p>
+<h2 id="4">4. 절차</h2>
+<pre><code>[1] 지그를 평소 0도 자세로 만든다
+     - 검사 1사이클 돌려서 영점 초기화(#3 또는 #10)가 끝난 직후 정지
+     - 이후 모터를 움직이지 말 것 (기울기/진동 항목으로 넘어가면 안 됨)
+
+[2] 검사 프로그램 종료 → 터미널로 COM16 접속 (38400 8N1)
+
+[3] setzfac  전송  →  응답 OK 확인          ← tare 취소, 공장 기준 복귀
+
+[4] get---x  전송  →  ★ 값 기록             ← 이 값이 누적 드리프트 D
+                     응답 형식: ±xxx.xxx  또는  OK±xxx.xxx
+
+[5] 끝. 터미널 닫고 검사 프로그램 재시작
+</code></pre>
+<p><strong>[4]를 여러 번(3~5회) 읽어 흔들림도 같이 기록하면 좋다.</strong> 노이즈와 실제 드리프트를 구분할 수 있다.</p>
+<h2 id="5">5. 결과 해석</h2>
+<table>
+<thead>
+<tr>
+<th>D (get---x 값)</th>
+<th>의미</th>
+<th>조치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>|D| ≤ 0.05</strong></td>
+<td>사실상 안 흘렀음. 제품 spec(±0.05) 이내</td>
+<td>현행 생산 유지. 계획대로 <code>setzcur</code> 제거 진행</td>
+</tr>
+<tr>
+<td><strong>0.05 &lt; |D| ≤ 0.2</strong></td>
+<td>흘렀음. 제품 영점이 spec을 벗어난 채 출하됐을 수 있음</td>
+<td>출하 이력 검토 + 제거 우선순위 상향</td>
+</tr>
+<tr>
+<td><strong>|D| &gt; 0.2</strong></td>
+<td>상당량 누적. <code>#6</code>/<code>#14</code> spec(±0.2)에 근접</td>
+<td><strong>라인 판단 필요.</strong> 골든샘플로 기출하품 확인 검토</td>
+</tr>
+</tbody>
+</table>
+<p>D의 부호도 기록할 것 — 어느 방향으로 틀어졌는지가 원인 추적(기구 마모 방향)에 쓰인다.</p>
+<h2 id="6">6. 안전성 — 왜 지금 해도 되나</h2>
+<ul>
+<li><strong><code>setzfac</code>는 tare만 취소</strong>한다. <code>setdir</code>(측정 방향)·필터·baudrate 등 다른 설정은 건드리지 않는다 (datasheet p.6).</li>
+<li>실행 후 <strong>다음 검사 사이클에서 자동 정상화</strong>된다:
+  <code>FineAdjust</code>가 공장 기준으로 진짜 수평을 찾아가고 → 거기서 <code>setzcur</code> → 영점이 <strong>중력 기준으로 리셋</strong>된다.
+  즉 측정 자체가 현 상태보다 <strong>나은 상태로 만들어 놓는다.</strong></li>
+<li>되돌릴 필요 없음. 별도 복구 작업 불필요.</li>
+</ul>
+<p><strong>단, [1]에서 모터를 움직이면 측정이 무의미해진다.</strong> 영점 직후 자세를 유지한 채로 [3]/[4]를 해야 한다.</p>
+<h2 id="7">7. 기록 양식</h2>
+<pre><code>측정일시    : 2026-__-__ __:__
+측정자      :
+대상 PC     : (개발 데스크탑 / 양산 미니PC)
+자이로 포트 : COM__          ← 실물 확인값
+workspace   : MP_workspace_motion____ (232 / 485)
+
+[1] 영점 직후 자세 확보      : (완료 / 실패)
+[3] setzfac 응답            : (OK / 무응답 / 기타: ______)
+[4] get---x 판독            :
+      1회차 : ______
+      2회차 : ______
+      3회차 : ______
+      평균 D : ______        ← ★ 결과
+
+판정      : (≤0.05 정상 / 0.05~0.2 경고 / &gt;0.2 라인판단)
+특이사항  :
+</code></pre>
+<h2 id="8">8. 이 측정으로 답이 나오는 것 / 안 나오는 것</h2>
+<p><strong>나오는 것</strong>
+- 자이로 영점이 그동안 얼마나 흘렀는가 (= 현행 양산 지속 가능 여부)
+- <code>setzcur</code> 제거 작업의 시급성</p>
+<p><strong>안 나오는 것 (별도 사안)</strong>
+- <strong>직교축 기울기</strong> — 1축 회전 지그라 보정·감지 불가. <code>setzcur</code> 유무와 무관
+- <strong>자이로 자체 오차 / 장착 틀어짐</strong> — 기준자 자신의 오차라 상대비교로는 검출 불가
+  → <code>../2026 0714-검사항목검토_영점검토/PLAN_골든샘플_자이로점검_20260714_v01.md</code> (여전히 유효)
+- <strong><code>setzcur</code> 제거 시 잔차 영향</strong> — FineAdjust 잔차(≤0.03)가 <code>VL−자이로</code>에 계통 오프셋으로 남음.
+  ±0.2 대비 15% 수준으로 예상되나 <strong>TEST 워크스페이스 실측 필요</strong> (별도 작업)</p>
+<h2 id="9">9. 후속 (측정 후)</h2>
+<ol>
+<li>D 기록 → 본 문서 7절에 채우고 커밋</li>
+<li>TEST 워크스페이스에서 <code>setzcur</code> 제거 + ±20/±45 실측 → 잔차 확인</li>
+<li>결과에 따라 MP 반영 + 관련 문서 정정
+   - <code>../2026 0714-검사항목검토_영점검토/PLAN_영점드리프트_대응_20260714_v01.md</code>
+     → 대책 A(setzfac 주기 점검)는 <strong>"주기 점검"이 아니라 "1회 복구"로 축소</strong>됨.
+       4.2절의 "verify_an 재조정 필요"는 <strong>오기</strong>(verify_an은 자이로 무관) — 정정 대상
+   - <code>REF_검사순서_명령어정리_20260715_v01.md</code> 5절 불일치 목록 갱신</li>
+</ol>
+</body>
+</html>

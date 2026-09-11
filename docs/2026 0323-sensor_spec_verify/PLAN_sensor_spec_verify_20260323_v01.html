@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>PLAN: Board Level 센서 스펙 검증 수정</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; max-width: 960px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }
+  h1 { border-bottom: 3px solid #333; padding-bottom: 8px; }
+  h2 { color: #2c3e50; margin-top: 30px; border-left: 4px solid #3498db; padding-left: 10px; }
+  h3 { color: #34495e; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 20px; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: center; }
+  th { background: #f0f0f0; }
+  .issue { background: #fff3cd; }
+  .ok { background: #d4edda; }
+  .change { background: #f8d7da; }
+  .spec { background: #e8f4fd; }
+  .done { background: #d4edda; }
+  .pending { background: #fff3cd; }
+  code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 0.95em; }
+  .section-info { background: #eef; padding: 10px 15px; border-radius: 6px; margin: 10px 0; }
+  .note { background: #f9f9f9; padding: 10px 15px; border-left: 4px solid #95a5a6; margin: 10px 0; }
+  .result { background: #e8f5e9; padding: 10px 15px; border-left: 4px solid #4caf50; margin: 10px 0; }
+</style>
+</head>
+<body>
+
+<h1>PLAN: Board Level 센서 스펙 검증 수정</h1>
+<p><strong>날짜:</strong> 2026-03-23 &nbsp;|&nbsp; <strong>브랜치:</strong> step5-board-sensor_spec_verify</p>
+
+<div class="section-info">
+  <strong>양산 스펙 원본:</strong> <code>docs/20251128_양산용 지그 제작 요청서_진동기울기센서 - 3.검사 항목 양식(수동검사).xlsx</code><br>
+  <strong>원칙:</strong> 보드레벨 검사는 양산 스펙 <u>항목(X/Y/Z)은 모두 검사</u>, <u>수치는 완화 허용</u>
+</div>
+
+<h2>지그 축 매핑 (실측 확인)</h2>
+<table>
+  <tr><th>동작</th><th>변화 축</th><th>방향</th></tr>
+  <tr><td>앞뒤 기울임</td><td><strong>X축</strong></td><td>앞 올라감 &rarr; X 마이너스 / 뒤 올라감 &rarr; X 플러스</td></tr>
+  <tr><td>좌우 기울임</td><td><strong>Y축</strong></td><td>오른쪽 올라감 &rarr; Y 마이너스</td></tr>
+  <tr><td>수평 정지</td><td><strong>Z축</strong></td><td>~1.0G (중력). 기울이면 0.84~0.87로 자연 변화 (중력 분산)</td></tr>
+</table>
+
+<h2>타임아웃 통일</h2>
+<table>
+  <tr><th>검사</th><th>구분</th><th>기존 TIMEOUT</th><th>변경</th></tr>
+  <tr><td rowspan="2">진동</td><td>485</td><td>5000ms</td><td rowspan="4"><strong>10000ms (10초)</strong></td></tr>
+  <tr><td>232</td><td>10000ms</td></tr>
+  <tr><td rowspan="2">기울기</td><td>485</td><td>5000ms</td></tr>
+  <tr><td>232</td><td>10000ms</td></tr>
+</table>
+<p>현재 485가 5초로 짧아서 FAIL 발생 &rarr; 10초로 통일</p>
+
+<h2>수정 대상 파일</h2>
+<table>
+  <tr><th>구분</th><th>파일 경로</th></tr>
+  <tr><td>RS-485</td><td><code>output/Debug/net8.0-windows/workspace.json</code></td></tr>
+  <tr><td>RS-232</td><td><code>output/Debug/net8.0-windows/workspace_232.json</code></td></tr>
+  <tr><td>코드</td><td><code>ff_vibetilt/VibeTilt.cs</code></td></tr>
+</table>
+
+<hr>
+
+<h2>1. 진동검사 (VIBE_485 / VIBE_232) &mdash; 완료</h2>
+
+<div class="note">
+  <strong>GAC 응답:</strong> <code>[GAC, X, Y, Z, RMS]</code><br>
+  X, Y, Z 3축 모두 개별 판정. 각 축은 값 크기에 따라 1축/0축으로 자동 분류.<br>
+  <strong>3축 모두 + 1값 범위 + 0값 범위 + RMS 범위 = 전부 만족해야 PASS</strong><br>
+  <strong>어떤 방향이든 한번 기울였다 돌아오면 모션 감지 + 정지 상태 3축 판정 완료</strong>
+</div>
+
+<h3>양산 스펙 기준 응답 예시</h3>
+<table>
+  <tr><th>측정 방향</th><th>응답 포맷</th><th>응답 예시</th><th>설명</th></tr>
+  <tr><td>X축</td><td>[GAC, X, Y, Z, RMS]</td><td>[GAC, 1, 0, 0, 0.58]</td><td>X=1, Y,Z=0</td></tr>
+  <tr><td>Y축</td><td>[GAC, X, Y, Z, RMS]</td><td>[GAC, 0, 1, 0, 0.58]</td><td>Y=1, X,Z=0</td></tr>
+  <tr><td>Z축</td><td>[GAC, X, Y, Z, RMS]</td><td>[GAC, 0, 0, 1, 0.58]</td><td>Z=1, X,Y=0</td></tr>
+</table>
+
+<h3>양산 스펙 vs 보드레벨 완화 스펙</h3>
+<table>
+  <tr><th>항목</th><th>양산 스펙</th><th>보드레벨 완화</th><th>변경</th></tr>
+  <tr class="spec"><td>1축 (one_min / one_max)</td><td>0.9 ~ 1.1</td><td>0.5 ~ 1.5</td><td>유지</td></tr>
+  <tr class="change"><td>0축 (zero_min / zero_max)</td><td>-0.1 ~ 0.1</td><td><strong>-0.3 ~ 0.3</strong></td><td>완화 (기존 -0.1~0.1)</td></tr>
+  <tr class="spec"><td>RMS (rms_min / rms_max)</td><td>0.5 ~ 0.65</td><td>0.1 ~ 2.0</td><td>유지</td></tr>
+</table>
+
+<h3>판정 예시 (지그 수평 = Z축 중력)</h3>
+<table>
+  <tr><th>축</th><th>예상값</th><th>분류</th><th>확인 범위 (완화)</th></tr>
+  <tr><td>X</td><td>~0.0</td><td>0축</td><td>-0.3 ~ 0.3</td></tr>
+  <tr><td>Y</td><td>~0.0</td><td>0축</td><td>-0.3 ~ 0.3</td></tr>
+  <tr><td>Z</td><td>~1.0</td><td>1축</td><td>0.5 ~ 1.5</td></tr>
+  <tr><td>RMS</td><td>~0.58</td><td>-</td><td>0.1 ~ 2.0</td></tr>
+</table>
+
+<h3>수정 내용</h3>
+<table>
+  <tr><th>항목</th><th>기존</th><th>변경</th><th>비고</th></tr>
+  <tr class="change"><td>zero_min / zero_max</td><td>-0.1 ~ 0.1</td><td><strong>-0.3 ~ 0.3</strong></td><td>JSON 수정</td></tr>
+  <tr class="change"><td>pass_consecutive_count</td><td>3</td><td><strong>1</strong></td><td>JSON 수정. 1회 범위 안에 들면 즉시 PASS</td></tr>
+  <tr class="change"><td>TIMEOUT (485)</td><td>5000</td><td><strong>10000</strong></td><td>JSON 수정. 232는 기존 10000 유지</td></tr>
+  <tr class="change"><td>motion_threshold</td><td>(없음, zero 범위에 연동)</td><td><strong>0.05</strong></td><td>JSON 추가 + 코드 수정. 모션 감지를 zero 범위와 분리</td></tr>
+</table>
+
+<h3>코드 수정 (<code>VibeTilt.cs:1113~1114</code>)</h3>
+<div class="note">
+  <strong>문제:</strong> zero 범위를 -0.3~0.3으로 넓히면서 모션 감지 threshold도 0.13 &rarr; 0.33으로 상승. 조금 움직여도 감지 안 됨.<br>
+  <strong>수정:</strong> <code>motion_threshold</code> JSON 파라미터 추가. 설정 시 zero 범위와 독립적으로 모션 감지 threshold 지정 가능.<br>
+  <code>motion_threshold: 0.05</code> &rarr; 0축 값이 0.05만 넘어도 즉시 모션 감지
+</div>
+
+<h3>판정 로직 (<code>VibeTilt.cs:336~353</code>)</h3>
+<ul>
+  <li>X, Y, Z <strong>3축 개별</strong> 판정 &rarr; 하나라도 NG면 FAIL</li>
+  <li>판정 로직 자체는 변경 없음</li>
+</ul>
+
+<div class="result">
+  <strong>테스트 결과 (2026-03-23 RS-485):</strong> 4회 연속 PASS<br>
+  <table>
+    <tr><th>테스트</th><th>방향</th><th>감지 값</th><th>threshold</th><th>결과</th></tr>
+    <tr class="ok"><td>1회</td><td>X축(앞뒤)</td><td>0.17</td><td>0.05</td><td>PASS</td></tr>
+    <tr class="ok"><td>2회</td><td>X축(앞뒤)</td><td>0.12</td><td>0.05</td><td>PASS</td></tr>
+    <tr class="ok"><td>3회</td><td>X축(앞뒤)</td><td>-0.15</td><td>0.05</td><td>PASS</td></tr>
+    <tr class="ok"><td>4회</td><td>Y축(좌우)</td><td>0.09</td><td>0.05</td><td>PASS</td></tr>
+  </table>
+</div>
+
+<hr>
+
+<h2>2. 기울기검사 (TILT_485 / TILT_232) &mdash; 미완료</h2>
+
+<div class="note">
+  <strong>AN 응답:</strong> <code>[AN, X, Y]</code><br>
+  <strong>X, Y 각각 범위 안에 들어야 PASS</strong><br>
+  <strong>기울기검사는 앞뒤 + 좌우 2단계 필요</strong> (X축, Y축 각각 확인)
+</div>
+
+<h3>양산 스펙 기준 응답 예시</h3>
+<table>
+  <tr><th>측정 방향</th><th>응답 포맷</th><th>응답 예시</th><th>설명</th></tr>
+  <tr><td>X축 기울임</td><td>[AN, X, Y]</td><td>[AN, 90, 0]</td><td>X=90, Y=0</td></tr>
+  <tr><td>Y축 기울임</td><td>[AN, X, Y]</td><td>[AN, 0, -90]</td><td>X=0, Y=-90</td></tr>
+</table>
+
+<h3>양산 스펙 vs 보드레벨 완화 스펙</h3>
+<table>
+  <tr><th>항목</th><th>양산 스펙</th><th>보드레벨 완화</th><th>변경</th></tr>
+  <tr class="change"><td>X축 (x_min / x_max)</td><td>85 ~ 90</td><td><strong>70 ~ 95</strong></td><td>완화 (기존 alive_check 모드)</td></tr>
+  <tr class="change"><td>Y축 (y_min / y_max)</td><td>-90 ~ -85</td><td><strong>-95 ~ -70</strong></td><td>완화 (기존 alive_check 모드)</td></tr>
+  <tr class="change"><td>alive_check</td><td>-</td><td><strong>false</strong></td><td>변화폭 &rarr; 절대값 범위 모드로 전환</td></tr>
+</table>
+
+<h3>기존 문제점</h3>
+<table>
+  <tr><th>항목</th><th>기존 설정</th><th>문제</th></tr>
+  <tr class="issue"><td>alive_check</td><td>true</td><td>X 또는 Y 중 <strong>하나만 동작해도 PASS</strong> &rarr; 한축 고장 미감지</td></tr>
+  <tr class="issue"><td>판정 로직</td><td>X AND Y 동시 범위 확인</td><td>한번에 X, Y 동시 만족 불가 &rarr; <strong>2단계 분리 필요</strong></td></tr>
+</table>
+
+<h3>TODO: 기울기검사 2단계 분리</h3>
+<div class="note">
+  현재 코드는 한 샘플에서 X, Y 동시에 범위 확인:<br>
+  <code>samplePass = (x >= xMin && x <= xMax && y >= yMin && y <= yMax)</code><br><br>
+  X축 기울일 때 X=90이지만 Y=0 &rarr; Y 범위 밖 &rarr; FAIL<br>
+  <strong>해결:</strong> <code>check_axis</code> 파라미터 추가하여 축별 분리 검사 지원<br>
+  JSON에서 TILT을 TILT_X / TILT_Y로 분리
+</div>
+
+<hr>
+
+<h2>수정 요약</h2>
+<table>
+  <tr><th>검사</th><th>항목</th><th>기존</th><th>변경</th><th>상태</th></tr>
+  <tr class="done"><td rowspan="4">진동</td><td>zero_min / zero_max</td><td>-0.1 ~ 0.1</td><td><strong>-0.3 ~ 0.3</strong></td><td>완료</td></tr>
+  <tr class="done"><td>pass_consecutive_count</td><td>3</td><td><strong>1</strong></td><td>완료</td></tr>
+  <tr class="done"><td>TIMEOUT (485)</td><td>5000</td><td><strong>10000</strong></td><td>완료</td></tr>
+  <tr class="done"><td>motion_threshold</td><td>(없음)</td><td><strong>0.05</strong></td><td>완료 (코드+JSON)</td></tr>
+  <tr class="pending"><td rowspan="5">기울기</td><td>alive_check</td><td>true</td><td><strong>false</strong></td><td>미완료</td></tr>
+  <tr class="pending"><td>x_min / x_max</td><td>-60.0 ~ 60.0</td><td><strong>70 ~ 95</strong></td><td>미완료</td></tr>
+  <tr class="pending"><td>y_min / y_max</td><td>-60.0 ~ 60.0</td><td><strong>-95 ~ -70</strong></td><td>미완료</td></tr>
+  <tr class="pending"><td>TIMEOUT (485)</td><td>5000</td><td><strong>10000</strong></td><td>미완료</td></tr>
+  <tr class="pending"><td>2단계 분리 (TILT_X / TILT_Y)</td><td>-</td><td><strong>check_axis 파라미터</strong></td><td>미완료 (코드+JSON)</td></tr>
+</table>
+<p>232 / 485 동일 적용</p>
+
+<h2>검증 방법</h2>
+<ol>
+  <li>빌드 후 실기기 테스트</li>
+  <li>진동: 어떤 방향이든 한번 기울였다 돌아오면 PASS 확인 &mdash; <strong>완료 (4회 PASS)</strong></li>
+  <li>기울기: X축, Y축 <strong>각각</strong> 기울여서 개별 PASS/FAIL 확인 &mdash; 미완료</li>
+  <li>한축 고장 시뮬레이션: 기울기 검사에서 한축만 기울여도 FAIL 되는지 확인 &mdash; 미완료</li>
+</ol>
+
+</body>
+</html>

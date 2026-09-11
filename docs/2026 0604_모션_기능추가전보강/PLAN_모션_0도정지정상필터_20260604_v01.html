@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>PLAN_모션_0도정지정상필터_20260604_v01</title>
+<style>
+body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+       max-width: 1000px; margin: 30px auto; padding: 0 25px;
+       line-height: 1.65; color: #333; background: #fafafa; }
+h1 { border-bottom: 3px solid #00695c; padding-bottom: 10px; color: #00695c; }
+h2 { border-left: 5px solid #00897b; padding-left: 12px; color: #00695c; margin-top: 35px; }
+h3 { color: #424242; margin-top: 22px; }
+h4 { color: #555; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background-color: #e0f2f1; font-weight: 600; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px;
+       font-family: 'Consolas', monospace; font-size: 0.92em; }
+pre { background: #263238; color: #aed581; padding: 15px; border-radius: 5px;
+      overflow-x: auto; font-size: 0.85em; line-height: 1.4; }
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote { border-left: 4px solid #00897b; padding: 6px 14px; color: #555;
+             background: #e0f2f1; margin: 12px 0; }
+a { color: #00695c; }
+ul, ol { margin: 6px 0 6px 22px; }
+li { margin: 3px 0; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1 id="plan_-0-b">PLAN_모션검사 0도 정지 정상 필터 추가 (B안)</h1>
+<ul>
+<li>작성일: 2026-06-04 / 작성: Claude</li>
+<li>목표 버전: <strong>0.7.2</strong> (현재 0.7.1.60601의 다음)</li>
+<li>대상: <strong>모션검사</strong> (VL20 485 우선) / <code>MP_workspace_motion_485_VL20.json</code></li>
+<li>관련 문서: 같은 폴더 <code>PLAN_보드정지노이즈검사_20260604_v01.md</code> (보드검사 측) — <strong>상호보완</strong></li>
+<li>보드검사 = 첫 게이트 / 모션검사 = 2보드 구조 백업. 둘 다 있어야 완성.</li>
+</ul>
+<hr />
+<h2 id="1">1. 목적</h2>
+<p><strong>0도(평평) 상태에서 "정상이 아닌" 보드를 걸러내는 필터.</strong>
+정지 상태인데 센서값이 출렁이거나(미세 변동), 값 자체가 정상밴드를 벗어나거나, 드롭아웃(0 반환)인 보드를 모션검사 0도 지점에서 검출한다.</p>
+<h2 id="2-2">2. 핵심 발견 — 모션검사는 2개 보드 동시 검사 구조</h2>
+<ul>
+<li><code>#3</code> 작업자 안내문(line 149): <strong>"X축 결합위치와 Y축 결합위치에 제품을 안착해 주세요"</strong></li>
+<li>UART가 둘로 분리: <strong>X결합 보드 = <code>uart_485</code></strong>, <strong>Y결합 보드 = <code>uart_485_y</code></strong></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>대상 보드</th>
+<th>0도?</th>
+<th>0도 진동(GAC) 스트림</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>#3 영점 / #4 CAL / #5 저장</td>
+<td><strong>X결합 (uart_485)</strong></td>
+<td>✅</td>
+<td>❌ (#4 <code>verify_an</code> 단발 ±0.05만)</td>
+</tr>
+<tr>
+<td>#6 기울기 / #7 진동(+90도)</td>
+<td>X결합</td>
+<td>❌</td>
+<td>#7=90도</td>
+</tr>
+<tr>
+<td>#10/#11/#12</td>
+<td>Y결합 (uart_485_y)</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>#13 진동(0도)</strong></td>
+<td><strong>Y결합 (uart_485_y)</strong></td>
+<td>✅</td>
+<td>✅ (현재 Z 1G만 판정)</td>
+</tr>
+<tr>
+<td>#14 기울기 / #15 진동(-90도)</td>
+<td>Y결합</td>
+<td>❌</td>
+<td>-90도</td>
+</tr>
+</tbody>
+</table>
+<p>→ <strong>0도 진동 스트림은 #13(Y결합) 하나뿐. X결합 보드는 0도 진동 측정이 아예 없다.</strong>
+→ <strong>#13만 손대면 Y결합만 필터되고 X결합은 통째로 빠진다. ⇒ 양쪽에 각각 넣어야 함.</strong></p>
+<h2 id="3">3. 현재 사각 (왜 지금은 못 잡나)</h2>
+<ul>
+<li><strong>#4 verify_an (±0.05, X)</strong>: OFFSET(캘) 직후 단발/평균성 판정 → 캘로 0 편향 + 대칭 노이즈 상쇄(zero-mean blind). 가장 약한 고리.</li>
+<li><strong>#13 / tilt all_in_spec (tail 5/10 + retry 3)</strong>: 큰·지속 노이즈는 잡지만, <strong>끝 N샘플만 + 재시도 3회</strong>가 작은/간헐 노이즈를 가린다.</li>
+<li><strong>RMS 미판정</strong>: #13은 Z(1G)만 보고 RMS(흔들림 지표)는 안 본다.</li>
+<li>⇒ <strong>작은/간헐 정지 노이즈는 현재 설정으로 escape 가능.</strong></li>
+</ul>
+<h2 id="4-b">4. 설계 — B안 채택 (양쪽 보드에 동일한 별도 항목)</h2>
+<h3 id="41-b">4.1 왜 B안 (≠ 기존 항목 병합)</h3>
+<table>
+<thead>
+<tr>
+<th>기준</th>
+<th>A안(#4·#13 병합)</th>
+<th><strong>B안(별도 항목)</strong> ✅</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>기존 인증 판정</td>
+<td>#13 1G 사양(tail5/retry3) 건드림</td>
+<td><strong>무손상</strong></td>
+</tr>
+<tr>
+<td>다축 판정</td>
+<td><code>check_axis_index</code> 단일 제약</td>
+<td>자유</td>
+</tr>
+<tr>
+<td>두 보드 일관성</td>
+<td>verify_an방식 vs 진동방식 = <strong>비대칭</strong></td>
+<td><strong>동일 방식</strong></td>
+</tr>
+<tr>
+<td>FAIL 원인 식별</td>
+<td>사양/필터 혼재</td>
+<td><strong>명확</strong></td>
+</tr>
+<tr>
+<td>DLL 작업</td>
+<td>어차피 필요할 수 있음</td>
+<td>한 번에 깔끔</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42">4.2 배치 위치</h3>
+<pre><code>X결합:  ... #5 X축 파라미터 저장(0도) → [신규] 정지 안정성 검사(0도)  → #6 기울기
+Y결합:  ... #13 Z축 진동값 측정(0도)   → [신규] 정지 안정성 검사(0도)  → #14 기울기
+</code></pre>
+<ul>
+<li>0도(평평) + 캘/저장 직후 = 모터 이동 없음 → 추가 모터부담 0, 사이클 영향 최소.</li>
+</ul>
+<h3 id="43-id">4.3 검사명 / id</h3>
+<table>
+<thead>
+<tr>
+<th>위치</th>
+<th>표시명(name)</th>
+<th>id</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>모션 X결합 (#5 직후)</td>
+<td><strong>#5-1 X결합 정지 안정성 검사 (0도)</strong></td>
+<td><code>MOTION_STAB_X_485</code></td>
+</tr>
+<tr>
+<td>모션 Y결합 (#13 직후)</td>
+<td><strong>#13-1 Y결합 정지 안정성 검사 (0도)</strong></td>
+<td><code>MOTION_STAB_Y_485</code></td>
+</tr>
+<tr>
+<td>(참고) 보드검사</td>
+<td>정지 안정성 검사 RS-485</td>
+<td><code>STAB_485</code> (v01 문서)</td>
+</tr>
+</tbody>
+</table>
+<p><code>_comment</code> 예: <code>"0도 정지 상태에서 X·Y·Z·RMS가 정상밴드 내 안정한지 판정. 값이상/미세변동/드롭아웃 필터 (all_in_spec, retry 0, no require_motion)"</code></p>
+<h3 id="44">4.4 측정/판정 방식</h3>
+<ul>
+<li>MODE <strong>02(GAC)</strong> 진입 → <strong>정지</strong> 상태 ~1초 스트리밍 수집 (이동 없음)</li>
+<li>판정: <strong><code>all_in_spec</code>(수집 전구간 전부 밴드 이내)</strong> = 값 정상 + 안정성 <strong>동시</strong> 확인</li>
+<li><strong>retry = 0</strong> (간헐 노이즈 안 가려지게) / <strong>tail = 전구간</strong> / <strong>require_motion 없음</strong></li>
+<li>지표: <strong>X·Y·Z 밴드 + RMS 밴드</strong> (가능하면 X·Y <strong>p2p(max−min)</strong> 병행 — 아래 6 참고)</li>
+</ul>
+<h2 id="5">5. 판정 기준값 (데이터 기반 시작값)</h2>
+<p>6/2·6/4 <strong>보드검사</strong> 로그 GAC 실측 (평평 Z≥0.99, 정지 구간):</p>
+<table>
+<thead>
+<tr>
+<th>축</th>
+<th>정상 중심</th>
+<th>std</th>
+<th><strong>권장 밴드(시작값)</strong></th>
+<th>잡는 불량</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>X (idx0)</td>
+<td>-0.035</td>
+<td>0.019</td>
+<td><strong>-0.12 ~ +0.05</strong></td>
+<td>값이상/틀어짐</td>
+</tr>
+<tr>
+<td>Y (idx1)</td>
+<td>-0.024</td>
+<td>—</td>
+<td><strong>-0.10 ~ +0.10</strong></td>
+<td>값이상</td>
+</tr>
+<tr>
+<td>Z (idx2)</td>
+<td>~1.00</td>
+<td>—</td>
+<td><strong>0.98 ~ 1.02</strong></td>
+<td>1G 이상</td>
+</tr>
+<tr>
+<td>RMS (idx3)</td>
+<td>0.584</td>
+<td>0.022</td>
+<td><strong>0.50 ~ 0.68</strong></td>
+<td>드롭아웃/죽은센서</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>⚠️ X는 <strong>음(-) 편향(-0.035)</strong> — 0 중심 아님(지그/실장 오프셋). 밴드를 이쪽으로 맞출 것.</li>
+<li>⚠️ 0.00 드롭아웃이 정상품에도 ~0.1% 혼입 → <code>all_in_spec</code> 전구간이면 오검출. <strong>소수 outlier 허용 또는 0.00(통신드롭) 제외</strong> 처리 필요.</li>
+<li>⚠️ 위 밴드는 <strong>보드검사(수동지그)</strong> 데이터라 다소 넓음. 모션 #13은 <strong>0도 post-CAL</strong>이라 더 타이트할 것 → <strong>모션 0도 정상 데이터로 재확정 필요</strong>(현재 검사 PC에 모션 로그 없음).</li>
+</ul>
+<h2 id="6-rms-xy-p2p">6. RMS 민감도 한계 — X/Y p2p 병행 권장 (중요)</h2>
+<ul>
+<li>실측상 RMS는 보드를 실제로 흔드는 중에도 거의 0.66을 안 넘김(std 0.022). <strong>고주파 떨림에 둔감.</strong></li>
+<li>⇒ <strong>RMS = 드롭아웃/죽은센서용. "미세 변동" 검출은 X·Y의 변동폭(p2p/std)이 더 직접적.</strong></li>
+<li>권장: RMS 밴드 + <strong>X·Y p2p ≤ 임계</strong>(예: p2p &lt; 0.05~0.08, 데이터로 확정) 같이 판정.</li>
+</ul>
+<h2 id="7">7. 변경 범위</h2>
+<h3 id="ff_vibetiltvibetiltcs">코드 (<code>ff_vibetilt/VibeTilt.cs</code>)</h3>
+<ul>
+<li>신규 핸들러: <code>MOTION_STAB_Internal</code> (또는 기존 vibe GAC 수집 재사용 + 정지 판정).</li>
+<li>proc id 라우팅: <code>MOTION_STAB_X_485</code> / <code>MOTION_STAB_Y_485</code>.</li>
+<li><strong>다축(X·Y·Z·RMS) 밴드 + p2p 판정</strong> 지원 — 현재 <code>check_axis_index</code> 단일 제약이라 <strong>다축 판정 추가가 핵심 작업</strong>.</li>
+</ul>
+<h3 id="json">JSON (모션 워크스페이스)</h3>
+<ul>
+<li><code>MP_workspace_motion_485_VL20.json</code>: #5 직후 / #13 직후 신규 항목 삽입.</li>
+<li>uart_id: X결합=<code>uart_485</code>, Y결합=<code>uart_485_y</code> 정확히 지정.</li>
+<li>파라미터: <code>vibe_min/max</code>(축별) · <code>rms_min/max</code> · <code>p2p_max</code> · <code>duration</code>(~1000) · <code>judge=all_in_spec</code> · <code>retry=0</code> · <code>require_motion=false</code> + <code>_comment</code>.</li>
+<li>대상: 485 우선, MP/TEST × Debug/Release 동시.</li>
+</ul>
+<h2 id="8-1">8. 선결 확인 포인트 (1회 시험으로 분기 결정)</h2>
+<ol>
+<li><strong>다축 판정이 현재 DLL에서 되나?</strong>
+   - 빠른 시험: #13에 <code>check_axis_index: 3</code>(RMS) 적용 → RMS 판정이 먹히는지 1회 실측.
+   - 먹히면 → 일부 설정으로 가능 / 안 먹히면 → <strong>DLL에 다축 0도 정상 판정 추가</strong>(정석).</li>
+<li><strong>모션 0도 정상 데이터 수집</strong> → 밴드/ p2p 임계 <strong>재확정</strong>.</li>
+<li>(선택) 노이즈 의심 시료로 <strong>FAIL 재현</strong>.</li>
+</ol>
+<h2 id="9">9. 리스크 / 미결</h2>
+<ul>
+<li>임계값 미확정(모션 0도 데이터 필요) — 빡빡하면 양품 오검출, 느슨하면 무의미.</li>
+<li>0.00 드롭아웃 처리 안 하면 정상품 오검출.</li>
+<li>다축 판정 DLL 미지원 시 작업량 증가.</li>
+<li>작업자 "가만히" 미준수 시 오검출 → 프롬프트 + 수집 윈도 보정.</li>
+<li>232 센서 동일 여부(동일하면 232에도 동일 적용).</li>
+</ul>
+<h2 id="10">10. 진행 순서</h2>
+<ol>
+<li><strong>(사용자 승인) 이 PLAN 확정</strong> ← 현재 여기</li>
+<li>선결 확인: ① #13 <code>check_axis_index:3</code> 다축 시험 ② 모션 0도 정상 데이터 수집 → 임계 확정</li>
+<li><code>VibeTilt.cs</code> 다축 정지판정 + JSON(X결합/Y결합) 구현 → 빌드 → 테스트</li>
+<li>회귀(기존 #4/#13/기울기/전원/통신 영향 없음) 확인</li>
+<li><strong>0.7.2</strong> 배포 + CODE_ 문서 작성</li>
+</ol>
+<h2 id="6264">부록 — 근거 데이터 (6/2·6/4 보드검사 로그)</h2>
+<ul>
+<li>전체 GAC RMS: n=29,217, mean 0.584, std 0.022, 정상집중 0.54~0.66, 0.00=28샘플, max 1.10</li>
+<li>평평(Z≥0.99) X: mean -0.035, std 0.019 / Y: mean -0.024 / 정지 X 거의 -0.07~-0.01, Y 거의 -0.03~+0.03</li>
+<li>6/2 모션 Fail 12건 중 통신 8·기울기 3·진동 1 (정지 노이즈 직접 불량은 미확인 — 사각 가설)</li>
+</ul>
+</body>
+</html>

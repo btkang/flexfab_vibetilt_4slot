@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>모션232_검사시간기록_20260609_01</title>
+<style>
+body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+       max-width: 1000px; margin: 30px auto; padding: 0 25px;
+       line-height: 1.65; color: #333; background: #fafafa; }
+h1 { border-bottom: 3px solid #00695c; padding-bottom: 10px; color: #00695c; }
+h2 { border-left: 5px solid #00897b; padding-left: 12px; color: #00695c; margin-top: 35px; }
+h3 { color: #424242; margin-top: 22px; }
+h4 { color: #555; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background-color: #e0f2f1; font-weight: 600; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px;
+       font-family: 'Consolas', monospace; font-size: 0.92em; }
+pre { background: #263238; color: #aed581; padding: 15px; border-radius: 5px;
+      overflow-x: auto; font-size: 0.85em; line-height: 1.4; }
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote { border-left: 4px solid #00897b; padding: 6px 14px; color: #555;
+             background: #e0f2f1; margin: 12px 0; }
+a { color: #00695c; }
+ul, ol { margin: 6px 0 6px 22px; }
+li { margin: 3px 0; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1 id="232-vl10">모션검사 232 (VL10) — 검사항목별 시간 기록</h1>
+<ul>
+<li>작성일: 2026-06-09 / 빌드: 0.7.3.60609 (정지검사 #5-1 + REFTEMP/RCONF 포함)</li>
+<li>측정: 232 모션 풀런 2회 (OK=20, FAIL=0)</li>
+<li>A = 3m05s (16:28), B = 3m21s (16:45)</li>
+<li>차이(~16s)는 거의 기울기 수렴 런투런 편차</li>
+<li>로그: <code>docs/2026 0609 모션 정지검사/232모션로그_0.7.3.60609 - 정지추가/</code> (풀 로그 3분05초.txt / 3분21초.txt)</li>
+</ul>
+<hr />
+<h2 id="x-x-station-uart_232">X결합 (X station, uart_232)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>항목</th>
+<th>A:3m05</th>
+<th>B:3m21</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>#0</td>
+<td>통신검사 RS-232</td>
+<td>2s</td>
+<td>2s</td>
+</tr>
+<tr>
+<td>#1-X</td>
+<td>FW 버전 확인</td>
+<td>1s</td>
+<td>1s</td>
+</tr>
+<tr>
+<td>#2</td>
+<td>시리얼번호 설정 (X)</td>
+<td>1s</td>
+<td>1s</td>
+</tr>
+<tr>
+<td>#3</td>
+<td>X영점 초기화 (홈센서 1250step)</td>
+<td>26s</td>
+<td>25s</td>
+</tr>
+<tr>
+<td>#4</td>
+<td>X Calibration</td>
+<td>6s</td>
+<td>7s</td>
+</tr>
+<tr>
+<td>#5</td>
+<td>X 파라미터 저장</td>
+<td>1s</td>
+<td>1s</td>
+</tr>
+<tr>
+<td>#5-1</td>
+<td>정지 검사 (0도) 🆕</td>
+<td>3s</td>
+<td>3s</td>
+</tr>
+<tr>
+<td>#6</td>
+<td>X 기울기 4각 측정</td>
+<td>48s</td>
+<td>58s</td>
+</tr>
+<tr>
+<td>#7</td>
+<td>Y 진동 측정 (+90도)</td>
+<td>7s</td>
+<td>7s</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>X결합 소계</strong></td>
+<td><strong>~95s</strong></td>
+<td><strong>~105s</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="y-y-station-uart_232_y">Y결합 (Y station, uart_232_y)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>항목</th>
+<th>A:3m05</th>
+<th>B:3m21</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>#8</td>
+<td>FW 버전 확인 (Y)</td>
+<td>1s</td>
+<td>1s</td>
+</tr>
+<tr>
+<td>#9</td>
+<td>시리얼번호 설정 (Y)</td>
+<td>1s</td>
+<td>1s</td>
+</tr>
+<tr>
+<td>#9-1</td>
+<td>센서 온도 저장 (REFTEMP) 🆕</td>
+<td>2s</td>
+<td>1s</td>
+</tr>
+<tr>
+<td>#10</td>
+<td>Y영점 초기화 (skip_home)</td>
+<td>5s</td>
+<td>11s</td>
+</tr>
+<tr>
+<td>#11</td>
+<td>Y Calibration</td>
+<td>7s</td>
+<td>7s</td>
+</tr>
+<tr>
+<td>#11-1</td>
+<td>출하 상태 설정 (RCONF) 🆕</td>
+<td>1s</td>
+<td>1s</td>
+</tr>
+<tr>
+<td>#12</td>
+<td>Y 파라미터 저장</td>
+<td>1s</td>
+<td>2s</td>
+</tr>
+<tr>
+<td>#13</td>
+<td>Z 진동 측정 (0도)</td>
+<td>8s</td>
+<td>7s</td>
+</tr>
+<tr>
+<td>#14</td>
+<td>Y 기울기 4각 측정</td>
+<td>53s</td>
+<td>54s</td>
+</tr>
+<tr>
+<td>#15</td>
+<td>X 진동 측정 (-90도)</td>
+<td>8s</td>
+<td>8s</td>
+</tr>
+<tr>
+<td>#16</td>
+<td>Config 확인 (APPCFG)</td>
+<td>1s</td>
+<td>1s</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Y결합 소계</strong></td>
+<td><strong>~88s</strong></td>
+<td><strong>~94s</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="_1">카테고리 합계</h2>
+<table>
+<thead>
+<tr>
+<th>분류</th>
+<th>A:3m05</th>
+<th>B:3m21</th>
+<th>비중</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>기울기 8각 (#6+#14)</strong></td>
+<td>~101s</td>
+<td>~112s</td>
+<td><strong>~55%</strong></td>
+</tr>
+<tr>
+<td>영점 (#3+#10)</td>
+<td>~31s</td>
+<td>~36s</td>
+<td>~17%</td>
+</tr>
+<tr>
+<td>진동 (#7+#13+#15)</td>
+<td>~23s</td>
+<td>~22s</td>
+<td>~12%</td>
+</tr>
+<tr>
+<td>CAL (#4+#11)</td>
+<td>~13s</td>
+<td>~14s</td>
+<td>~7%</td>
+</tr>
+<tr>
+<td>신규 3항목 (#5-1+#9-1+#11-1)</td>
+<td>~6s</td>
+<td>~5s</td>
+<td>~3%</td>
+</tr>
+<tr>
+<td>기타 (통신/FW/UID/저장/config)</td>
+<td>~11s</td>
+<td>~12s</td>
+<td>~6%</td>
+</tr>
+<tr>
+<td><strong>총계</strong></td>
+<td><strong>3m05s (185s)</strong></td>
+<td><strong>3m21s (201s)</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>→ 단축 1순위 = <strong>기울기 8각(~55%)</strong>, 2순위 = <strong>영점(특히 X영점 홈센서 25~26s)</strong>.
+   정지검사 #5-1 = 3s (232 프로토콜 <code>&lt;MODE,2&gt;/&lt;START&gt;/&lt;STOP&gt;</code> 3명령, 485의 5명령보다 빠름).</p>
+<h2 id="485">참고 — 485와 비교</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>232</th>
+<th>485</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>풀런 시간</td>
+<td>3m05~3m21s</td>
+<td>3m21~3m22s</td>
+</tr>
+<tr>
+<td>#5-1 정지검사</td>
+<td>~3s</td>
+<td>~5s</td>
+</tr>
+<tr>
+<td>시간 본체</td>
+<td>기울기+영점 ~72%</td>
+<td>~68%</td>
+</tr>
+<tr>
+<td>- 485 상세: 같은 폴더 <code>CHECK_모션검사_시간분석_항목정리검토_20260609_v01.md</code> (485 시간표 + baseline + 항목제거 검토)</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

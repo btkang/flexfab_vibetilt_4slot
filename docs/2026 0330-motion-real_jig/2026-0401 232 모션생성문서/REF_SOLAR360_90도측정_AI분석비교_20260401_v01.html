@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SOLAR-360-420 경사계 90도 측정 가능 여부 - AI 분석 비교</title>
+<style>
+body { font-family: 'Malgun Gothic', sans-serif; max-width: 1000px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.7; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; color: #2c3e50; font-size: 22px; }
+h2 { border-bottom: 1px solid #bdc3c7; padding-bottom: 6px; margin-top: 40px; color: #34495e; }
+h3 { color: #7f8c8d; margin-top: 24px; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+th, td { border: 1px solid #bdc3c7; padding: 8px 12px; text-align: center; }
+th { background: #2c3e50; color: #fff; }
+tr:nth-child(even) { background: #f8f9fa; }
+td.left { text-align: left; }
+.ok { background: #e0ffe0; color: #27ae60; font-weight: bold; }
+.ng { background: #ffe0e0; color: #c0392b; font-weight: bold; }
+.warn { background: #fff3cd; color: #856404; font-weight: bold; }
+.info-box { background: #eaf2f8; border-left: 4px solid #2980b9; padding: 12px 16px; margin: 16px 0; }
+.alert-box { background: #fdedec; border-left: 4px solid #e74c3c; padding: 12px 16px; margin: 16px 0; }
+.success-box { background: #eafaf1; border-left: 4px solid #27ae60; padding: 12px 16px; margin: 16px 0; }
+.summary-box { background: #f4f6f7; border: 1px solid #bdc3c7; border-radius: 8px; padding: 16px; margin: 20px 0; }
+code { background: #ecf0f1; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+.meta { color: #95a5a6; font-size: 13px; }
+.section-num { color: #2980b9; }
+.ai-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-right: 6px; }
+.ai-gemini { background: #e8f5e9; color: #2e7d32; }
+.ai-chatgpt { background: #e3f2fd; color: #1565c0; }
+.ai-claude { background: #fce4ec; color: #c62828; }
+pre { background: #2c3e50; color: #ecf0f1; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<h1>SOLAR-360-420 경사계 90도 측정 가능 여부 &mdash; AI 분석 비교</h1>
+<p class="meta">작성일: 2026-04-01 | 질문: "SOLAR-360-420 자이로 센서가 90도를 정확히 측정할 수 있어?"<br>
+입력: SOLAR-360-420_Inclinometer_Sensor_4-20mA_Output.pdf</p>
+
+<!-- ============================================ -->
+<h2><span class="section-num">0.</span> 결론 요약</h2>
+
+<div class="success-box">
+<strong>SOLAR-360-420은 데이터시트 기준 90도 측정 가능.</strong><br>
+내부 DSP 선형화로 단순 sin 감도 문제를 보정. 정확도 &plusmn;0.03&deg; (전 범위, @20&deg;C), 분해능 0.002&deg;.
+</div>
+
+<table>
+<tr><th style="width:30%">항목</th><th>내용</th></tr>
+<tr><td>센서 종류</td><td class="left">경사계(inclinometer), 자이로가 아님</td></tr>
+<tr><td>측정 원리</td><td class="left">중력 기반 MEMS 가속도 센서 + 내부 DSP 선형화</td></tr>
+<tr><td>측정 범위</td><td class="left">&plusmn;180&deg; (디지털), &plusmn;1&deg;~&plusmn;180&deg; (아날로그, 사용자 설정)</td></tr>
+<tr><td>정확도 (@20&deg;C)</td><td class="left">&plusmn;0.03&deg; (전 범위)</td></tr>
+<tr><td>분해능</td><td class="left">0.002&deg;</td></tr>
+<tr><td>90도 측정</td><td class="left"><strong>데이터시트 기준 가능</strong> &mdash; 단, sin 감도 저하 논쟁 있음</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="section-num">1.</span> AI별 답변 비교</h2>
+
+<h3><span class="ai-tag ai-gemini">Gemini</span> 1.1 Gemini</h3>
+
+<div class="success-box">
+<strong>결론: 90도 측정 가능</strong> &mdash; 가장 정확한 답변
+</div>
+
+<ul>
+<li>전체 360&deg; 범위의 고성능 단일축 기울기 센서</li>
+<li>전 구간 &plusmn;0.03&deg; 정확도 보장 (90도 포함)</li>
+<li>&plusmn;90&deg; 맞춤형 아날로그 설정 가능 (-90&deg;=4mA, 0&deg;=12mA, +90&deg;=20mA)</li>
+<li>내부 DSP로 response를 linearise 처리</li>
+<li>"중력장 내에서 질량의 움직임을 감지하면서도 내부 디지털 신호 처리기를 통해 반응을 선형화"</li>
+</ul>
+
+<h3><span class="ai-tag ai-chatgpt">ChatGPT</span> 1.2 ChatGPT (1차 &mdash; PDF 분석 전)</h3>
+
+<div class="info-box">
+<strong>결론: 90도 측정 가능</strong> (단, 정확도 수치 부정확)
+</div>
+
+<ul>
+<li>기본 정확도 (20&deg;C): &plusmn;0.07&deg; (실제는 &plusmn;0.03&deg;)</li>
+<li>온도 보상 시: &plusmn;0.1&deg;</li>
+<li>90도에서 예상 오차: &plusmn;0.3&deg; (온도 변화 포함)</li>
+</ul>
+<p class="meta">* PDF 입력 전이라 정확도 수치가 다소 부정확</p>
+
+<h3><span class="ai-tag ai-chatgpt">ChatGPT</span> 1.3 ChatGPT (2차 &mdash; PDF 분석 후)</h3>
+
+<div class="success-box">
+<strong>결론: 90도 매우 정확하게 측정 가능</strong>
+</div>
+
+<ul>
+<li>정확도 수정: &plusmn;0.03&deg; (@20&deg;C)</li>
+<li>분해능: 0.002&deg;</li>
+<li>장기 안정성: &plusmn;0.01&deg;</li>
+<li>90도 예상: 89.97&deg; ~ 90.03&deg; (최상 조건)</li>
+</ul>
+
+<div class="alert-box">
+<strong>sin 감도 문제 제시 후 입장 번복:</strong><br>
+&bull; "카탈로그 스펙만 보고 물리적 한계를 간과했다"<br>
+&bull; 85~90&deg;: "실질적으로 사용 불가"로 결론 변경<br>
+&bull; <strong>문제: 데이터시트에 명시된 DSP 선형화를 무시하고 단순 sin 원리만으로 판단</strong>
+</div>
+
+<h3><span class="ai-tag ai-claude">Claude 웹</span> 1.4 Claude 웹</h3>
+
+<div class="alert-box">
+<strong>1차 결론: sin 감도 문제로 90도 측정 불가</strong>
+</div>
+
+<p>경사계의 일반적인 sin 감도 문제를 설명:</p>
+
+<table>
+<tr><th>각도</th><th>sin 값</th><th>1도당 변화량</th><th>감도</th></tr>
+<tr><td>0&deg;</td><td>0.000</td><td>0.01745</td><td class="ok">매우 민감</td></tr>
+<tr><td>45&deg;</td><td>0.707</td><td>0.01234</td><td class="ok">양호</td></tr>
+<tr><td>80&deg;</td><td>0.985</td><td>0.00302</td><td class="warn">둔감</td></tr>
+<tr><td>89&deg;</td><td>0.9998</td><td>0.00015</td><td class="ng">거의 변화 없음</td></tr>
+<tr><td>90&deg;</td><td>1.000</td><td>0.00000</td><td class="ng">변화 없음</td></tr>
+</table>
+
+<p>"89도와 90도에서 sin 값 차이가 0.0002밖에 안 됩니다. 센서 입장에서는 88도인지 89도인지 90도인지 구분을 못합니다."</p>
+
+<div class="success-box">
+<strong>Gemini 반박 후 입장 수정 &rarr; 측정 가능:</strong><br>
+&bull; "단순 1축 가속도계의 일반 원리로는 괜찮지만, 이 제품에 그대로 적용하면 부정확"<br>
+&bull; "제조사가 내부에서 보정/선형화 처리를 한다고 밝히고 있으므로, 일반적인 sin 설명만으로 이 제품의 90&deg; 측정을 부정하면 근거가 약합니다"<br>
+&bull; <strong>"이 제품은 데이터시트 기준으로 90&deg;를 측정할 수 있습니다"</strong><br><br>
+오류 원인 후보: (1) setzcur 영점 리셋 (2) setdir 축 방향 (3) 장착 방향 (4) 아날로그 범위 설정 (5) 출력 형식 해석
+</div>
+
+<!-- ============================================ -->
+<h2><span class="section-num">2.</span> 논쟁 핵심: sin 감도 저하 vs DSP 선형화</h2>
+
+<h3>2.1 sin 감도 문제 (일반론 &mdash; 맞는 말)</h3>
+
+<div class="info-box">
+단순 가속도계가 <code>arcsin(ax/1G)</code>로 각도를 계산하면:<br>
+&bull; 0도 근처: cos(0)=1 &rarr; 감도 최대<br>
+&bull; 90도 근처: cos(90)=0 &rarr; <strong>감도 거의 0</strong><br>
+&bull; 90도에서 1도 변화 시 sin 변화량 = 0.00015 &rarr; 노이즈 이하
+</div>
+
+<h3>2.2 SOLAR-360-420의 차이점 (데이터시트 근거)</h3>
+
+<table>
+<tr><th style="width:30%">근거</th><th>내용</th></tr>
+<tr><td>측정 범위</td><td class="left">&plusmn;180&deg; (90도를 훨씬 넘음)</td></tr>
+<tr><td>정확도 표기</td><td class="left">"전 범위에서" &plusmn;0.03&deg;</td></tr>
+<tr><td>내부 처리</td><td class="left">"high performance MEMS sensor + digital signal processor &rarr; response is linearised"</td></tr>
+<tr><td>아날로그 설정</td><td class="left">&plusmn;90&deg; range 예시 제공 (-90&deg;=4mA, +90&deg;=20mA)</td></tr>
+<tr><td>분해능</td><td class="left">0.002&deg; (1Hz 필터)</td></tr>
+</table>
+
+<div class="success-box">
+<strong>결론: 제조사가 DSP로 내부 보정/선형화를 하므로, 단순 sin 감도 문제가 그대로 적용되지 않음</strong>
+</div>
+
+<h3>2.3 주의할 점</h3>
+<ul>
+<li>데이터시트 스펙은 이상적 조건 기준</li>
+<li>실제 90도에서 정확도가 0~45도와 <strong>동일</strong>한지는 확인 필요</li>
+<li>진동, 온도, 장착 오차 등 환경 요인에 의한 추가 오차 가능</li>
+<li><strong>우리 프로젝트에서는 진동 측정 시 90도 위치를 사용하지만, 90도 "각도 정밀도"가 아니라 GAC(가속도) 값을 보므로 자이로 90도 정확도는 직접적 이슈 아님</strong></li>
+</ul>
+
+<!-- ============================================ -->
+<h2><span class="section-num">3.</span> 우리 프로젝트 적용</h2>
+
+<h3>3.1 자이로(SOLAR-360-420) 사용처</h3>
+
+<table>
+<tr><th>용도</th><th>각도 범위</th><th>자이로 역할</th></tr>
+<tr><td>영점 초기화</td><td>0&deg;</td><td class="left">FineAdjust 수평 찾기 &rarr; setzcur</td></tr>
+<tr><td>기울기 검사</td><td>&plusmn;20&deg;, &plusmn;45&deg;</td><td class="left">FineAdjust 목표각도 수렴 + 레퍼런스 비교</td></tr>
+<tr><td>진동 검사</td><td>&plusmn;90&deg;</td><td class="left">FineAdjust 건너뜀 (step 이동만)</td></tr>
+</table>
+
+<h3>3.2 90도에서 자이로 관련 이슈</h3>
+
+<div class="info-box">
+<strong>현재 코드:</strong> 90도 근처(&ge;85&deg;)는 FineAdjust 건너뜀 (<code>ccfd249</code> 커밋)<br>
+<strong>이유:</strong> 90도에서 자이로 FineAdjust가 수렴 불안정<br>
+<strong>재분석:</strong> sin 감도 문제보다는 <strong>setzcur 영점 버그일 가능성</strong> (2026-04-01 수정 완료)<br>
+<strong>다음 단계:</strong> 영점 수정 후 90도 FineAdjust 재시도 가능
+</div>
+
+<h3>3.3 VL10 센서의 90도 문제 (별개)</h3>
+
+<div class="alert-box">
+이대리 20개 제품 데이터에서 90도 오차 급증 (avg 0.36~0.63&deg;):<br>
+&bull; VL10 센서(가속도 기반)의 sin 감도 문제<br>
+&bull; VL10은 DSP 선형화가 SOLAR-360 수준이 아닐 수 있음<br>
+&bull; <strong>자이로(SOLAR-360)의 90도 문제와 VL10의 90도 문제는 별개</strong>
+</div>
+
+<!-- ============================================ -->
+<h2><span class="section-num">4.</span> AI 답변 신뢰도 평가</h2>
+
+<table>
+<tr><th>AI</th><th>1차 답변</th><th>반박 후</th><th>평가</th></tr>
+<tr>
+<td><span class="ai-tag ai-gemini">Gemini</span></td>
+<td class="ok">측정 가능 (DSP 선형화 근거)</td>
+<td>&mdash;</td>
+<td class="left">가장 정확, 데이터시트 근거 충실</td>
+</tr>
+<tr>
+<td><span class="ai-tag ai-chatgpt">ChatGPT</span></td>
+<td class="ok">측정 가능</td>
+<td class="ng">번복 &rarr; 측정 불가</td>
+<td class="left">데이터시트 분석 후에도 쉽게 번복</td>
+</tr>
+<tr>
+<td><span class="ai-tag ai-claude">Claude 웹</span></td>
+<td class="ng">측정 불가 (sin 감도)</td>
+<td class="ok">수정 &rarr; 측정 가능</td>
+<td class="left">반박 수용 후 정확한 분석 제공</td>
+</tr>
+</table>
+
+<div class="summary-box">
+<h3 style="margin-top:0">교훈</h3>
+<ul>
+<li>AI 답변은 반박하면 쉽게 번복됨 &mdash; <strong>데이터시트 원문 기준으로 판단해야 함</strong></li>
+<li>sin 감도 문제는 "단순 가속도계"에 적용되는 일반론이며, DSP 선형화 제품에 그대로 적용하면 안 됨</li>
+<li>실제 90도 정확도는 <strong>실측으로 검증</strong>하는 것이 가장 확실</li>
+</ul>
+</div>
+
+</body>
+</html>

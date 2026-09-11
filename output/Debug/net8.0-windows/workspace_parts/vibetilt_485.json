@@ -1,0 +1,182 @@
+{
+  "project": {
+    "id": "prj-vl20-rs485",
+    "name": "VL20 검사 (RS-485)"
+  },
+  "libraries": [
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_485",
+      "config": {
+        "port": "COM11",
+        "baudrate": 115200,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Ctsp",
+      "id": "ctsp",
+      "config": {
+        "commlib": "uart_485"
+      }
+    },
+    {
+      "filename": "ff_vibetilt.dll",
+      "classname": "Cantops.FlexFab.VibeTilt",
+      "id": "vibetilt",
+      "config": {
+        "uart_485": "uart_485",
+        "dpm": "dpm",
+        "stop_repeat_count": 10,
+        "stop_interval_ms": 10,
+        "_stop_comment": "VL20 PDF 권장 — 송수신 충돌 대비 STOP 다회 송신. 양산 재발 시 15→20 상향 (코드 빌드 불필요). ret(0) 수신 시 즉시 early-exit"
+      }
+    }
+  ],
+  "library_depencency": ["uart_485", "vibetilt", "ctsp"],
+  "procs": [
+    {
+      "libid": "vibetilt",
+      "id": "VER_485",
+      "name": "버전 통신검사 RS-485",
+      "param": {
+        "TIMEOUT": 5000,
+        "tests": [
+          {
+            "command": "<VER,1>",
+            "expected_response": "VER"
+          }
+        ]
+      }
+    },
+    {
+      "libid": "vibetilt",
+      "id": "SENTEMP_485",
+      "name": "센서온도 RS-485",
+      "param": {
+        "TIMEOUT": 5000,
+        "min": 20,
+        "max": 40,
+        "tests": [
+          {
+            "command": "<SENTEMP,1>"
+          }
+        ]
+      }
+    },
+    {
+      "libid": "vibetilt",
+      "id": "APPCFG_485",
+      "name": "Config확인 RS-485",
+      "param": {
+        "TIMEOUT": 5000,
+        "tests": [
+          {
+            "command": "<MODE,1,0>",
+            "expected_response": "[MODE,0,1,00]"
+          },
+          {
+            "command": "<APPCFG,1>",
+            "expected_response": "[APPCFG,0,1/00/0/10/1/115200]"
+          }
+        ]
+      }
+    },
+    {
+      "libid": "vibetilt",
+      "id": "VIBE_485",
+      "name": "진동검사 RS-485",
+      "param": {
+        "TIMEOUT": 5000,
+        "DURATION": 3000,
+        "line_ending": "lf",
+        "one_min": 0.9,
+        "one_max": 1.1,
+        "zero_min": -0.1,
+        "zero_max": 0.1,
+        "rms_min": 0.5,
+        "rms_max": 0.65,
+        "sampling_ms": 10,
+        "sample_log_interval_ms": 500,
+        "pass_consecutive_count": 5,
+        "tests": [
+          {
+            "command": "<MODE,1,0>"
+          },
+          {
+            "command": "<MODE,1,2>"
+          },
+          {
+            "command": "<START,1>"
+          },
+          {
+            "command": "<STOP,1>"
+          },
+          {
+            "command": "<MODE,1,0>"
+          }
+        ]
+      }
+    },
+    {
+      "libid": "vibetilt",
+      "id": "TILT_X_485",
+      "name": "기울기검사 X축 RS-485",
+      "param": {
+        "TIMEOUT": 10000,
+        "DURATION": 3000,
+        "line_ending": "lf",
+        "_comment": "2026-03-24 X축 기울기 범위 검사 | 앞으로 기울여 70~95도 확인 | 한축 고장 감지 목적",
+        "alive_check": false,
+        "check_axis": "x",
+        "x_min": 5.0,
+        "x_max": 95.0,
+        "sampling_ms": 10,
+        "sample_log_interval_ms": 500,
+        "tilt_baud": 115200,
+        "normal_baud": 115200,
+        "pass_consecutive_count": 1,
+        "operator_prompt": "좌우로 기울이세요.\nX축 기울기를 확인합니다.",
+        "tests": [
+          { "command": "<STOP,1>" },
+          { "command": "<MODE,1,6>", "expected_response": "[MODE,0,1,06]" },
+          { "command": "<START,1>" },
+          { "command": "<STOP,1>" },
+          { "command": "<MODE,1,0>" }
+        ]
+      }
+    },
+    {
+      "libid": "vibetilt",
+      "id": "TILT_Y_485",
+      "name": "기울기검사 Y축 RS-485",
+      "param": {
+        "TIMEOUT": 10000,
+        "DURATION": 3000,
+        "line_ending": "lf",
+        "_comment": "2026-03-24 Y축 기울기 범위 검사 | 오른쪽으로 기울여 -95~-70도 확인 | 한축 고장 감지 목적",
+        "alive_check": false,
+        "check_axis": "y",
+        "y_min": 5.0,
+        "y_max": 95.0,
+        "sampling_ms": 10,
+        "sample_log_interval_ms": 500,
+        "tilt_baud": 115200,
+        "normal_baud": 115200,
+        "pass_consecutive_count": 1,
+        "operator_prompt": "앞뒤로 기울이세요.\nY축 기울기를 확인합니다.",
+        "tests": [
+          { "command": "<STOP,1>" },
+          { "command": "<MODE,1,6>", "expected_response": "[MODE,0,1,06]" },
+          { "command": "<START,1>" },
+          { "command": "<STOP,1>" },
+          { "command": "<MODE,1,0>" }
+        ]
+      }
+    }
+  ]
+}

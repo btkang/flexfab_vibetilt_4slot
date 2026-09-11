@@ -1,0 +1,173 @@
+{
+  "libraries": [
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_485",
+      "config": {
+        "port": "COM10",
+        "baudrate": 115200,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Ctsp",
+      "id": "ctsp",
+      "config": {
+        "commlib": "uart_485"
+      }
+    },
+    {
+      "filename": "ff_vibetilt.dll",
+      "classname": "Cantops.FlexFab.VibeTilt",
+      "id": "vibetilt",
+      "config": {
+        "uart_485": "uart_485"
+      }
+    }
+  ],
+  "projects": [
+    {
+      "id": "prj-vl20-rs485",
+      "name": "VL20 검사 (RS-485)",
+      "library_depencency": ["uart_485", "vibetilt", "ctsp"],
+      "procs": [
+        {
+          "libid": "vibetilt",
+          "id": "VER_485",
+          "name": "버전 통신검사 RS-485",
+          "param": {
+            "TIMEOUT": 5000,
+            "tests": [
+              {
+                "command": "<VER>",
+                "expected_response": "VER"
+              }
+            ]
+          }
+        },
+        {
+          "libid": "vibetilt",
+          "id": "SENTEMP_485",
+          "name": "센서온도 RS-485",
+          "param": {
+            "TIMEOUT": 5000,
+            "min": 20,
+            "max": 40,
+            "tests": [
+              {
+                "command": "<SENTEMP>"
+              }
+            ]
+          }
+        },
+        {
+          "libid": "vibetilt",
+          "id": "APPCFG_485",
+          "name": "Config확인 RS-485",
+          "param": {
+            "TIMEOUT": 5000,
+            "tests": [
+              {
+                "command": "<MODE,0>",
+                "expected_response": "[MODE,1,00]"
+              },
+              {
+                "command": "<APPCFG>",
+                "expected_response": "[APPCFG,1,00/10/2/115200]"
+              }
+            ]
+          }
+        },
+        {
+          "libid": "vibetilt",
+          "id": "VIBE_485",
+          "name": "진동검사 RS-485",
+          "param": {
+            "TIMEOUT": 5000,
+            "DURATION": 3000,
+            "line_ending": "lf",
+            "one_min": 0.9,
+            "one_max": 1.1,
+            "zero_min": -0.1,
+            "zero_max": 0.1,
+            "rms_min": 0.5,
+            "rms_max": 0.65,
+            "sampling_ms": 10,
+            "pass_consecutive_count": 5,
+            "tests": [
+              {
+                "command": "<MODE,0>"
+              },
+              {
+                "command": "<MODE,2>"
+              },
+              {
+                "command": "<SAM,10>"
+              },
+              {
+                "command": "<START>"
+              },
+              {
+                "command": "<GAC>"
+              },
+              {
+                "command": "<STOP>"
+              },
+              {
+                "command": "<MODE,0>"
+              }
+            ]
+          }
+        },
+        {
+          "libid": "vibetilt",
+          "id": "TILT_485",
+          "name": "기울기검사 RS-485",
+          "param": {
+            "TIMEOUT": 5000,
+            "DURATION": 3000,
+            "line_ending": "lf",
+            "alive_check": true,
+            "alive_min_delta_x": 0.2,
+            "alive_min_delta_y": 0.2,
+            "x_min": -60.0,
+            "x_max": 60.0,
+            "y_min": -60.0,
+            "y_max": 60.0,
+            "sampling_ms": 10,
+            "tilt_baud": 115200,
+            "normal_baud": 115200,
+            "tests": [
+              {
+                "command": "<MODE,0>"
+              },
+              {
+                "command": "<MODE,6>"
+              },
+              {
+                "command": "<SAM,10>"
+              },
+              {
+                "command": "<START>"
+              },
+              {
+                "command": "<AN>"
+              },
+              {
+                "command": "<STOP>"
+              },
+              {
+                "command": "<MODE,0>"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "active_project": "prj-vl20-rs485"
+}

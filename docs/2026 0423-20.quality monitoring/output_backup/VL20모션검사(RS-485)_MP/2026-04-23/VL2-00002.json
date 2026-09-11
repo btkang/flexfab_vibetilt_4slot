@@ -1,0 +1,59 @@
+{
+  "time": "2026-04-23T07:57:03.8412672Z",
+  "Ins": "홍길동",
+  "Proj": "VL20 모션검사 (RS-485)_MP",
+  "project_type": "motion",
+  "comm_type": "RS-485",
+  "lib": [
+    "{ff_common.dll},{1.0}",
+    "{ff_vibetilt.dll},{0.3.0.60409}"
+  ],
+  "sn": "VL2-00002",
+  "mac": "Not Use",
+  "result": [
+    {
+      "Name": "통신검사 RS-485",
+      "id": "COMM_485",
+      "data": [
+        {
+          "item": "X축 VL",
+          "result": "OK"
+        },
+        {
+          "item": "Y축 VL",
+          "result": "OK"
+        },
+        {
+          "item": "자이로 통신검사",
+          "value": -1.123,
+          "result": "OK"
+        }
+      ],
+      "result": "PASS"
+    },
+    {
+      "Name": "#1-X FW 버전 확인",
+      "id": "FWVER_485",
+      "data": [
+        {
+          "command": "<VER,1>",
+          "value": "[VER,0,1,F/W ver.2.0.2]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "#8 FW 버전 확인 (Y축)",
+      "id": "FWVER_485",
+      "data": [
+        {
+          "command": "<VER,1>",
+          "value": "[VER,0,1,F/W ver.2.0.2.3]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    }
+  ]
+}

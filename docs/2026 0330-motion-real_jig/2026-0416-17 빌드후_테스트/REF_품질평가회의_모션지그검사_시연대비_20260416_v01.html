@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>모션지그 검사 시스템 — 품질평가회의 시연 자료</title>
+<style>
+  body { font-family: 'Malgun Gothic', 'Segoe UI', sans-serif; margin: 30px; background: #f8f9fa; color: #222; line-height: 1.7; max-width: 1100px; }
+  h1 { border-bottom: 3px solid #1a5276; padding-bottom: 8px; font-size: 1.6em; color: #1a5276; }
+  h2 { color: #1a5276; margin-top: 35px; font-size: 1.25em; border-left: 4px solid #2980b9; padding-left: 10px; }
+  h3 { color: #2c3e50; font-size: 1.05em; margin-top: 18px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.91em; }
+  th, td { border: 1px solid #bbb; padding: 7px 10px; text-align: left; }
+  th { background: #1a5276; color: #fff; font-weight: 600; }
+  tr:nth-child(even) { background: #eef2f7; }
+  .pass { color: #27ae60; font-weight: bold; }
+  .fail { color: #e74c3c; font-weight: bold; }
+  .info-box { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 16px 20px; margin: 14px 0; }
+  .highlight-box { background: #eaf2f8; border: 1px solid #2980b9; border-radius: 6px; padding: 16px 20px; margin: 14px 0; }
+  .warn-box { background: #fef9e7; border: 1px solid #f0c674; border-radius: 6px; padding: 16px 20px; margin: 14px 0; }
+  code { background: #ecf0f1; padding: 1px 5px; border-radius: 3px; font-size: 0.93em; }
+  pre { background: #2c3e50; color: #ecf0f1; padding: 14px; border-radius: 6px; overflow-x: auto; font-size: 0.88em; line-height: 1.5; }
+  ul { margin: 6px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.85em; font-weight: 600; }
+  .tag-spec { background: #d5f5e3; color: #1e8449; }
+  .tag-time { background: #d6eaf8; color: #2471a3; }
+  .tag-hw { background: #fadbd8; color: #c0392b; }
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  .summary-card { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 14px 18px; }
+  .summary-card h3 { margin-top: 0; }
+  .flow { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 10px 0; }
+  .flow-box { background: #fff; border: 1px solid #aaa; border-radius: 4px; padding: 4px 10px; font-size: 0.85em; text-align: center; }
+  .flow-box.active { background: #2980b9; color: #fff; border-color: #2980b9; }
+  .flow-box.measure { background: #27ae60; color: #fff; border-color: #27ae60; }
+  .flow-arrow { font-size: 1.0em; color: #999; }
+  .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 0.85em; color: #888; }
+  .toc { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 16px 20px; margin: 20px 0; }
+  .toc a { text-decoration: none; color: #2980b9; }
+  .toc a:hover { text-decoration: underline; }
+  .toc li { margin: 3px 0; }
+  .diagram { background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 20px; margin: 14px 0; font-family: 'Consolas', monospace; font-size: 0.88em; line-height: 1.6; white-space: pre; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>모션지그 검사 시스템 — 품질평가회의 시연 자료</h1>
+
+<div class="info-box">
+  <strong>제품:</strong> VL10 (RS-232) / VL20 (RS-485) 진동기울기센서 &nbsp;|&nbsp;
+  <strong>버전:</strong> v0.6.2.60415 &nbsp;|&nbsp;
+  <strong>작성일:</strong> 2026-04-16
+  <br>
+  <strong>검사 모드:</strong> 듀얼 (X축 + Y축 동시 장착, 2개 보드 1사이클)
+  <br>
+  <strong>1회 검사 소요:</strong> ~3분 (232 기준, 홈 초기화 포함)
+</div>
+
+<!-- 목차 -->
+<div class="toc">
+  <strong>목차</strong>
+  <ol>
+    <li><a href="#sec1">전체 검사 항목 (16개)</a></li>
+    <li><a href="#sec2">기울기(TILT) 검사 — PASS/FAIL 조건</a></li>
+    <li><a href="#sec3">진동(VIBE) 검사 — PASS/FAIL 조건</a></li>
+    <li><a href="#sec4">판정 모드 (Judge Mode)</a></li>
+    <li><a href="#sec5">타이밍 파라미터 (Settle, Stream, Wait)</a></li>
+    <li><a href="#sec6">영점 초기화 — 조건과 시간</a></li>
+    <li><a href="#sec7">모터 홈(Home) 잡는 방식</a></li>
+    <li><a href="#sec8">원반 파진 데(슬롯) 인식 방법</a></li>
+    <li><a href="#sec9">하드웨어 리밋 없는 이유 + 소프트웨어 리밋</a></li>
+    <li><a href="#sec10">FineAdjust 수렴 알고리즘</a></li>
+  </ol>
+</div>
+
+<!-- ============================================ -->
+<h2 id="sec1">1. 전체 검사 항목 (16개)</h2>
+
+<table>
+  <tr><th>#</th><th>항목</th><th>ID</th><th>대상</th><th>내용</th></tr>
+  <tr><td>0</td><td>통신검사</td><td>COMM</td><td>X+Y축</td><td>VER 명령 응답 확인 + 자이로 통신</td></tr>
+  <tr><td>1</td><td>FW 버전 확인</td><td>FWVER</td><td>X축</td><td>펌웨어 버전 일치 여부</td></tr>
+  <tr><td>2</td><td>시리얼번호 설정</td><td>UID</td><td>X축</td><td>UID 쓰기 + 읽기 검증</td></tr>
+  <tr><td>3</td><td>X축 영점 초기화</td><td>MOTION_ZERO</td><td>X축</td><td>홈 → FineAdjust → 0도 설정</td></tr>
+  <tr><td>4</td><td>X축 Calibration</td><td>OFFSET</td><td>X축</td><td>OFFSET 명령 + AN 0도 검증</td></tr>
+  <tr><td>5</td><td>X축 파라미터 저장</td><td>APPCFG_SAVE</td><td>X축</td><td>Flash 쓰기 (APPCFG,SAVE)</td></tr>
+  <tr><td>6</td><td><strong>X축 기울기 측정</strong></td><td>MOTION_TILT_X</td><td>X축</td><td>±20도, ±45도 4각도 측정</td></tr>
+  <tr><td>7</td><td><strong>Y축 진동 측정</strong></td><td>MOTION_VIBE_Y</td><td>X축 포트</td><td>-90도 위치에서 GAC Y축 1G 확인</td></tr>
+  <tr><td>1-Y</td><td>FW 버전 확인 (Y축)</td><td>FWVER</td><td>Y축</td><td>Y축 보드 FW 확인</td></tr>
+  <tr><td>8</td><td>시리얼번호 설정 (Y축)</td><td>UID</td><td>Y축</td><td>Y축 UID 설정</td></tr>
+  <tr><td>9</td><td>Y축 영점 초기화</td><td>MOTION_ZERO</td><td>Y축</td><td>skip_home=true → FineAdjust만</td></tr>
+  <tr><td>10</td><td>Y축 Calibration</td><td>OFFSET</td><td>Y축</td><td>Y축 OFFSET + 0도 검증</td></tr>
+  <tr><td>11</td><td>Y축 파라미터 저장</td><td>APPCFG_SAVE</td><td>Y축</td><td>Y축 Flash 쓰기</td></tr>
+  <tr><td>12</td><td><strong>Z축 진동 측정</strong></td><td>MOTION_VIBE_Z</td><td>Y축 포트</td><td>0도 위치에서 GAC Z축 1G 확인</td></tr>
+  <tr><td>13</td><td><strong>Y축 기울기 측정</strong></td><td>MOTION_TILT_Y</td><td>Y축</td><td>±20도, ±45도 4각도 측정</td></tr>
+  <tr><td>14</td><td><strong>X축 진동 측정</strong></td><td>MOTION_VIBE_X</td><td>X축 포트</td><td>-90도 위치에서 GAC X축 1G 확인</td></tr>
+  <tr><td>15</td><td>Config 확인</td><td>APPCFG</td><td>X+Y축</td><td>최종 설정값 읽기 검증</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2 id="sec2">2. 기울기(TILT) 검사 — PASS/FAIL 조건</h2>
+
+<div class="highlight-box">
+  <strong>측정 원리:</strong> 지그 모터로 제품을 목표 각도까지 회전 → 자이로(레퍼런스)와 VL 센서(피검체) 동시 측정 → 오차 판정
+</div>
+
+<h3>Spec (허용 오차)</h3>
+<table>
+  <tr><th>목표 각도</th><th>허용 오차</th><th>예시</th></tr>
+  <tr><td><strong>±20도</strong></td><td class="pass">±0.2도</td><td>자이로 20.00도일 때 VL은 19.8~20.2도 이내</td></tr>
+  <tr><td><strong>±45도</strong></td><td class="pass">±0.5도</td><td>자이로 45.00도일 때 VL은 44.5~45.5도 이내</td></tr>
+</table>
+
+<h3>FAIL 조건</h3>
+<table>
+  <tr><th>조건</th><th>판정</th><th>설명</th></tr>
+  <tr><td>tail 10개 중 <strong>1개라도</strong> spec 벗어남</td><td class="fail">FAIL</td><td>all_in_spec 모드 (가장 엄격)</td></tr>
+  <tr><td>AN 파싱 실패 (4회 연속)</td><td class="fail">FAIL</td><td>센서 응답 없음 or 데이터 깨짐</td></tr>
+  <tr><td>자이로-VL 차이 ≥ 10도</td><td class="fail">FAIL</td><td>센서 하드웨어 이상 (리트라이 불가)</td></tr>
+</table>
+
+<h3>PASS 조건</h3>
+<div class="info-box">
+  마지막 <strong>10개 샘플 전부</strong>가 spec 범위 안에 들어야 PASS.
+  <br>실패 시 최대 <strong>3회 리트라이</strong> (총 4회 시도). 1회라도 PASS 되면 최종 PASS.
+</div>
+
+<h3>측정 각도 순서</h3>
+<table>
+  <tr><th>축</th><th>측정 순서</th></tr>
+  <tr><td>X축</td><td>-20도 → -45도 → +20도 → +45도</td></tr>
+  <tr><td>Y축</td><td>+20도 → +45도 → -20도 → -45도</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2 id="sec3">3. 진동(VIBE) 검사 — PASS/FAIL 조건</h2>
+
+<div class="highlight-box">
+  <strong>측정 원리:</strong> 제품을 -90도(수직) 또는 0도(수평) 위치에서 가속도 센서(GAC) 값 측정 → 중력 방향 축이 1.00G인지 확인
+</div>
+
+<h3>Spec (허용 범위)</h3>
+<table>
+  <tr><th>축</th><th>측정 각도</th><th>기대값</th><th>Min</th><th>Max</th><th>비고</th></tr>
+  <tr><td><strong>Y축</strong></td><td>-90도 (수직)</td><td>1.00</td><td class="pass">0.98</td><td class="pass">1.02</td><td>완화 spec</td></tr>
+  <tr><td><strong>Z축</strong></td><td>0도 (수평)</td><td>1.00</td><td class="pass">0.99</td><td class="pass">1.01</td><td>표준 spec</td></tr>
+  <tr><td><strong>X축</strong></td><td>-90도 (수직)</td><td>1.00</td><td class="pass">0.99</td><td class="pass">1.01</td><td>표준 spec</td></tr>
+</table>
+
+<h3>FAIL 조건</h3>
+<table>
+  <tr><th>조건</th><th>판정</th><th>설명</th></tr>
+  <tr><td>tail 5개 중 <strong>1개라도</strong> spec 벗어남</td><td class="fail">FAIL</td><td>all_in_spec 모드 (가장 엄격)</td></tr>
+  <tr><td>GAC 파싱 실패 (4회 연속)</td><td class="fail">FAIL</td><td>센서 응답 없음 or 데이터 깨짐</td></tr>
+</table>
+
+<h3>PASS 조건</h3>
+<div class="info-box">
+  마지막 <strong>5개 샘플 전부</strong>가 spec 범위 안에 들어야 PASS.
+  <br>실패 시 최대 <strong>3회 리트라이</strong> (총 4회 시도).
+</div>
+
+<!-- ============================================ -->
+<h2 id="sec4">4. 판정 모드 (Judge Mode)</h2>
+
+<div class="warn-box">
+  현재 양산 적용: <strong>all_in_spec (가장 엄격)</strong> — tail 샘플 전수 검사
+</div>
+
+<table>
+  <tr><th>모드</th><th>판정 방식</th><th>엄격도</th><th>현재 사용</th></tr>
+  <tr><td><code>last</code></td><td>마지막 1개 값만 확인</td><td>가장 느슨</td><td></td></tr>
+  <tr><td><code>average</code></td><td>마지막 N개 평균</td><td>중간</td><td></td></tr>
+  <tr><td><code>median</code></td><td>마지막 N개 중앙값</td><td>중간</td><td></td></tr>
+  <tr><td><code>trimmed_mean</code></td><td>상하 10% 제거 후 평균</td><td>중상</td><td></td></tr>
+  <tr><td><strong><code>all_in_spec</code></strong></td><td><strong>마지막 N개 전부</strong> spec 이내</td><td><strong>가장 엄격</strong></td><td class="pass">적용 중</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2 id="sec5">5. 타이밍 파라미터</h2>
+
+<h3>센서 리딩 관련 <span class="tag tag-time">타이밍</span></h3>
+<table>
+  <tr><th>파라미터</th><th>값</th><th>용도</th></tr>
+  <tr><td><strong>Stream Duration</strong></td><td>1,000 ms</td><td>AN/GAC 스트리밍 수집 시간 (SAM=10ms → ~100샘플)</td></tr>
+  <tr><td><strong>Settle Wait</strong></td><td>500 ms</td><td>스트리밍 시작 후 초기 과도 데이터 무시 (안정화 대기)</td></tr>
+  <tr><td><strong>VL Stream Settle</strong></td><td>300 ms</td><td>VL 센서 스트리밍 모드 전환 후 안정화</td></tr>
+</table>
+
+<h3>모터/영점 관련 <span class="tag tag-time">타이밍</span></h3>
+<table>
+  <tr><th>파라미터</th><th>값</th><th>용도</th></tr>
+  <tr><td><strong>Zero Settle Wait</strong></td><td>1,500 ms</td><td>홈 감지 후 기계적 안정화 대기</td></tr>
+  <tr><td><strong>Fine Step Wait</strong></td><td>500 ms</td><td>FineAdjust 1스텝 후 자이로 읽기 대기</td></tr>
+  <tr><td><strong>Fine Confirm Wait</strong></td><td>500 ms</td><td>수렴 확인 대기</td></tr>
+  <tr><td><strong>Home Pre-wait</strong></td><td>500 ms</td><td>홈 센서 명령 전 대기</td></tr>
+  <tr><td><strong>Home Timeout</strong></td><td>20,000 ms</td><td>홈 감지 최대 대기 시간</td></tr>
+  <tr><td><strong>Move Timeout</strong></td><td>3,000~5,000 ms</td><td>모터 이동 완료 대기 (동적 계산)</td></tr>
+</table>
+
+<h3>전체 1회 검사 시간 구성</h3>
+<div class="info-box">
+  <strong>총 ~3분 (232 기준)</strong><br>
+  = 홈+영점(X) ~30초 + TILT(X) 4각도 ~60초 + VIBE(Y) ~8초 + 영점(Y) ~15초 + TILT(Y) 4각도 ~60초 + VIBE(X,Z) ~16초 + 기타 ~10초
+</div>
+
+<!-- ============================================ -->
+<h2 id="sec6">6. 영점 초기화 — 조건과 시간</h2>
+
+<h3>영점 초기화 흐름</h3>
+
+<div class="flow">
+  <span class="flow-box active">소프트리밋 해제 (±8000)</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box active">자이로 방향 설정</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box active">홈 센서 탐색 (PMO011)</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">1,500ms 안정화</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box measure">FineAdjust (자이로 피드백)</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box active">소프트리밋 설정 (±1600)</span>
+</div>
+
+<h3>FineAdjust 수렴 조건</h3>
+<table>
+  <tr><th></th><th>0도 (영점)</th><th>비영점 (20/45도)</th></tr>
+  <tr><td><strong>엄격 허용치</strong></td><td>0.03도</td><td>0.05도</td></tr>
+  <tr><td><strong>완화 허용치</strong> (10초 후)</td><td>0.05도</td><td>0.10도</td></tr>
+  <tr><td><strong>최대 스텝</strong></td><td>250</td><td>250</td></tr>
+  <tr><td><strong>방향 반전 임계</strong></td><td colspan="2">오차 증가 0.02도 이상 시 반전</td></tr>
+</table>
+
+<h3>Y축 영점 — skip_home</h3>
+<div class="info-box">
+  Y축은 <strong>skip_home=true</strong> → 홈 센서 탐색 생략, FineAdjust만 수행.
+  <br>이유: Y축 영점은 X축 VIBE 측정 직후 수행 — 이미 0도 근처에 있으므로 FineAdjust만으로 충분.
+  <br><strong>시간 절약: ~17초</strong>
+</div>
+
+<!-- ============================================ -->
+<h2 id="sec7">7. 모터 홈(Home) 잡는 방식</h2>
+
+<h3>홈 탐색 과정</h3>
+
+<div class="diagram">
+  ┌─────────────────────────────────────────────────────────────┐
+  │                    원반 (슬롯 디스크)                         │
+  │                                                             │
+  │        ┌──┐                                   ┌──┐         │
+  │   ─────┤IN1├───── 원반 회전축 ────────────────┤IN2├─────    │
+  │        └──┘  홈 센서 1                        └──┘ 홈 센서 2 │
+  │              (주 사용)                          (보조)       │
+  │                                                             │
+  │   1. 현재 위치에서 ±200 step 탈출 (슬롯 위 감지 방지)         │
+  │   2. PMO011 명령 → 모터 회전 시작                             │
+  │   3. 슬롯(파진 곳) 통과 시 센서 감지 → 모터 정지               │
+  │   4. 감지 위치에서 1250 step 이동 → 0도 위치                  │
+  │   5. FineAdjust (자이로 피드백) → 0.03도 이내 수렴             │
+  └─────────────────────────────────────────────────────────────┘
+</div>
+
+<table>
+  <tr><th>단계</th><th>동작</th><th>시간</th></tr>
+  <tr><td>1. 탈출</td><td>현재 위치가 슬롯 위인 경우 ±200 step 이동</td><td>~1초</td></tr>
+  <tr><td>2. 홈 탐색</td><td>PMO011 명령 → 모터 회전, 슬롯 감지까지</td><td>최대 20초</td></tr>
+  <tr><td>3. 0도 이동</td><td>IN1 기준 1250 step / IN2 기준 200 step</td><td>~2초</td></tr>
+  <tr><td>4. 안정화</td><td>기계적 진동 안정화 대기</td><td>1.5초</td></tr>
+  <tr><td>5. FineAdjust</td><td>자이로 피드백으로 0.03도 이내 수렴</td><td>~5~15초</td></tr>
+</table>
+
+<h3>홈 센서 선택</h3>
+<table>
+  <tr><th>모드</th><th>사용 센서</th><th>설명</th></tr>
+  <tr><td><code>in1</code></td><td>IN1 (PMO011)</td><td>주 센서 — 0도까지 1250 step</td></tr>
+  <tr><td><code>in2</code></td><td>IN2 (PMO012)</td><td>보조 센서 — 0도까지 200 step</td></tr>
+  <tr><td><code>auto</code></td><td>번갈아 사용</td><td>매 회차 IN1/IN2 교대 (내구성)</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2 id="sec8">8. 원반 파진 데(슬롯) 인식 방법</h2>
+
+<div class="highlight-box">
+  원반 양쪽에 <strong>말굽자석 2개</strong>가 부착되어 있고, 각 위치에 <strong>광학 센서(IN1, IN2)</strong>가 설치됨.
+  <br>원반이 회전하면서 파진 부분(슬롯)이 센서를 통과할 때 <strong>빛이 통과 → 감지 신호 발생</strong>.
+</div>
+
+<h3>인식 흐름</h3>
+<table>
+  <tr><th>단계</th><th>EMIO 명령</th><th>응답</th><th>의미</th></tr>
+  <tr><td>홈 탐색 시작</td><td><code>PMO011</code></td><td><code>pmo0011</code> (ACK3)</td><td>모터 회전 시작, 슬롯 감지 대기</td></tr>
+  <tr><td>슬롯 감지됨</td><td>-</td><td><code>pms3010</code></td><td>센서가 슬롯(파진 곳)을 통과 → 모터 자동 정지</td></tr>
+  <tr><td>이미 슬롯 위</td><td><code>PMO011</code></td><td>ACK4</td><td>현재 슬롯 위에 있음 → ±50 step 탈출 후 재시도</td></tr>
+</table>
+
+<h3>왜 말굽자석 2개인가?</h3>
+<div class="info-box">
+  <ul>
+    <li>원반 360도 중 <strong>정반대 위치에 2개 슬롯</strong> → 최대 180도만 회전하면 홈 감지 가능</li>
+    <li>IN1은 EMIO에 연결, IN2는 연결 안 됨 (현재 IN1만 실제 사용)</li>
+    <li>홈 센서는 <strong>영점 초기화 시에만</strong> 사용 — 측정 중에는 자이로 피드백으로 위치 제어</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2 id="sec9">9. 하드웨어 리밋 없는 이유 + 소프트웨어 리밋</h2>
+
+<h3>하드웨어 리밋이 없는 이유</h3>
+<div class="warn-box">
+  <strong>구조적 제약:</strong>
+  <ul>
+    <li><strong>원반 구조:</strong> 회전축에 제품 + 케이블이 연결되어 있어 리밋 스위치 설치 공간 없음</li>
+    <li><strong>회전 범위:</strong> 검사 범위가 ±90도인데, 물리적 스토퍼를 설치하면 케이블 라우팅과 충돌</li>
+    <li><strong>정밀도:</strong> 기계적 스토퍼 충격이 자이로/센서 측정에 영향을 줄 수 있음</li>
+    <li><strong>대안:** 소프트웨어 리밋으로 충분히 안전 — EMIO 모터 컨트롤러가 SW 리밋 지원</li>
+  </ul>
+</div>
+
+<h3>소프트웨어 리밋 설정</h3>
+<table>
+  <tr><th>상태</th><th>리밋+</th><th>리밋-</th><th>각도 범위</th><th>용도</th></tr>
+  <tr>
+    <td><strong>홈 탐색 중</strong></td>
+    <td>+8,000 step</td><td>-8,000 step</td>
+    <td>±900도</td>
+    <td>홈 탐색을 위한 자유 회전 (케이블 꼬임은 자이로 감시)</td>
+  </tr>
+  <tr>
+    <td><strong>영점 이후 (정상)</strong></td>
+    <td>+1,600 step</td><td>-1,600 step</td>
+    <td><strong>±180도</strong></td>
+    <td>검사 범위 ±90도 + 안전 여유 (케이블 꼬임 방지)</td>
+  </tr>
+</table>
+
+<h3>소프트웨어 리밋 동작 방식</h3>
+<div class="info-box">
+  EMIO 모터 컨트롤러의 <code>PMS07</code>(+방향), <code>PMS08</code>(-방향) 레지스터에 리밋값 설정.
+  <br>모터가 리밋 위치에 도달하면 <strong>EMIO 자체에서 이동 거부</strong> → 프로그램에서 추가 보호 불필요.
+  <br>
+  <br><strong>이중 보호:</strong>
+  <ul>
+    <li>1차: EMIO 소프트 리밋 (±1600 step)</li>
+    <li>2차: 프로그램에서 이동 전 IO 상태 확인 (<code>PII00</code>)</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2 id="sec10">10. FineAdjust 수렴 알고리즘</h2>
+
+<h3>동작 원리</h3>
+<div class="info-box">
+  자이로 센서(SOLAR-360-420)를 기준으로, 현재 각도와 목표 각도의 차이(오차)가 허용치 이내가 될 때까지
+  모터를 <strong>1 step 단위</strong>로 미세 이동.
+  <br><br>
+  <strong>1 step = 0.1125도</strong> (모터 분해능)
+</div>
+
+<h3>적응형 스텝 크기</h3>
+<table>
+  <tr><th>오차 범위</th><th>이동량</th><th>설명</th></tr>
+  <tr><td>|오차| &gt; 1.0도</td><td>필요량의 80%</td><td>오버슈트 방지</td></tr>
+  <tr><td>|오차| &gt; 0.2도</td><td>필요량의 50%</td><td>감속 진입</td></tr>
+  <tr><td>|오차| ≤ 0.2도</td><td><strong>1 step</strong></td><td>미세 조정 (0.1125도/step)</td></tr>
+</table>
+
+<h3>수렴 예시 (로그)</h3>
+<pre>
+[FINE] 시작: target=20.00, current=18.053, 오차=1.947
+[FINE] step 0: moved=13, current=20.935, 오차=0.935    ← 80% 이동 (대폭)
+[FINE] step 1: moved=-4, current=20.818, 오차=0.818    ← 방향 반전
+[FINE] step 2: moved=-3, current=20.589, 오차=0.589    ← 50% 이동
+...
+[FINE] step 11: moved=1, current=19.957, 오차=0.043    ← 1 step 미세 조정
+[FINE] 수렴 완료: target=20.00, actual=19.964, 오차=0.036  ← 0.05도 이내 수렴
+</pre>
+
+<h3>방향 반전 로직</h3>
+<div class="info-box">
+  이전 스텝 대비 오차가 <strong>증가</strong>하면 → 즉시 방향 반전 (오버슈트 감지).
+  <br>이를 통해 목표 각도를 사이에 두고 진동하면서 수렴.
+</div>
+
+<!-- ============================================ -->
+<h2>부록: 주요 수치 요약표</h2>
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <h3>기울기(TILT)</h3>
+    <table>
+      <tr><td>±20도 허용 오차</td><td><strong>±0.2도</strong></td></tr>
+      <tr><td>±45도 허용 오차</td><td><strong>±0.5도</strong></td></tr>
+      <tr><td>판정 샘플 수</td><td>마지막 10개 전수</td></tr>
+      <tr><td>리트라이</td><td>3회 (총 4회)</td></tr>
+      <tr><td>스트리밍</td><td>1,000ms (~100샘플)</td></tr>
+      <tr><td>안정화 대기</td><td>500ms</td></tr>
+    </table>
+  </div>
+  <div class="summary-card">
+    <h3>진동(VIBE)</h3>
+    <table>
+      <tr><td>Y축 범위</td><td><strong>0.98~1.02</strong></td></tr>
+      <tr><td>X/Z축 범위</td><td><strong>0.99~1.01</strong></td></tr>
+      <tr><td>판정 샘플 수</td><td>마지막 5개 전수</td></tr>
+      <tr><td>리트라이</td><td>3회 (총 4회)</td></tr>
+      <tr><td>스트리밍</td><td>1,000ms (~100샘플)</td></tr>
+      <tr><td>안정화 대기</td><td>500ms</td></tr>
+    </table>
+  </div>
+  <div class="summary-card">
+    <h3>모터/영점</h3>
+    <table>
+      <tr><td>1 step 분해능</td><td><strong>0.1125도</strong></td></tr>
+      <tr><td>소프트 리밋</td><td>±1,600 step (±180도)</td></tr>
+      <tr><td>영점 수렴 허용</td><td>0.03도 → 0.05도</td></tr>
+      <tr><td>비영점 수렴 허용</td><td>0.05도 → 0.10도</td></tr>
+      <tr><td>홈 탐색 최대</td><td>20초</td></tr>
+      <tr><td>FineAdjust 최대</td><td>250 step</td></tr>
+    </table>
+  </div>
+  <div class="summary-card">
+    <h3>검사 시간</h3>
+    <table>
+      <tr><td>1회 총 소요</td><td><strong>~3분</strong></td></tr>
+      <tr><td>홈+영점(X축)</td><td>~30초</td></tr>
+      <tr><td>TILT 4각도</td><td>~60초</td></tr>
+      <tr><td>VIBE 1축</td><td>~8초</td></tr>
+      <tr><td>영점(Y축, skip)</td><td>~15초</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="footer">
+  작성일: 2026-04-16 | 버전: v0.6.2.60415 | 대상: 품질평가회의 시연 대비
+</div>
+
+</body>
+</html>

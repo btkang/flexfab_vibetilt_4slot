@@ -1,0 +1,178 @@
+{
+  "libraries": [
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_e84a",
+      "config": {
+        "port": "COM3",
+        "baudrate": 38400,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_pim.dll",
+      "classname": "Cantops.FlexFab.Pim",
+      "id": "pim",
+      "config": {
+        "uart": "uart_e84a"
+      }
+    }
+  ],
+  "projects": [
+    {
+      "id": "prj-pim-ship",
+      "name": "E84A 출하검사 (PIM)",
+      "library_depencency": [
+        "uart_e84a",
+        "pim"
+      ],
+      "procs": [
+        {
+          "libid": "pim",
+          "id": "ShipConfigClearTest",
+          "name": "Ship Config Clear Test",
+          "param": {
+            "port": "uart_e84a",
+            "TIMEOUT": 5000,
+            "BOOT_WAIT": 2000,
+            "tests": [
+              {
+                "command": "exit"
+              },
+              {
+                "command": "#console"
+              },
+              {
+                "command": "config clear"
+              },
+              {
+                "command": "save",
+                "expected_response": "Save Success"
+              },
+              {
+                "command": "reset"
+              },
+              {
+                "sleep": 2000
+              },
+              {
+                "command": "#console"
+              }
+            ]
+          }
+        },
+        {
+          "libid": "pim",
+          "id": "ShipConfigCheckTest",
+          "name": "Ship Config Check Test",
+          "param": {
+            "port": "uart_e84a",
+            "TIMEOUT": 6000,
+            "tests": [
+              {
+                "command": "exit"
+              },
+              {
+                "command": "#console"
+              },
+              {
+                "command": "config"
+              },
+              {
+                "expected_response": "config_data ver = 1"
+              },
+              {
+                "expected_response": "config_stat[0:load ok]"
+              },
+              {
+                "expected_response": "baud = 0x9600"
+              },
+              {
+                "expected_response": "DEV MODE[0]:SLAVE_ANA"
+              },
+              {
+                "expected_response": "[FA=0000-000000]"
+              },
+              {
+                "expected_response": "ch=0"
+              },
+              {
+                "expected_response": "pwr=3"
+              },
+              {
+                "expected_response": "rfbaud=1"
+              },
+              {
+                "expected_response": "logic_filter_cnt = 10"
+              },
+              {
+                "expected_response": "dbgmsg = 0"
+              },
+              {
+                "expected_response": "tx_on_clk = 200"
+              },
+              {
+                "expected_response": "rx_ref_lv[1],[0] = 48,51"
+              },
+              {
+                "expected_response": "hf_filter = 1"
+              },
+              {
+                "expected_response": "hf_sampling = 0"
+              },
+              {
+                "expected_response": "[0]HOST_DATA_HW = 0"
+              },
+              {
+                "expected_response": "baud=2"
+              },
+              {
+                "expected_response": "termination=0"
+              },
+              {
+                "expected_response": "E84_Ana_Exception=0"
+              },
+              {
+                "expected_response": "Brightness=255"
+              },
+              {
+                "expected_response": "mode=0"
+              },
+              {
+                "expected_response": "flash_break_cnt = 0"
+              },
+              {
+                "expected_response": "break_ptr = 0x0000"
+              }
+            ]
+          }
+        },
+        {
+          "libid": "pim",
+          "id": "ShipLogClearTest",
+          "name": "Ship Log Clear Test",
+          "param": {
+            "port": "uart_e84a",
+            "TIMEOUT": 6000,
+            "tests": [
+              {
+                "command": "exit"
+              },
+              {
+                "command": "#console"
+              },
+              {
+                "command": "clrlog",
+                "expected_response": "Clear Log Success."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "active_project": "prj-pim-ship"
+}

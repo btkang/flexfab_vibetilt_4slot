@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>PLAN: 485 워크스페이스 수평전개 (VL20)</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; max-width: 900px; margin: 30px auto; padding: 0 20px; line-height: 1.6; color: #333; }
+  h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 8px; }
+  h2 { color: #2c3e50; border-bottom: 1px solid #bdc3c7; padding-bottom: 4px; margin-top: 30px; }
+  h3 { color: #34495e; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 20px; }
+  th, td { border: 1px solid #bdc3c7; padding: 8px 12px; text-align: left; }
+  th { background: #2c3e50; color: white; }
+  tr:nth-child(even) { background: #f8f9fa; }
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.95em; }
+  .meta { color: #666; margin-bottom: 20px; }
+  .status { display: inline-block; background: #f39c12; color: white; padding: 2px 10px; border-radius: 4px; font-weight: bold; }
+  .changed { color: #c0392b; font-weight: bold; }
+  .removed { color: #95a5a6; text-decoration: line-through; }
+  blockquote { border-left: 4px solid #3498db; margin: 10px 0; padding: 8px 16px; background: #ebf5fb; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<h1>PLAN: 485 워크스페이스 수평전개 (VL20)</h1>
+<div class="meta">
+  <strong>날짜:</strong> 2026-04-08 &nbsp;|&nbsp;
+  <strong>상태:</strong> <span class="status">검토 대기</span>
+</div>
+
+<h2>배경</h2>
+<ul>
+  <li>232 듀얼 워크스페이스 250회 ALL PASS 안정화 완료</li>
+  <li>지금 485를 만들어야 이후 232 수정 시 485도 같이 반영 가능</li>
+  <li>기존 <code>workspace_motion_485.json</code> 있지만 구버전 (듀얼 구조, 최신 파라미터 미반영)</li>
+</ul>
+
+<h2>사양서 확인 결과 (CSV 기능검사탭)</h2>
+
+<h3>232 vs 485 명령어 차이</h3>
+<table>
+  <tr><th>기능</th><th>VL10 (232)</th><th>VL20 (485)</th></tr>
+  <tr><td>FW 버전</td><td><code>&lt;VER&gt;</code></td><td><code>&lt;VER,1&gt;</code></td></tr>
+  <tr><td>UID 설정</td><td><code>&lt;UID,VL1-yyyyy&gt;</code></td><td><code>&lt;UID,1,VL2-yyyyy&gt;</code></td></tr>
+  <tr><td>Calibration</td><td><code>&lt;OFFSET,1&gt;</code> → <code>[OFFSET,0,1]</code></td><td><code>&lt;OFFSET,1,1&gt;</code> → <code>[OFFSET,0,1,1]</code></td></tr>
+  <tr><td>파라미터 저장</td><td><code>&lt;APPCFG,SAVE&gt;</code> → <code>[APPCFG,0,SAVE]</code></td><td><code>&lt;APPCFG,1,SAVE&gt;</code> → <code>[APPCFG,0,1,SAVE]</code></td></tr>
+  <tr><td>MODE 설정</td><td><code>&lt;MODE,06&gt;</code> → <code>[MODE,0,06]</code></td><td><code>&lt;MODE,1,06&gt;</code> → <code>[MODE,0,1,06]</code></td></tr>
+  <tr><td>START</td><td><code>&lt;START&gt;</code> → <code>[START,0]</code></td><td><code>&lt;START,1&gt;</code> → <code>[START,0,1]</code></td></tr>
+  <tr><td>STOP</td><td><code>&lt;STOP&gt;</code> → <code>[STOP,0]</code></td><td><code>&lt;STOP,1&gt;</code> → <code>[STOP,0,1]</code></td></tr>
+  <tr><td>GAC 쿼리</td><td><code>&lt;GAC&gt;</code> → <code>[GAC,X,Y,Z,RMS]</code></td><td><code>&lt;GAC,1&gt;</code> → <code>[GAC,1,X,Y,Z,RMS]</code></td></tr>
+  <tr><td>AN 스트리밍</td><td><code>[AN,X,Y]</code></td><td><code>[AN,1,X,Y]</code></td></tr>
+</table>
+
+<h3>SPEC (동일)</h3>
+<ul>
+  <li>TILT: ±20도=±0.2, ±45도=±0.5</li>
+  <li>VIBE: GAC 0.99~1.01</li>
+  <li>OFFSET 검증: AN ±0.05</li>
+</ul>
+
+<h3>485 특성</h3>
+<ul>
+  <li>baudrate: <strong>460800</strong> (232는 115200)</li>
+  <li>단일 포트 (<strong>COM3</strong>) — 232는 X:COM13, Y:COM14 듀얼</li>
+  <li>자이로: <strong>COM6</strong> (232는 COM15)</li>
+</ul>
+
+<h2>구현 방식</h2>
+<p>232 듀얼 JSON (<code>longrun_motion_232_dual.json</code>)을 복사 후 485용으로 변경.<br>
+<strong>코드 변경 없음</strong> — MotionJig.cs의 <code>isRs485</code> 분기가 이미 485 명령어 처리함.</p>
+
+<h2>변경 상세</h2>
+
+<h3>libraries 변경</h3>
+<table>
+  <tr><th>232</th><th>485</th></tr>
+  <tr><td><code>uart_232</code> COM13 115200</td><td><code>uart_485</code> COM3 460800</td></tr>
+  <tr><td><code>uart_232_y</code> COM14 115200</td><td><span class="removed">제거</span> (단일 포트)</td></tr>
+  <tr><td><code>uart_gyro</code> COM15</td><td><code>uart_gyro</code> COM6</td></tr>
+  <tr><td>ctsp commlib: uart_232</td><td>ctsp commlib: uart_485</td></tr>
+  <tr><td>vibetilt config: uart_232</td><td>vibetilt config: uart_485</td></tr>
+</table>
+
+<h3>procs 변경 (13개 항목)</h3>
+<table>
+  <tr><th>#</th><th>232 ID</th><th>485 ID</th><th>명령어 변경</th><th>기타</th></tr>
+  <tr><td>0</td><td>FWVER_232 <code>&lt;VER&gt;</code></td><td>FWVER_485 <code>&lt;VER,1&gt;</code></td><td>명령</td><td>-</td></tr>
+  <tr><td>1</td><td>MOTION_ZERO_232 (X축)</td><td>MOTION_ZERO_485</td><td>-</td><td>ID만</td></tr>
+  <tr><td>2</td><td>OFFSET_232 (X축)</td><td>OFFSET_485</td><td><code>&lt;OFFSET,1,1&gt;</code> / <code>[OFFSET,0,1,1]</code></td><td>명령+응답</td></tr>
+  <tr><td>3</td><td>APPCFG_SAVE_232 (X축)</td><td>APPCFG_SAVE_485</td><td><code>&lt;APPCFG,1,SAVE&gt;</code> / <code>[APPCFG,0,1,SAVE]</code></td><td>명령+응답</td></tr>
+  <tr><td>4</td><td>MOTION_TILT_X_232</td><td>MOTION_TILT_X_485</td><td>-</td><td>ID만</td></tr>
+  <tr><td>5</td><td>MOTION_VIBE_Y_232</td><td>MOTION_VIBE_Y_485</td><td>-</td><td>ID만</td></tr>
+  <tr><td>0-Y</td><td>FWVER_232 (Y축) uart_id=uart_232_y</td><td>FWVER_485 <code>&lt;VER,1&gt;</code></td><td>명령</td><td><span class="changed">uart_id 제거</span></td></tr>
+  <tr><td>7</td><td>MOTION_ZERO_232 (Y축)</td><td>MOTION_ZERO_485</td><td>-</td><td>ID만</td></tr>
+  <tr><td>8</td><td>OFFSET_232 (Y축) uart_id=uart_232_y</td><td>OFFSET_485</td><td>명령+응답</td><td><span class="changed">uart_id 제거</span></td></tr>
+  <tr><td>9</td><td>APPCFG_SAVE_232 (Y축) uart_id=uart_232_y</td><td>APPCFG_SAVE_485</td><td>명령+응답</td><td><span class="changed">uart_id 제거</span></td></tr>
+  <tr><td>12</td><td>MOTION_VIBE_Z_232 uart_id=uart_232_y</td><td>MOTION_VIBE_Z_485</td><td>-</td><td><span class="changed">uart_id 제거</span></td></tr>
+  <tr><td>10</td><td>MOTION_TILT_Y_232 uart_id=uart_232_y</td><td>MOTION_TILT_Y_485</td><td>-</td><td><span class="changed">uart_id 제거</span></td></tr>
+  <tr><td>11</td><td>MOTION_VIBE_X_232 uart_id=uart_232_y</td><td>MOTION_VIBE_X_485</td><td>-</td><td><span class="changed">uart_id 제거</span></td></tr>
+</table>
+
+<h3>485 듀얼 특이사항</h3>
+<ul>
+  <li>485는 단일 포트 → Y축 항목의 <code>uart_id: uart_232_y</code> 전부 제거</li>
+  <li>Y축 전환 시 제품 교체 필요 → operator_prompt 추가 (#7 Y축 영점에)</li>
+  <li>232에서 Y축은 uart_id로 COM14 지정했지만, 485는 같은 포트이므로 불필요</li>
+</ul>
+
+<h2>확인 필요 사항</h2>
+<ol>
+  <li>COM 포트: uart_485=COM3, uart_gyro=COM6 맞는지?</li>
+  <li>듀얼 구조로 만들지 싱글로 만들지?</li>
+  <li>UID 설정 항목 추가 여부? (사양서에는 있음, 232 롱런에는 없었음)</li>
+  <li>롱런 반복 횟수?</li>
+</ol>
+
+<h2>생성 파일</h2>
+<ul>
+  <li><code>output/Debug/net8.0-windows/longrun_motion_485_dual.json</code></li>
+</ul>
+
+<h2>검증</h2>
+<ol>
+  <li>485 장비 연결 후 싱글 1회 실행 → 전 항목 PASS 확인</li>
+  <li>롱런 10회 → 안정성 확인</li>
+</ol>
+
+</body>
+</html>

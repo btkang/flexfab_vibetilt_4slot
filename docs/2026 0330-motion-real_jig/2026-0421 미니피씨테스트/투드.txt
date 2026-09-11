@@ -1,0 +1,129 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔴 [내일 즉시 작업 가능] 2026-04-24 오전 시작용
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▶ STEP 1 (5분): 워크스페이스 rename 커밋 + 푸시
+  - git status 보면 8개 파일 R (rename) 상태로 stage됨
+  - 커밋 메시지:
+      "워크스페이스 파일명 패턴 변경 (종류→프로토콜→모델)
+       8개 파일 (Release MP/TEST × VL10/VL20 board/motion)
+       MP_workspace_VL10_board_232.json → MP_workspace_board_232_VL10.json"
+  - git commit + git push origin step6-motion-jig-test
+
+▶ STEP 2 (10분): Debug 폴더도 동일 rename (일관성)
+  - output/Debug/net8.0-windows/ 의 8개 워크스페이스 동일 패턴으로
+  - git mv 사용 (history 보존)
+  - 같은 커밋에 묶거나 별도 커밋
+
+▶ STEP 3 (양산 진행): 미니피씨 v0.6.9 양산 시작
+  - 풀 시나리오 검사 진행
+  - 통신검사 PASS율 모니터링 (목표 99%)
+  - DPM_CURR 측정값 누적 (3.7mA 정상 여부 판단용)
+
+▶ STEP 4 (양산 1주 후): DPM_CURR 스펙 결정
+  - 1주 양산 데이터로 정상 보드 평균 전류 확인
+  - min 4.0mA 유지 vs 3.0mA 완화 결정
+  - JSON 9개 파일 일괄 변경 (스펙 변경 시)
+
+▶ STEP 5 (양산 2주 후): 품질 모니터링 단계 1 시작
+  - docs/2026 0423-품질모니터링/PLAN_품질모니터링_시스템_20260423_v01.md 참조
+  - Python 스크립트로 Result JSON 스캔
+  - HTML 리포트 출력
+  - 단계 0 (코드 수정)은 스킵 — Result JSON만으로 충분
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1.보드검사 전류 스펙 232 8밀리대 485 3밀리대.  전류 (VL20 485) │ ❌ spec 아웃 (실측 3.78mA / spec 4~7mA)
+2. 보드검사 몽고디비 연결  가시화     
+3.
+
+
+
+
+1.모션 485 2.0.2.3은 UID구현된거고 2.0.2는 UID 미구현이야
+2.롱런 COM 포트 락업 대응 (v0.6.8 후보)
+ - 2026-04-21~22 485 롱런 173회(9h35m) 정상 후 Y축 COM12 드롭아웃, 56회 허공반복 → 재부팅으로만 복구됨 (드라이버 락업)
+ - 양산에선 작업자가 USB 뽑꽂으로 즉시 복구하므로 실영향 낮음. 단 다음 개선 필요
+ - 연속 FAIL 2~3회시 부저/팝업 알람 크게
+ - UI "COM 포트 재연결" 버튼 추가 (내부 pnputil /restart-device)
+ - 연속 FAIL N회 하드스톱 (허공반복 차단)
+
+3.serial_board_232.txt 중복 append 버그 (v0.6.8에서 수정 완료, commit 35682b9)
+ - 보드검사 1회 실행 시 serial 파일에 다음번호가 2줄씩 중복 기록됨 (예: 00001, 00002, 00002)
+ - 원인: SerialMac.cs:204 와 FlexfabForm.cs:2086 두 곳에서 동일 auto_increment append 호출
+ - 해결: FlexfabForm.cs:2086 한 줄 제거 (SerialMac이 이미 처리하므로 상위 중복 제거)
+ - 양산 영향: 단순 가독성이 아니라 ★FAIL 시 시리얼 롤백 미작동★ 발생
+   (rollback이 1줄만 제거 → 다음 시리얼이 +1 올라가버림)
+ - 00001 seed(SerialMac.cs:182 빈 파일 초기화)는 의도된 설계이므로 유지
+
+4.미니피씨에 v0.6.8 publish 배포 (이관 D-1, 2026-04-23 추가)
+ - 현황: 미니피씨가 아직 v0.6.7.60422 사용 → 위 #3 버그 살아있음
+ - 증상: 보드검사 5회차 FAIL 시 다음 사이클 시리얼이 5가 아닌 6으로 표시됨
+ - 해결: 개발PC의 flexfab_mini\output\Release\net8.0-windows\win-x64\publish\ 폴더 통째로 미니피씨에 복사
+ - 검증: 새 EXE 실행 시 로그 첫 줄 "version: 0.6.8.60422" 확인 + 의도적 FAIL 1회 후 시리얼 정상 롤백 확인
+ - 시간: 10분 (코드 수정 없음, 단순 배포)
+
+7.보드검사 COMM_485 통신검사 간헐 FAIL (v0.6.9 후보, 2026-04-23 추가)
+ - 증상: 미니피씨 VL20 보드검사 (RS-485) 양산 사이클 중 통신검사 ~30% FAIL
+   (예: 7회 중 2회 — 00002, 00006 cycle에서 [VER] 응답 명령 불일치)
+ - 잔류 패킷 형식: [AN,1,-0.85,0.40] (MODE,6 = TILT streaming)
+ - 근본 원인: TILT_X/Y_485 검사 종료 시 finally 블록에서 MODE,1,0 후 buffer 정리 누락
+   → 보드의 MODE,6 streaming이 완전히 멈추기 전 다음 사이클 시작
+   → COMM_485의 ClearCommBuffer (1초만 정리)가 잔류 [AN,...] 패킷 못 비움
+   → VER 응답 파서가 마지막 [AN,...]을 응답으로 잘못 인식
+ - 232는 영향 없음 (full-duplex라 STOP이 line 충돌 없이 전달됨)
+ - 485만 발생 (half-duplex 특성으로 boards's TX 중에 호스트 STOP이 깨질 수 있음)
+ - 수정 방향:
+   A. ff_vibetilt/VibeTilt.cs:498 ClearCommBuffer 강화
+      - 시작 시 <STOP,1> 강제 송신 (응답 무시)
+      - maxAttempts 10 → 30 (1초 → 3초)
+      - 연속 빈 응답 2 → 3 (안전 마진)
+      - silence detection (ff_pim/pim.cs:820 ClearUartBufferSafe 패턴 차용)
+   B. (선택) ff_vibetilt/VibeTilt.cs:2260~2310 TILT_Internal finally 블록에
+      MODE,1,0 후 ClearCommBuffer 추가 호출
+ - 양산 임시 대응: "통신검사 FAIL 시 검사 정지 → 다시 시작" 운영 가이드로 커버
+ - 시간: 코드 수정 30분 + 빌드 30분 + 미니피씨 검증 (10회 연속) 30분 = 1.5시간
+
+5.런타임 포함/미포함 빌드 자동화 스크립트
+ - 현재 수동 절차: dotnet build → dotnet publish → 배포 폴더 생성 → 복사 → Log/Result/serial 정리 → 모션 JSON HEAD 원복 → RELEASE_NOTE 복사
+ - 실수 위험: dll 버전 불일치, 솔루션 최상위 output/Release 갱신 누락, 본인 테스트값(COM113 등) 섞여들어감
+ - 목표: 명령 1회로 끝나는 PowerShell/bash 스크립트
+ - 주요 단계:
+   - csproj 버전 확인 → 자동 폴더명 생성 (260MMDD_X.Y.Z_ff_vl)
+   - ff_vibetilt + flexfab_mini 빌드 (Release)
+   - publish (win-x64 self-contained)
+   - 미포함/런타임포함 폴더 생성 + 파일 복사
+   - 최신 ff_vibetilt.dll로 덮어쓰기 (publish 폴더 구버전 대응)
+   - 보드 JSON 그대로 / 모션 JSON은 git show HEAD로 원복
+   - Log/Result/csv_tilt/serial_*/last_serial_*/RELEASE_NOTE.txt 정리
+   - 최상위에 RELEASE_NOTE 복사
+   - _TEST_RUN 옵션 생성
+ - 파일 위치 후보: build_deploy.ps1 (프로젝트 루트)
+ - 참고: docs/REF_빌드_배포_절차.md
+
+8.last_serial_x.txt를 워크스페이스 JSON에 통합 (v0.7.x 후보, 2026-04-23 추가)
+ - 현재 구조: 4종 워크스페이스 × 2 (serial_*.txt + last_serial_x_*.txt) = 8개 파일
+   * serial_*.txt: 누적 이력 (append-only, 매 cycle +1줄) — 유지 필요
+   * last_serial_x_*.txt: 1줄만 (마지막 X축 시리얼, dual 모드 Y축 디폴트용) — 통합 후보
+ - 개선: last_serial_x_*.txt 4개 → 각 워크스페이스 JSON의 "_last_serial_x" 필드로 이동
+   * 파일 12개 → 8개 (33% 감소)
+   * 워크스페이스 옮기면 X시리얼 자동 따라감 (1:1 묶음)
+   * serial_*.txt는 이력 추적 위해 그대로 유지
+ - 코드 변경 위치 (flexfab_mini/FlexfabForm.cs):
+   * 1864~1866 lastXPath 읽기 → workspace._last_serial_x 읽기
+   * 1996~1998 File.WriteAllText → workspace._last_serial_x 업데이트 + JSON 저장
+   * 3230~3232 롤백 → 동일 패턴
+   * GetLastSerialXFileName() 함수 제거
+ - 매 cycle JSON 재직렬화 부담 (한 필드 update): 100ms 미만, 양산 cycle(30초) 대비 무시 가능
+ - 단 개발 PC에서 git 추적 시 workspace.json dirty 상태 빈번 → .gitignore 고려 또는 serial 관련만 별도 state.json
+ - 시간: 1시간 (코드 수정 + 빌드 + 검증)
+
+6.로컬 DB(SQLite) + 모니터링 프로그램 (v0.7.x 로드맵)
+ - 상세 로드맵: docs/2026 0330-motion-real_jig/2026-0420 sqllite 메뉴얼/PLAN_로컬DB_모니터링_로드맵_20260420_v01.md
+ - 요약:
+   A. 검사 프로그램에 SQLite 추가 (flexfab.db, WAL 모드, serial 중복체크 파일→DB 쿼리 교체, Mongo 실패 시 큐잉)
+   B. 모니터링 프로그램 신규 개발 (별도 exe, 대시보드 + 재동기화 + 품질분석)
+   C. 매뉴얼 작성 (사용자 직접)
+ - MVP 기능: 오늘 PASS/FAIL, 불량률, 동기화 상태, CSV 내보내기
+ - 고급 (4차): 시료군 기반 μ/σ/Cp/Cpk 산출, 관리도, 히스토그램
+ - 영향: 공용 라이브러리/워크스페이스 변경 없음, 기존 JSON+Mongo 로직 유지 (3중 저장)

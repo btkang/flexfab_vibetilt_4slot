@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTS_BG01_MOS_Tester 프로그램 분석 보고서</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 30px;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.7;
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px 40px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .header-info {
+            display: flex;
+            gap: 30px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .header-info span {
+            background: rgba(255,255,255,0.15);
+            padding: 4px 12px;
+            border-radius: 4px;
+        }
+        h2 {
+            color: #2c3e50;
+            border-left: 4px solid #3498db;
+            padding-left: 12px;
+            margin-top: 40px;
+        }
+        h3 {
+            color: #34495e;
+            margin-top: 25px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 500;
+        }
+        td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        tr:hover td {
+            background-color: #f8f9fa;
+        }
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 15px 0;
+            white-space: pre;
+            line-height: 1.5;
+        }
+        .code-block .comment { color: #6a9955; }
+        .code-block .keyword { color: #569cd6; }
+        .code-block .string { color: #ce9178; }
+        .code-block .number { color: #b5cea8; }
+        .code-block .arrow { color: #4fc1ff; }
+        .flow-box {
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin: 8px 0;
+        }
+        .step-num {
+            background: #3498db;
+            color: white;
+            min-width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .step-content {
+            padding-top: 5px;
+        }
+        .step-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .step-desc {
+            color: #666;
+            font-size: 14px;
+        }
+        .step-arrow {
+            text-align: center;
+            color: #3498db;
+            font-size: 18px;
+            margin: 2px 0 2px 10px;
+        }
+        .highlight-box {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 6px;
+            padding: 15px 20px;
+            margin: 15px 0;
+        }
+        .warn-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 15px 20px;
+            margin: 15px 0;
+        }
+        .section-card {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+        .tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .tag-ethernet { background: #d4edda; color: #155724; }
+        .tag-serial { background: #cce5ff; color: #004085; }
+        .tag-motion { background: #f8d7da; color: #721c24; }
+        .footer {
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="header">
+    <h1>CTS_BG01_MOS_Tester 프로그램 분석 보고서</h1>
+    <div class="header-info">
+        <span>날짜: 2026-02-21</span>
+        <span>문서번호: 01</span>
+        <span>프로젝트: CTS_BG01_MOS_Tester_Ver_1.0.0.6</span>
+    </div>
+</div>
+
+<!-- 1. 전체 구조 -->
+<h2>1. 전체 프로젝트 구조</h2>
+<div class="section-card">
+    <table>
+        <tr>
+            <th>파일</th>
+            <th>역할</th>
+            <th>분류</th>
+        </tr>
+        <tr>
+            <td><strong>CTS_pCOM_TesterDlg.cpp</strong></td>
+            <td>메인 UI, 이더넷/시리얼 연결 관리, 수신 처리</td>
+            <td><span class="tag tag-ethernet">UI/통신</span></td>
+        </tr>
+        <tr>
+            <td><strong>BoardLevelMo_BG01.cpp</strong></td>
+            <td>핵심 - 테스트 시나리오 실행 (상태머신)</td>
+            <td><span class="tag tag-motion">모션제어</span></td>
+        </tr>
+        <tr>
+            <td><strong>MySocket.cpp</strong></td>
+            <td>EMIO 이더넷 소켓 (CAsyncSocket)</td>
+            <td><span class="tag tag-ethernet">이더넷</span></td>
+        </tr>
+        <tr>
+            <td><strong>CommThread.cpp</strong></td>
+            <td>센서 시리얼 통신 (Overlapped I/O)</td>
+            <td><span class="tag tag-serial">시리얼</span></td>
+        </tr>
+        <tr>
+            <td><strong>BoardLevelMo.cpp</strong></td>
+            <td>모션 제어 기본 버전 (원본)</td>
+            <td><span class="tag tag-motion">모션제어</span></td>
+        </tr>
+        <tr>
+            <td><strong>BoardLevel.cpp</strong></td>
+            <td>보드 레벨 기본 클래스</td>
+            <td><span class="tag tag-motion">기본클래스</span></td>
+        </tr>
+        <tr>
+            <td><strong>Commtest.cpp</strong></td>
+            <td>통신 테스트 다이얼로그</td>
+            <td><span class="tag tag-ethernet">테스트</span></td>
+        </tr>
+    </table>
+</div>
+
+<!-- 2. 통신 프로토콜 -->
+<h2>2. 통신 프로토콜</h2>
+
+<h3>2.1 EMIO 보드 (이더넷 TCP)</h3>
+<div class="section-card">
+    <div class="highlight-box">
+        <strong>연결 정보:</strong> IP 100.100.100.70 / 포트 2233 / TCP (비동기 소켓)
+    </div>
+    <div class="code-block"><span class="comment">// 송신 프레임</span>
+<span class="keyword">STX</span>(0x02) + <span class="string">명령어</span> + <span class="keyword">ETX</span>(0x03)
+
+<span class="comment">// 수신 프레임</span>
+<span class="keyword">STX</span>(0x02) + <span class="string">응답(소문자)</span> + <span class="keyword">ETX</span>(0x03)
+
+<span class="comment">// 예시</span>
+송신: <span class="string">\x02PMD071LL1500\x03</span>   <span class="comment">// 상대 이동 +1500 펄스</span>
+수신: <span class="string">\x02pmd0011\x03</span>         <span class="comment">// 완료 응답</span></div>
+
+    <h4>수신 처리 (OnRcv 상태머신)</h4>
+    <div class="code-block"><span class="comment">// CTS_pCOM_TesterDlg.cpp - OnRcv()</span>
+state=0: <span class="keyword">STX</span>(0x02) 대기 중
+state=1: 데이터 수집 &amp; <span class="keyword">ETX</span>(0x03) 검색
+<span class="arrow">→</span> 완료 시 App_RcvPort 변수에 저장
+<span class="arrow">→</span> 응답 검증: <span class="string">App_RcvPort.Find("pms0041480")</span> 으로 확인</div>
+</div>
+
+<h3>2.2 센서 (시리얼)</h3>
+<div class="section-card">
+    <table>
+        <tr>
+            <th>포트</th>
+            <th>센서</th>
+            <th>속도</th>
+            <th>설정</th>
+        </tr>
+        <tr>
+            <td>COM2</td>
+            <td>X축</td>
+            <td>115200</td>
+            <td>8N1</td>
+        </tr>
+        <tr>
+            <td>COM3</td>
+            <td>Y축 (기준)</td>
+            <td>115200</td>
+            <td>8N1</td>
+        </tr>
+        <tr>
+            <td>COM4</td>
+            <td>Z축</td>
+            <td>57600</td>
+            <td>8N1</td>
+        </tr>
+        <tr>
+            <td>COM5</td>
+            <td>레퍼런스 (기울기)</td>
+            <td>38400</td>
+            <td>8N1</td>
+        </tr>
+    </table>
+
+    <div class="code-block"><span class="comment">// 센서 명령어</span>
+오픈:   <span class="string">&lt;MOPEN7F&gt;</span>     닫기: <span class="string">&lt;MCLOSEC3&gt;</span>     측정: <span class="string">&lt;MTEST8D&gt;</span>
+시리얼: <span class="string">&lt;msopen&gt;\r\n</span>        <span class="string">&lt;msclose&gt;\r\n</span>        <span class="string">&lt;mstest&gt;\r\n</span>
+
+<span class="comment">// 센서 응답 데이터 형식</span>
+<span class="string">A=0.33,-0.14,0.00,ACC=0.002,0.005,1.004,T=45.52,GA=0.00,0.00,0.00</span>
+  <span class="arrow">A</span>   = 각도 (X, Y, Z)
+  <span class="arrow">ACC</span> = 가속도 (X, Y, Z)
+  <span class="arrow">T</span>   = 온도
+  <span class="arrow">GA</span>  = 자이로 각속도 (X, Y, Z)
+
+<span class="comment">// 레퍼런스(기울기) 센서</span>
+송신: <span class="string">"setzcur"</span> <span class="arrow">→</span> <span class="string">"get---x"</span>
+수신: <span class="string">"+10.5"</span> 또는 <span class="string">"-10.5"</span></div>
+</div>
+
+<!-- 3. EMIO 모션 명령어 체계 -->
+<h2>3. EMIO 모션 명령어 체계 (재사용 대상)</h2>
+
+<h3>3.1 초기화 명령 (JIG_INIT 단계)</h3>
+<div class="section-card">
+    <table>
+        <tr>
+            <th>명령어</th>
+            <th>파라미터</th>
+            <th>설명</th>
+            <th>대기(ms)</th>
+        </tr>
+        <tr>
+            <td><code>PPC00</code></td>
+            <td>-</td>
+            <td>에러 클리어</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS041480</code></td>
+            <td>1480</td>
+            <td>스텝 모터 해상도</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS0510550</code></td>
+            <td>50</td>
+            <td>구동 토크</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS0510650</code></td>
+            <td>50</td>
+            <td>홀딩 토크</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS071212000</code></td>
+            <td>12000</td>
+            <td>고속 설정</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS071222000</code></td>
+            <td>22000</td>
+            <td>중속 설정</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS071231000</code></td>
+            <td>31000</td>
+            <td>저속 설정</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS06124256</code></td>
+            <td>256</td>
+            <td>고속 가속도</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS06125128</code></td>
+            <td>128</td>
+            <td>중속 가속도</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS0512664</code></td>
+            <td>64</td>
+            <td>저속 가속도</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS071121000</code></td>
+            <td>1000</td>
+            <td>원점 최대 속도</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS06113500</code></td>
+            <td>500</td>
+            <td>원점 최소 속도</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS06114128</code></td>
+            <td>128</td>
+            <td>원점 가속도</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS071288000</code></td>
+            <td>+8000</td>
+            <td>소프트웨어 한계 (+)</td>
+            <td>250</td>
+        </tr>
+        <tr>
+            <td><code>PMS08129-8000</code></td>
+            <td>-8000</td>
+            <td>소프트웨어 한계 (-)</td>
+            <td>250</td>
+        </tr>
+    </table>
+</div>
+
+<h3>3.2 동작 명령</h3>
+<div class="section-card">
+    <table>
+        <tr>
+            <th>명령어</th>
+            <th>설명</th>
+            <th>대기(ms)</th>
+        </tr>
+        <tr>
+            <td><code>PMO011</code></td>
+            <td>홈 잡기 (원점 복귀)</td>
+            <td>6500</td>
+        </tr>
+        <tr>
+            <td><code>PMD071LL</code> + 양수값</td>
+            <td>상대 이동 (오른쪽)</td>
+            <td>4000</td>
+        </tr>
+        <tr>
+            <td><code>PMD081LL</code> + 음수값</td>
+            <td>상대 이동 (왼쪽)</td>
+            <td>4000</td>
+        </tr>
+        <tr>
+            <td><code>PMD071LM</code> + 값</td>
+            <td>절대 위치 이동</td>
+            <td>3000</td>
+        </tr>
+        <tr>
+            <td><code>PML011</code></td>
+            <td>현재 위치 읽기</td>
+            <td>500</td>
+        </tr>
+        <tr>
+            <td><code>PII00</code></td>
+            <td>입출력 포트 상태 읽기</td>
+            <td>1000</td>
+        </tr>
+        <tr>
+            <td><code>PST</code></td>
+            <td>정지</td>
+            <td>-</td>
+        </tr>
+    </table>
+</div>
+
+<!-- 4. 시작 버튼 동작 흐름 -->
+<h2>4. 시작 버튼 &rarr; 테스트 동작 흐름</h2>
+
+<div class="section-card">
+    <h3>4.1 시작 버튼 클릭</h3>
+    <div class="code-block"><span class="comment">// BoardLevelMo_BG01.cpp - OnBnClickedButtonStart()</span>
+1. m_bThreadStatus_BG01 = <span class="keyword">TRUE</span>       <span class="comment">// 테스트 시작 플래그</span>
+2. m_iTestStep_BG01 = <span class="keyword">JIG_INIT</span>        <span class="comment">// 초기 상태 = 0</span>
+3. 모든 제어 버튼 <span class="keyword">DISABLE</span>             <span class="comment">// UI 잠금</span>
+4. 체크박스 초기화
+5. <span class="keyword">AfxBeginThread</span>(ThreadStatus_BoardLevelMoBG01)  <span class="comment">// 스레드 생성</span></div>
+
+    <h3>4.2 상태머신 (13단계)</h3>
+    <div class="flow-box">
+        <div class="step">
+            <div class="step-num">0</div>
+            <div class="step-content">
+                <div class="step-name">JIG_INIT</div>
+                <div class="step-desc">에러 클리어 + 모터 파라미터 14개 설정 + 홈 잡기 (각 250ms, 홈 6500ms)</div>
+            </div>
+        </div>
+        <div class="step-arrow">&darr;</div>
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+                <div class="step-name">OPEN</div>
+                <div class="step-desc">센서 3개 (X/Y/Z) 오픈 및 연결 확인 (3000ms)</div>
+            </div>
+        </div>
+        <div class="step-arrow">&darr;</div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+                <div class="step-name">DEGREE_0_CHECK</div>
+                <div class="step-desc">레퍼런스 센서로 초기 각도 읽기 ("setzcur" &rarr; "get---x")</div>
+            </div>
+        </div>
+        <div class="step-arrow">&darr;</div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+                <div class="step-name">ANGLE_p_10_5_0</div>
+                <div class="step-desc">오른쪽 이동 (+6000, +500 펄스 / 4000ms)</div>
+            </div>
+        </div>
+        <div class="step-arrow">&darr;</div>
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+                <div class="step-name">MEASURE_ANGLE_p_10_5</div>
+                <div class="step-desc">양수 각도 측정 검증 (&lt;mstest&gt;)</div>
+            </div>
+        </div>
+        <div class="step-arrow">&darr;</div>
+        <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+                <div class="step-name">ANGLE_m_10_5_0</div>
+                <div class="step-desc">왼쪽 이동 (-1500 펄스 / 4000ms)</div>
+            </div>
+        </div>
+        <div class="step-arrow">&darr;</div>
+        <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-content">
+                <div class="step-name">ANGLE_INIT_0</div>
+                <div class="step-desc">각도 보정 / 초기화</div>
+            </div>
+        </div>
+        <div class="step-arrow">&darr;</div>
+        <div class="step">
+            <div class="step-num">7</div>
+            <div class="step-content">
+                <div class="step-name">pCOM_INIT</div>
+                <div class="step-desc">센서 재초기화</div>
+            </div>
+        </div>
+        <div class="step-arrow">&darr;</div>
+        <div class="step">
+            <div class="step-num">8</div>
+            <div class="step-content">
+                <div class="step-name">ANGLE_m_10_5_1</div>
+                <div class="step-desc">다시 왼쪽 이동</div>
+            </div>
+        </div>
+        <div class="step-arrow">&darr;</div>
+        <div class="step">
+            <div class="step-num">9</div>
+            <div class="step-content">
+                <div class="step-name">MEASURE_ANGLE_m_10_5</div>
+                <div class="step-desc">음수 각도 측정 검증</div>
+            </div>
+        </div>
+        <div class="step-arrow">&darr;</div>
+        <div class="step">
+            <div class="step-num">10</div>
+            <div class="step-content">
+                <div class="step-name">ANGLE_p_10_5_1</div>
+                <div class="step-desc">오른쪽 복귀</div>
+            </div>
+        </div>
+        <div class="step-arrow">&darr;</div>
+        <div class="step">
+            <div class="step-num">11</div>
+            <div class="step-content">
+                <div class="step-name">ANGLE_INIT_1</div>
+                <div class="step-desc">최종 각도 맞추기 (반복 실행 시 &rarr; 단계 1로 복귀)</div>
+            </div>
+        </div>
+        <div class="step-arrow">&darr;</div>
+        <div class="step">
+            <div class="step-num">12</div>
+            <div class="step-content">
+                <div class="step-name">END</div>
+                <div class="step-desc">테스트 완료, 버튼 활성화</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 5. 타이밍 파라미터 -->
+<h2>5. 타이밍 / 속도 파라미터</h2>
+
+<div class="section-card">
+    <h3>5.1 단계별 대기 시간</h3>
+    <table>
+        <tr>
+            <th>동작</th>
+            <th>대기 시간</th>
+            <th>비고</th>
+        </tr>
+        <tr>
+            <td>에러 클리어 / 모터 설정</td>
+            <td>250 ms</td>
+            <td>EMIO 보드 초기화</td>
+        </tr>
+        <tr>
+            <td>홈 잡기 (PMO011)</td>
+            <td>6500 ms</td>
+            <td>센서 원점 도달 대기</td>
+        </tr>
+        <tr>
+            <td>상대 이동 (PMD07/08)</td>
+            <td>4000 ms</td>
+            <td>모터 이동 완료 대기</td>
+        </tr>
+        <tr>
+            <td>위치 읽기 (PML011)</td>
+            <td>500 ms</td>
+            <td>위치 반환 대기</td>
+        </tr>
+        <tr>
+            <td>센서 오픈/클로즈</td>
+            <td>3000 ms</td>
+            <td>센서 연결 안정화</td>
+        </tr>
+        <tr>
+            <td>센서 측정 (&lt;mstest&gt;)</td>
+            <td>200 ms</td>
+            <td>센서 데이터 준비</td>
+        </tr>
+        <tr>
+            <td>센서 재안정화</td>
+            <td>3000 ms</td>
+            <td>재측정 대기</td>
+        </tr>
+    </table>
+
+    <h3>5.2 모터 속도/가속도 파라미터</h3>
+    <table>
+        <tr>
+            <th>항목</th>
+            <th>고속</th>
+            <th>중속</th>
+            <th>저속</th>
+        </tr>
+        <tr>
+            <td>속도</td>
+            <td>12000</td>
+            <td>22000</td>
+            <td>31000</td>
+        </tr>
+        <tr>
+            <td>가속도</td>
+            <td>256</td>
+            <td>128</td>
+            <td>64</td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <th>항목</th>
+            <th>값</th>
+        </tr>
+        <tr>
+            <td>구동 토크</td>
+            <td>50</td>
+        </tr>
+        <tr>
+            <td>홀딩 토크</td>
+            <td>50</td>
+        </tr>
+        <tr>
+            <td>스텝 해상도</td>
+            <td>1480</td>
+        </tr>
+        <tr>
+            <td>원점 최대 속도</td>
+            <td>1000</td>
+        </tr>
+        <tr>
+            <td>원점 최소 속도</td>
+            <td>500</td>
+        </tr>
+        <tr>
+            <td>원점 가속도</td>
+            <td>128</td>
+        </tr>
+        <tr>
+            <td>소프트웨어 한계</td>
+            <td>+8000 ~ -8000</td>
+        </tr>
+    </table>
+</div>
+
+<!-- 6. PortControl 함수 -->
+<h2>6. 핵심 함수: PortControl()</h2>
+<div class="section-card">
+    <div class="code-block"><span class="comment">// EMIO 보드로 명령 전송하는 핵심 함수</span>
+<span class="keyword">void</span> PortControl(CString cmd, <span class="keyword">int</span> delay)
+{
+    CString msg = <span class="string">""</span>;
+
+    <span class="keyword">if</span> (cmd == <span class="string">"run"</span>) {
+        msg += (<span class="keyword">TCHAR</span>)<span class="number">0x0A</span>;     <span class="comment">// Line Feed</span>
+    } <span class="keyword">else</span> {
+        msg += (<span class="keyword">TCHAR</span>)<span class="number">0x02</span>;     <span class="comment">// STX</span>
+    }
+
+    msg += cmd;
+
+    <span class="keyword">if</span> (cmd == <span class="string">"run"</span>) {
+        msg += (<span class="keyword">TCHAR</span>)<span class="number">0x0A</span>;     <span class="comment">// Line Feed</span>
+    } <span class="keyword">else</span> {
+        msg += (<span class="keyword">TCHAR</span>)<span class="number">0x03</span>;     <span class="comment">// ETX</span>
+    }
+
+    <span class="comment">// 소켓을 통해 전송</span>
+    m_MySocket-&gt;Send(msg, strlen(msg));
+
+    <span class="comment">// 응답 대기</span>
+    processdelay(delay);
+}</div>
+</div>
+
+<!-- 7. 이식 시 재사용 요소 -->
+<h2>7. 이식 시 재사용 가능한 핵심 요소</h2>
+<div class="section-card">
+    <div class="highlight-box">
+        <strong>EMIO 통신 명령은 그대로 재사용 예정</strong>
+    </div>
+    <table>
+        <tr>
+            <th>구분</th>
+            <th>재사용 대상</th>
+            <th>비고</th>
+        </tr>
+        <tr>
+            <td><strong>EMIO 통신 모듈</strong></td>
+            <td>PortControl() 함수 + OnRcv() 수신 처리</td>
+            <td>STX/ETX 프로토콜 그대로 사용</td>
+        </tr>
+        <tr>
+            <td><strong>모션 명령어 세트</strong></td>
+            <td>초기화 14개 + 동작 명령 전체</td>
+            <td>명령어/파라미터 동일 적용</td>
+        </tr>
+        <tr>
+            <td><strong>센서 시리얼 통신</strong></td>
+            <td>CommThread 클래스 (Overlapped I/O)</td>
+            <td>COM 포트/속도 설정 포함</td>
+        </tr>
+        <tr>
+            <td><strong>상태머신 구조</strong></td>
+            <td>13단계 순차 처리 패턴</td>
+            <td>스레드 기반 비동기 실행</td>
+        </tr>
+    </table>
+
+    <div class="warn-box">
+        <strong>이식 시 주의사항:</strong>
+        <ul>
+            <li>소켓 연결 정보 (IP: 100.100.100.70, 포트: 2233) 확인 필요</li>
+            <li>센서 COM 포트 번호는 대상 PC 환경에 맞게 조정</li>
+            <li>processdelay() 타이밍은 실제 하드웨어 응답 속도에 따라 조정 가능</li>
+            <li>반복 테스트(Longrun) 기능 이식 여부 확인 필요</li>
+        </ul>
+    </div>
+</div>
+
+<!-- 푸터 -->
+<div class="footer">
+    CTS_BG01_MOS_Tester 프로그램 분석 보고서 | 2026-02-21 | 문서번호: 01
+</div>
+
+</body>
+</html>

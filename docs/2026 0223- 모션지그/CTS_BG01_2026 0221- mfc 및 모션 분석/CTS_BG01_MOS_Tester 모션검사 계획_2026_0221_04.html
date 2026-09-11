@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTS_BG01_MOS_Tester 모션검사 계획 2026-02-22</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; background: #f4f6f9; color: #2c3e50; line-height: 1.7; }
+
+  .cover {
+    background: linear-gradient(135deg, #1a2a4a 0%, #2c5282 60%, #2b6cb0 100%);
+    color: white; padding: 60px 40px; text-align: center;
+  }
+  .cover h1 { font-size: 2.2em; font-weight: 700; letter-spacing: 2px; margin-bottom: 12px; }
+  .cover .sub { font-size: 1.1em; opacity: 0.85; margin-bottom: 8px; }
+  .cover .date { font-size: 0.95em; opacity: 0.7; margin-top: 16px; }
+
+  .container { max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
+
+  h2 {
+    font-size: 1.35em; font-weight: 700; color: #1a365d;
+    border-left: 5px solid #2b6cb0; padding-left: 14px;
+    margin: 40px 0 16px;
+  }
+  h3 {
+    font-size: 1.1em; font-weight: 700; color: #2c5282;
+    margin: 24px 0 10px; padding-left: 10px;
+    border-left: 3px solid #63b3ed;
+  }
+  h4 { font-size: 1.0em; font-weight: 700; color: #2d3748; margin: 16px 0 8px; }
+
+  p { margin-bottom: 10px; }
+
+  .card {
+    background: white; border-radius: 10px; padding: 24px 28px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 20px;
+  }
+
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;
+  }
+  .compare-box {
+    border-radius: 8px; padding: 20px;
+  }
+  .compare-box.before { background: #ebf8ff; border: 1px solid #bee3f8; }
+  .compare-box.after  { background: #f0fff4; border: 1px solid #9ae6b4; }
+  .compare-box h4 { margin-top: 0; }
+  .compare-box.before h4 { color: #2b6cb0; }
+  .compare-box.after  h4 { color: #276749; }
+
+  table {
+    width: 100%; border-collapse: collapse; font-size: 0.93em;
+    margin: 12px 0;
+  }
+  th {
+    background: #2b6cb0; color: white;
+    padding: 10px 14px; text-align: left; font-weight: 600;
+  }
+  td { padding: 9px 14px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  tr:nth-child(even) td { background: #f7fafc; }
+  tr:hover td { background: #ebf8ff; }
+
+  code, .code {
+    font-family: 'Consolas', 'D2Coding', monospace;
+    font-size: 0.9em;
+  }
+  pre {
+    background: #1a202c; color: #e2e8f0;
+    border-radius: 8px; padding: 20px 24px;
+    overflow-x: auto; margin: 12px 0;
+    font-family: 'Consolas', 'D2Coding', monospace;
+    font-size: 0.88em; line-height: 1.6;
+  }
+  pre .comment { color: #68d391; }
+  pre .key     { color: #63b3ed; }
+  pre .val     { color: #fbd38d; }
+  pre .str     { color: #fc8181; }
+
+  .seq-table th { background: #276749; }
+  .seq-table tr.group-a td { background: #e6fffa; }
+  .seq-table tr.group-b td { background: #ebf8ff; }
+  .seq-table tr.group-c td { background: #fff5f5; }
+  .seq-table tr.group-d td { background: #fffff0; }
+
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: 0.8em; font-weight: 700; margin-right: 4px;
+  }
+  .badge-emio    { background: #fed7d7; color: #c53030; }
+  .badge-vibe    { background: #c3dafe; color: #2b6cb0; }
+  .badge-tilt    { background: #c6f6d5; color: #276749; }
+  .badge-new     { background: #fefcbf; color: #744210; }
+  .badge-motion  { background: #e9d8fd; color: #553c9a; }
+
+  .note {
+    background: #fffbeb; border-left: 4px solid #f6ad55;
+    padding: 14px 18px; border-radius: 0 8px 8px 0;
+    margin: 12px 0; font-size: 0.93em;
+  }
+  .note strong { color: #c05621; }
+
+  .flow {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+    margin: 12px 0;
+  }
+  .flow-box {
+    background: #2b6cb0; color: white;
+    padding: 8px 14px; border-radius: 6px; font-size: 0.88em; font-weight: 600;
+    white-space: nowrap;
+  }
+  .flow-box.emio   { background: #c53030; }
+  .flow-box.vibe   { background: #2b6cb0; }
+  .flow-box.tilt   { background: #276749; }
+  .flow-box.motion { background: #553c9a; }
+  .flow-arrow { color: #718096; font-size: 1.3em; font-weight: 700; }
+
+  .section-num {
+    display: inline-block; background: #2b6cb0; color: white;
+    width: 28px; height: 28px; border-radius: 50%;
+    text-align: center; line-height: 28px; font-size: 0.85em;
+    font-weight: 700; margin-right: 8px; vertical-align: middle;
+  }
+
+  .issue-box {
+    background: #fff5f5; border: 1px solid #fc8181;
+    border-radius: 8px; padding: 16px 20px; margin: 12px 0;
+  }
+  .issue-box h4 { color: #c53030; margin-top: 0; }
+
+  .solution-box {
+    background: #f0fff4; border: 1px solid #9ae6b4;
+    border-radius: 8px; padding: 16px 20px; margin: 12px 0;
+  }
+  .solution-box h4 { color: #276749; margin-top: 0; }
+
+  ul, ol { padding-left: 24px; margin: 8px 0; }
+  li { margin-bottom: 4px; }
+
+  .toc { background: #ebf8ff; border-radius: 8px; padding: 20px 28px; margin-bottom: 32px; }
+  .toc h3 { color: #2b6cb0; border: none; padding: 0; margin-top: 0; }
+  .toc ol { margin: 8px 0 0; }
+  .toc li { margin-bottom: 4px; }
+  .toc a { color: #2b6cb0; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+
+  hr { border: none; border-top: 2px solid #e2e8f0; margin: 40px 0; }
+</style>
+</head>
+<body>
+
+<!-- ════════ 표지 ════════ -->
+<div class="cover">
+  <h1>모션검사 구현 계획</h1>
+  <div class="sub">CTS_BG01_MOS_Tester — flexfab_VibeTilt C# 확장</div>
+  <div class="sub">ff_motion 모듈 설계 및 EMIO 스텝모터 연동</div>
+  <div class="date">작성일: 2026-02-22 &nbsp;|&nbsp; Rev. 04</div>
+</div>
+
+<!-- ════════ 본문 ════════ -->
+<div class="container">
+
+  <!-- 목차 -->
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#s1">배경 및 목적</a></li>
+      <li><a href="#s2">현재 구조 vs 추가 구조</a></li>
+      <li><a href="#s3">EMIO 프로토콜 분석 (MFC 기반)</a></li>
+      <li><a href="#s4">핵심 설계 문제 — 동시 실행 이슈</a></li>
+      <li><a href="#s5">ff_motion 모듈 설계</a></li>
+      <li><a href="#s6">모션 검사 시퀀스 (MFC 기반)</a></li>
+      <li><a href="#s7">VIBE_MOTION 상세 설계</a></li>
+      <li><a href="#s8">TILT_MOTION 상세 설계</a></li>
+      <li><a href="#s9">workspace.json 구조</a></li>
+      <li><a href="#s10">파일 구성 및 작업 목록</a></li>
+    </ol>
+  </div>
+
+
+  <!-- ───── 1. 배경 ───── -->
+  <h2 id="s1"><span class="section-num">1</span> 배경 및 목적</h2>
+  <div class="card">
+    <p>
+      기존 <code>flexfab_VibeTilt</code> C# 프로그램은 <strong>수동 보드레벨 검사</strong>만 지원한다.
+      검사원이 지그(보드)를 손으로 흔들거나 기울여서 VibeTilt 센서의 응답을 확인하는 방식이다.
+    </p>
+    <p>
+      MFC 프로그램(CTS_BG01_MOS_Tester)에는 <strong>EMIO 스텝모터 컨트롤러</strong>를 이용한
+      자동 모션 지그가 구현되어 있다. 이 모션 지그를 C# 프로그램에도 추가하여
+      <strong>모션검사(자동)</strong>를 지원하는 것이 목적이다.
+    </p>
+    <div class="tag-row">
+      <span class="badge badge-emio">EMIO 스텝모터</span>
+      <span class="badge badge-vibe">진동검사</span>
+      <span class="badge badge-tilt">기울기검사</span>
+      <span class="badge badge-new">신규 ff_motion 모듈</span>
+    </div>
+  </div>
+
+
+  <!-- ───── 2. 현재 vs 추가 ───── -->
+  <h2 id="s2"><span class="section-num">2</span> 현재 구조 vs 추가 구조</h2>
+  <div class="compare-grid">
+    <div class="compare-box before">
+      <h4>현재 — 보드레벨 검사 (수동)</h4>
+      <ul>
+        <li>모듈: <code>ff_vibetilt.dll</code></li>
+        <li>진동검사: 검사원이 지그를 손으로 흔듦 → GAC 측정</li>
+        <li>기울기검사: 검사원이 지그를 손으로 기울임 → AN 측정</li>
+        <li>통신: RS-485 UART</li>
+        <li>코드 변경: <strong>없음 (유지)</strong></li>
+      </ul>
+    </div>
+    <div class="compare-box after">
+      <h4>추가 — 모션검사 (자동)</h4>
+      <ul>
+        <li>모듈: <code>ff_motion.dll</code> (신규)</li>
+        <li>진동검사: EMIO 모터가 이동하는 동안 GAC 동시 측정</li>
+        <li>기울기검사: EMIO 모터가 특정 각도로 이동 후 AN 측정</li>
+        <li>통신: EMIO(TCP/IP) + VibeTilt(RS-485)</li>
+        <li>코드: <strong>ff_motion 신규 작성</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>전체 모듈 관계도</h3>
+    <pre>
+flexfab_VibeTilt 솔루션
+│
+├── ff_common.dll        : Uart (RS-485 통신)
+├── ff_vibetilt.dll      : VibeTilt 센서 검사 (수동 보드레벨) ← <span class="comment">변경 없음</span>
+├── ff_emio.dll          : EMIO 단독 제어 (보조용)            ← <span class="comment">이미 생성</span>
+└── ff_motion.dll        : EMIO + VibeTilt 동시 제어         ← <span class="comment">신규 작성 대상</span>
+    ├── 내부 EMIO TCP 연결 (192.168.x.x : 2233)
+    └── libraries 에서 uart_485 (IComm) 참조
+    </pre>
+  </div>
+
+
+  <!-- ───── 3. EMIO 프로토콜 ───── -->
+  <h2 id="s3"><span class="section-num">3</span> EMIO 프로토콜 분석 (MFC 기반)</h2>
+  <div class="card">
+    <h3>3-1. 통신 규격</h3>
+    <table>
+      <tr><th>항목</th><th>값</th><th>출처</th></tr>
+      <tr><td>프로토콜</td><td>TCP/IP (CAsyncSocket)</td><td>MySocket.h</td></tr>
+      <tr><td>포트</td><td>2233</td><td>CTS_pCOM_TesterDlg.cpp : m_nPort = 2233</td></tr>
+      <tr><td>패킷 프레임</td><td>STX(0x02) + 명령 + ETX(0x03)</td><td>BoardLevelMo_BG01.cpp : STX_BG01/ETX_BG01</td></tr>
+      <tr><td>응답 규칙</td><td>명령어 소문자 에코 + 상태 바이트('0'=정상)</td><td>MFC 수신 버퍼 패턴 분석</td></tr>
+    </table>
+
+    <h3 style="margin-top:20px;">3-2. 핵심 명령어</h3>
+    <table>
+      <tr><th>명령</th><th>기능</th><th>응답 예시</th></tr>
+      <tr><td><code>PPC00</code></td><td>에러 클리어</td><td><code>ppc00</code></td></tr>
+      <tr><td><code>PMS041480</code></td><td>모터 해상도 480 pulse/rev</td><td><code>pms0041480</code></td></tr>
+      <tr><td><code>PMS0510550</code></td><td>이동 토크 550</td><td><code>pms00510550</code></td></tr>
+      <tr><td><code>PMS0510650</code></td><td>유지 토크 650</td><td><code>pms00510650</code></td></tr>
+      <tr><td><code>PMS071212000</code></td><td>고속 설정 2000</td><td><code>pms0071212000</code></td></tr>
+      <tr><td><code>PMS071231000</code></td><td>저속 설정 1000</td><td><code>pms0071231000</code></td></tr>
+      <tr><td><code>PMO011</code></td><td>원점복귀 (Home Search)</td><td><code>pmo0011</code></td></tr>
+      <tr><td><code>PML011</code></td><td>현재 위치 읽기</td><td><code>pml005XXXXX</code> (위치값)</td></tr>
+      <tr><td><code>PMD071LL{n}</code></td><td>상대 이동 (+방향, 채널7)</td><td><code>pmd0011</code>(완료) / <code>pmd4011</code>(에러)</td></tr>
+      <tr><td><code>PMD081LL{-n}</code></td><td>상대 이동 (−방향, 채널8)</td><td><code>pmd0011</code>(완료) / <code>pmd4011</code>(에러)</td></tr>
+      <tr><td><code>PST</code></td><td>즉시 정지</td><td>-</td></tr>
+    </table>
+
+    <h3 style="margin-top:20px;">3-3. 위치값 관계 (MFC 코드 기반)</h3>
+    <table>
+      <tr><th>각도</th><th>위치 (pulse)</th><th>PML 응답 예시</th><th>이동 명령 예시</th></tr>
+      <tr><td>원점 (0°)</td><td>~16750 (하드스탑 기준)</td><td><code>pml005-500</code> 내외</td><td>PMO011</td></tr>
+      <tr><td>+10.5°</td><td>17500</td><td><code>pml00517500</code></td><td>PMD071LL1500 (+1500 이동)</td></tr>
+      <tr><td>−10.5°</td><td>16000</td><td><code>pml00516000</code></td><td>PMD081LL-1500 (−1500 이동)</td></tr>
+    </table>
+    <div class="note">
+      <strong>주의:</strong> 위치값은 MFC 코드(BoardLevelMo_BG01.cpp)에서 실측값 기반이므로
+      실제 장비에서 확인 후 조정 필요.
+    </div>
+  </div>
+
+
+  <!-- ───── 4. 핵심 설계 문제 ───── -->
+  <h2 id="s4"><span class="section-num">4</span> 핵심 설계 문제 — 동시 실행 이슈</h2>
+  <div class="card">
+    <div class="issue-box">
+      <h4>❌ 문제: Sequential 실행으로는 진동검사 불가</h4>
+      <p>FlexFab 프레임워크는 proc를 순서대로(sequential) 실행한다.</p>
+      <div class="flow">
+        <div class="flow-box emio">emio.CMD (PMD 전송)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box emio">pmd0011 응답 대기</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box emio">모터 이미 정지</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box vibe">VIBE_485 (GAC 읽기)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box" style="background:#c53030;">진동 없음 → FAIL</div>
+      </div>
+      <p>모터가 PMD 완료 후 정지하면, 그 다음 VIBE_485를 실행해도 진동이 없다.</p>
+    </div>
+
+    <div class="solution-box">
+      <h4>✅ 해결: PMD 전송 직후 GAC 폴링 동시 시작</h4>
+      <div class="flow">
+        <div class="flow-box emio">PMD 전송 (모터 이동 시작)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box motion">즉시 GAC 폴링 시작</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box vibe">이동 중 GAC 수집 → PASS</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box emio">PMD 완료 응답 수신</div>
+      </div>
+      <p>
+        모터가 이동하는 동안 가속/감속 구간에서 진동(가속도 변화)이 발생한다.
+        이 시간 동안 GAC를 폴링하면 진동 신호를 측정할 수 있다.
+      </p>
+      <p>
+        <strong>이 동작은 하나의 proc 안에서 처리해야 한다.</strong>
+        → <code>VIBE_MOTION</code> 프로시저가 EMIO TCP + VibeTilt UART를 동시에 제어.
+      </p>
+    </div>
+
+    <div class="note">
+      <strong>왜 진동이 발생하는가?</strong><br>
+      스텝모터가 PMD 명령으로 이동을 시작하면 보드가 가속/감속한다.
+      이때 보드에 탑재된 VibeTilt 센서(가속도계)가 중력 외의 가속도 성분을 측정한다.
+      수동 검사에서 검사원이 손으로 흔드는 것과 물리적으로 동일한 효과.
+    </div>
+  </div>
+
+
+  <!-- ───── 5. ff_motion 모듈 설계 ───── -->
+  <h2 id="s5"><span class="section-num">5</span> ff_motion 모듈 설계</h2>
+  <div class="card">
+    <h3>5-1. 모듈 구조</h3>
+    <pre>
+<span class="key">namespace</span> Cantops.FlexFab
+{
+    <span class="key">public class</span> Motion : ModuleBase, IProcess
+    {
+        <span class="comment">// ── EMIO TCP (자체 관리) ──────────────────────</span>
+        <span class="key">private</span> TcpClient  _emioClient;
+        <span class="key">private</span> NetworkStream _emioStream;
+        <span class="key">private string</span> _emioIp   = <span class="str">"127.0.0.1"</span>;
+        <span class="key">private int</span>    _emioPort = 2233;
+        <span class="key">const byte</span> STX = 0x02, ETX = 0x03;
+
+        <span class="comment">// ── VibeTilt UART (libraries 에서 참조) ───────</span>
+        <span class="comment">// config["uart_485"] → libraries["uart_485"] → IComm</span>
+
+        <span class="comment">// ── Proc 목록 ────────────────────────────────</span>
+        <span class="comment">// INIT        : EMIO 초기화 + 원점복귀</span>
+        <span class="comment">// VIBE_MOTION : 모터 이동 중 GAC 측정 (진동검사)</span>
+        <span class="comment">// TILT_MOTION : 모터 이동 후 AN 측정  (기울기검사)</span>
+        <span class="comment">// HOME        : 원점복귀</span>
+        <span class="comment">// STOP        : 모터 정지</span>
+    }
+}
+    </pre>
+
+    <h3>5-2. 의존성</h3>
+    <table>
+      <tr><th>항목</th><th>내용</th></tr>
+      <tr><td>프로젝트 참조</td><td>flexfab_interfaces.csproj</td></tr>
+      <tr><td>EMIO 통신</td><td>내부 TcpClient (NuGet 불필요, System.Net.Sockets)</td></tr>
+      <tr><td>VibeTilt 통신</td><td>libraries["uart_485"] → IComm (ff_common.dll Uart)</td></tr>
+      <tr><td>config 키</td><td>emio_ip, emio_port, uart_key(기본값: "uart_485")</td></tr>
+    </table>
+
+    <h3>5-3. EMIO 패킷 처리 (ff_emio와 동일)</h3>
+    <pre>
+<span class="comment">// 송신: STX(0x02) + 명령 + ETX(0x03)</span>
+<span class="key">private bool</span> EmioSend(<span class="key">string</span> cmd)
+{
+    <span class="key">byte</span>[] body   = Encoding.ASCII.GetBytes(cmd);
+    <span class="key">byte</span>[] packet = <span class="key">new byte</span>[body.Length + 2];
+    packet[0]       = STX;
+    packet[^1]      = ETX;
+    Buffer.BlockCopy(body, 0, packet, 1, body.Length);
+    _emioStream.Write(packet, 0, packet.Length);
+}
+
+<span class="comment">// 수신: 소문자 에코 확인 (pmd0011, pmo0011 등)</span>
+<span class="key">private string</span> EmioRecv(<span class="key">int</span> timeoutMs) { ... }
+    </pre>
+  </div>
+
+
+  <!-- ───── 6. 모션 검사 시퀀스 ───── -->
+  <h2 id="s6"><span class="section-num">6</span> 모션 검사 시퀀스 (MFC 기반)</h2>
+  <div class="card">
+    <h3>전체 시퀀스 흐름</h3>
+    <div class="flow" style="flex-direction:column; align-items:flex-start; gap:4px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="flow-box emio">① INIT</div>
+        <span>모터 파라미터 설정 + 원점복귀 (PMO011)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="flow-box motion">② VIBE_MOTION</div>
+        <span>모터 이동 (PMD) 시작 → 즉시 GAC 수집 → 진동 PASS/FAIL</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="flow-box tilt">③ TILT_MOTION (+10.5°)</div>
+        <span>PMD071LL1500 이동 완료 → AN 읽기 → 각도 범위 확인</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="flow-box tilt">④ TILT_MOTION (−10.5°)</div>
+        <span>PMD081LL-1500 이동 완료 → AN 읽기 → 각도 범위 확인</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="flow-box emio">⑤ HOME</div>
+        <span>원점복귀</span>
+      </div>
+    </div>
+
+    <h3 style="margin-top:20px;">EMIO INIT 시퀀스 (MFC BoardLevelMo_BG01.cpp 기반)</h3>
+    <table class="seq-table">
+      <tr><th>순서</th><th>명령</th><th>기능</th><th>기대 응답</th></tr>
+      <tr class="group-a"><td>1</td><td><code>PPC00</code></td><td>에러 클리어</td><td><code>ppc00</code></td></tr>
+      <tr class="group-b"><td>2</td><td><code>PMS041480</code></td><td>모터 해상도 480 pulse/rev</td><td><code>pms0041480</code></td></tr>
+      <tr class="group-b"><td>3</td><td><code>PMS0510550</code></td><td>이동 토크 550</td><td><code>pms00510550</code></td></tr>
+      <tr class="group-b"><td>4</td><td><code>PMS0510650</code></td><td>유지 토크 650</td><td><code>pms00510650</code></td></tr>
+      <tr class="group-b"><td>5</td><td><code>PMS071212000</code></td><td>고속 2000</td><td><code>pms0071212000</code></td></tr>
+      <tr class="group-b"><td>6</td><td><code>PMS071222000</code></td><td>중속 2000</td><td><code>pms0071222000</code></td></tr>
+      <tr class="group-b"><td>7</td><td><code>PMS071231000</code></td><td>저속 1000</td><td><code>pms0071231000</code></td></tr>
+      <tr class="group-b"><td>8</td><td><code>PMS06124256</code></td><td>고가속도 256</td><td><code>pms006124256</code></td></tr>
+      <tr class="group-b"><td>9</td><td><code>PMS06125128</code></td><td>중가속도 128</td><td><code>pms006125128</code></td></tr>
+      <tr class="group-b"><td>10</td><td><code>PMS0512664</code></td><td>저가속도 64</td><td><code>pms00512664</code></td></tr>
+      <tr class="group-b"><td>11</td><td><code>PMS071121000</code></td><td>원점 최고속 1000</td><td><code>pms0071121000</code></td></tr>
+      <tr class="group-b"><td>12</td><td><code>PMS06113500</code></td><td>원점 최저속 500</td><td><code>pms006113500</code></td></tr>
+      <tr class="group-b"><td>13</td><td><code>PMS06114128</code></td><td>원점 가속도 128</td><td><code>pms006114128</code></td></tr>
+      <tr class="group-b"><td>14</td><td><code>PMS071288000</code></td><td>SW 리밋 + (초기값 +8000)</td><td><code>pms0071288000</code></td></tr>
+      <tr class="group-b"><td>15</td><td><code>PMS08129-8000</code></td><td>SW 리밋 − (초기값 −8000)</td><td><code>pms008129-8000</code></td></tr>
+      <tr class="group-c"><td>16</td><td><code>PMO011</code></td><td>원점복귀 실행</td><td><code>pmo0011</code></td></tr>
+      <tr class="group-d"><td>17</td><td><code>PML011</code> × 2</td><td>원점 위치 확인 (~−500 pulse)</td><td><code>pml0051-500</code> 포함</td></tr>
+      <tr class="group-b"><td>18</td><td><code>PMS0812812000</code></td><td>SW 리밋 + (운용값 +12000)</td><td><code>pms00812812000</code></td></tr>
+      <tr class="group-b"><td>19</td><td><code>PMS08129-1000</code></td><td>SW 리밋 − (운용값 −1000)</td><td><code>pms008129-1000</code></td></tr>
+    </table>
+  </div>
+
+
+  <!-- ───── 7. VIBE_MOTION ───── -->
+  <h2 id="s7"><span class="section-num">7</span> VIBE_MOTION 상세 설계</h2>
+  <div class="card">
+    <h3>7-1. 동작 원리</h3>
+    <p>
+      <code>PMD071LL{n}</code> 또는 <code>PMD081LL{-n}</code>으로 모터 이동 명령을 전송한 직후,
+      PMD 완료 응답(<code>pmd0011</code>)을 기다리지 않고 즉시 VibeTilt UART로 GAC 명령을 전송하여
+      가속도 데이터를 수집한다. 모터 이동 중 발생하는 가속/감속이 GAC 신호로 나타난다.
+    </p>
+
+    <h3>7-2. VIBE_MOTION 처리 흐름</h3>
+    <pre>
+<span class="comment">// Step 1: EMIO 이동 명령 전송 (응답 대기 없음)</span>
+EmioSend(<span class="str">"PMD071LL{move_pulses}"</span>);
+
+<span class="comment">// Step 2: 즉시 GAC 폴링 시작 (기존 VIBE_485와 동일 로직)</span>
+DateTime deadline = DateTime.UtcNow.AddMilliseconds(overallTimeoutMs);
+<span class="key">while</span> (DateTime.UtcNow &lt; deadline &amp;&amp; !ok)
+{
+    <span class="comment">// RS-485: GAC 자동 스트림 수신</span>
+    ReadStep(uart, stepReadTimeoutMs, logAction, ...);
+
+    <span class="comment">// GAC 파싱: [GAC,ID,X,Y,Z,RMS]</span>
+    <span class="comment">// EvaluateVibeSample() → PASS 조건 확인</span>
+    <span class="comment">// passStreak >= passConsecutiveCount → ok = true</span>
+}
+
+<span class="comment">// Step 3: EMIO 완료 응답 수신 (이미 완료되었을 수도 있음)</span>
+<span class="key">string</span> emioResp = EmioRecv(remainingTimeoutMs);
+
+<span class="comment">// Step 4: 종료 명령 (STOP 등 필요 시)</span>
+    </pre>
+
+    <h3>7-3. workspace.json 파라미터</h3>
+    <table>
+      <tr><th>파라미터</th><th>의미</th><th>예시값</th></tr>
+      <tr><td><code>TIMEOUT</code></td><td>GAC 수집 최대 시간(ms)</td><td>8000</td></tr>
+      <tr><td><code>move_command</code></td><td>EMIO 이동 명령</td><td>"PMD071LL1500"</td></tr>
+      <tr><td><code>one_min / one_max</code></td><td>진동 1축 범위</td><td>0.9 / 1.1</td></tr>
+      <tr><td><code>zero_min / zero_max</code></td><td>진동 0축 범위</td><td>−0.1 / 0.1</td></tr>
+      <tr><td><code>rms_min / rms_max</code></td><td>RMS 범위</td><td>0.5 / 0.65</td></tr>
+      <tr><td><code>pass_consecutive_count</code></td><td>연속 PASS 샘플 수</td><td>5</td></tr>
+    </table>
+
+    <div class="note">
+      <strong>기존 VibeTilt.cs의 VIBE_485 로직을 그대로 재사용.</strong><br>
+      다른 점은 GAC 수집 루프 진입 전에 EmioSend(move_command)를 먼저 실행한다는 것뿐.
+      GAC 파싱·PASS 판정·연속 샘플 카운트 로직은 동일.
+    </div>
+  </div>
+
+
+  <!-- ───── 8. TILT_MOTION ───── -->
+  <h2 id="s8"><span class="section-num">8</span> TILT_MOTION 상세 설계</h2>
+  <div class="card">
+    <h3>8-1. 동작 원리</h3>
+    <p>
+      모터가 특정 위치(각도)로 이동 완료한 뒤 정지 상태에서 AN(각도) 데이터를 읽는다.
+      수동 검사의 <code>TILT_485</code>에서 <code>alive_check: false</code>로 동작하는 것과 동일하지만,
+      이동 명령을 자동으로 먼저 보낸다는 점이 다르다.
+    </p>
+
+    <h3>8-2. TILT_MOTION 처리 흐름</h3>
+    <pre>
+<span class="comment">// Step 1: EMIO 위치 이동 (완료 대기)</span>
+EmioSend(<span class="str">"PMD071LL1500"</span>);
+<span class="key">string</span> moveResp = EmioRecv(move_timeout_ms);
+<span class="key">if</span> (!moveResp.Contains(<span class="str">"pmd0011"</span>)) → FAIL (이동 실패)
+
+<span class="comment">// Step 2: 위치 안정화 대기</span>
+Thread.Sleep(settle_ms);  <span class="comment">// 기본 500ms</span>
+
+<span class="comment">// Step 3: AN 각도 읽기 (기존 TILT_485 로직)</span>
+<span class="comment">// VibeTilt START → AN 스트림 수신 → [AN,ID,X,Y] 파싱</span>
+<span class="comment">// x_min ≤ X ≤ x_max  AND  y_min ≤ Y ≤ y_max → PASS</span>
+
+<span class="comment">// Step 4: VibeTilt STOP, MODE 0 복귀</span>
+<span class="comment">// Step 5: EMIO 다음 위치로 이동 (또는 HOME)</span>
+    </pre>
+
+    <h3>8-3. 검사 위치별 파라미터</h3>
+    <table>
+      <tr><th>검사 위치</th><th>EMIO 명령</th><th>기대 위치</th><th>x_min</th><th>x_max</th><th>y_min</th><th>y_max</th></tr>
+      <tr><td>+10.5°</td><td><code>PMD071LL1500</code></td><td>17500 pulse</td><td>9.5</td><td>11.5</td><td>−1.0</td><td>1.0</td></tr>
+      <tr><td>−10.5°</td><td><code>PMD081LL-1500</code></td><td>16000 pulse</td><td>−11.5</td><td>−9.5</td><td>−1.0</td><td>1.0</td></tr>
+    </table>
+    <div class="note">
+      <strong>참고:</strong> x/y 범위는 MFC 코드의 실측값을 기반으로 하며, 실제 장비 교정 후 조정 필요.
+      수동 TILT_485의 파라미터 구조(<code>x_min, x_max, y_min, y_max, alive_check: false</code>)와 동일.
+    </div>
+  </div>
+
+
+  <!-- ───── 9. workspace.json ───── -->
+  <h2 id="s9"><span class="section-num">9</span> workspace.json 구조</h2>
+  <div class="card">
+    <pre>
+{
+  <span class="str">"libraries"</span>: [
+    {
+      <span class="str">"filename"</span>: <span class="val">"ff_common.dll"</span>,
+      <span class="str">"classname"</span>: <span class="val">"Cantops.FlexFab.Uart"</span>,
+      <span class="str">"id"</span>: <span class="val">"uart_485"</span>,
+      <span class="str">"config"</span>: { <span class="str">"port"</span>: <span class="val">"COM11"</span>, <span class="str">"baudrate"</span>: <span class="val">115200</span> ... }
+    },
+    {
+      <span class="str">"filename"</span>: <span class="val">"ff_motion.dll"</span>,       <span class="comment">// ← 신규</span>
+      <span class="str">"classname"</span>: <span class="val">"Cantops.FlexFab.Motion"</span>,
+      <span class="str">"id"</span>: <span class="val">"motion"</span>,
+      <span class="str">"config"</span>: {
+        <span class="str">"emio_ip"</span>:   <span class="val">"192.168.0.10"</span>,
+        <span class="str">"emio_port"</span>: <span class="val">2233</span>,
+        <span class="str">"uart_key"</span>:  <span class="val">"uart_485"</span>
+      }
+    }
+  ],
+  <span class="str">"projects"</span>: [
+    {
+      <span class="str">"id"</span>: <span class="val">"prj-motion-bg01"</span>,
+      <span class="str">"name"</span>: <span class="val">"BG01 모션검사"</span>,
+      <span class="str">"library_depencency"</span>: [<span class="val">"uart_485"</span>, <span class="val">"motion"</span>],
+      <span class="str">"procs"</span>: [
+        {
+          <span class="str">"libid"</span>: <span class="val">"motion"</span>, <span class="str">"id"</span>: <span class="val">"INIT"</span>,
+          <span class="str">"name"</span>: <span class="val">"모터 초기화 + 원점복귀"</span>,
+          <span class="str">"param"</span>: { <span class="str">"TIMEOUT"</span>: <span class="val">5000</span>, <span class="str">"HOME_TIMEOUT"</span>: <span class="val">10000</span> }
+        },
+        {
+          <span class="str">"libid"</span>: <span class="val">"motion"</span>, <span class="str">"id"</span>: <span class="val">"VIBE_MOTION"</span>,
+          <span class="str">"name"</span>: <span class="val">"진동검사 (모터 이동 중)"</span>,
+          <span class="str">"param"</span>: {
+            <span class="str">"TIMEOUT"</span>: <span class="val">8000</span>,
+            <span class="str">"move_command"</span>: <span class="val">"PMD071LL1500"</span>,
+            <span class="str">"one_min"</span>: <span class="val">0.9</span>, <span class="str">"one_max"</span>: <span class="val">1.1</span>,
+            <span class="str">"zero_min"</span>: <span class="val">-0.1</span>, <span class="str">"zero_max"</span>: <span class="val">0.1</span>,
+            <span class="str">"rms_min"</span>: <span class="val">0.5</span>, <span class="str">"rms_max"</span>: <span class="val">0.65</span>,
+            <span class="str">"pass_consecutive_count"</span>: <span class="val">5</span>
+          }
+        },
+        {
+          <span class="str">"libid"</span>: <span class="val">"motion"</span>, <span class="str">"id"</span>: <span class="val">"TILT_MOTION"</span>,
+          <span class="str">"name"</span>: <span class="val">"기울기검사 +10.5°"</span>,
+          <span class="str">"param"</span>: {
+            <span class="str">"TIMEOUT"</span>: <span class="val">5000</span>, <span class="str">"settle_ms"</span>: <span class="val">500</span>,
+            <span class="str">"move_command"</span>: <span class="val">"PMD071LL1500"</span>,
+            <span class="str">"move_expected"</span>: <span class="val">"pmd0011"</span>,
+            <span class="str">"pos_expected"</span>: <span class="val">"pml00517500"</span>,
+            <span class="str">"x_min"</span>: <span class="val">9.5</span>, <span class="str">"x_max"</span>: <span class="val">11.5</span>,
+            <span class="str">"y_min"</span>: <span class="val">-1.0</span>, <span class="str">"y_max"</span>: <span class="val">1.0</span>
+          }
+        },
+        {
+          <span class="str">"libid"</span>: <span class="val">"motion"</span>, <span class="str">"id"</span>: <span class="val">"TILT_MOTION"</span>,
+          <span class="str">"name"</span>: <span class="val">"기울기검사 −10.5°"</span>,
+          <span class="str">"param"</span>: {
+            <span class="str">"TIMEOUT"</span>: <span class="val">5000</span>, <span class="str">"settle_ms"</span>: <span class="val">500</span>,
+            <span class="str">"move_command"</span>: <span class="val">"PMD081LL-1500"</span>,
+            <span class="str">"move_expected"</span>: <span class="val">"pmd0011"</span>,
+            <span class="str">"pos_expected"</span>: <span class="val">"pml00516000"</span>,
+            <span class="str">"x_min"</span>: <span class="val">-11.5</span>, <span class="str">"x_max"</span>: <span class="val">-9.5</span>,
+            <span class="str">"y_min"</span>: <span class="val">-1.0</span>, <span class="str">"y_max"</span>: <span class="val">1.0</span>
+          }
+        },
+        {
+          <span class="str">"libid"</span>: <span class="val">"motion"</span>, <span class="str">"id"</span>: <span class="val">"HOME"</span>,
+          <span class="str">"name"</span>: <span class="val">"원점복귀"</span>,
+          <span class="str">"param"</span>: { <span class="str">"TIMEOUT"</span>: <span class="val">10000</span> }
+        }
+      ]
+    }
+  ],
+  <span class="str">"active_project"</span>: <span class="val">"prj-motion-bg01"</span>
+}
+    </pre>
+  </div>
+
+
+  <!-- ───── 10. 작업 목록 ───── -->
+  <h2 id="s10"><span class="section-num">10</span> 파일 구성 및 작업 목록</h2>
+  <div class="card">
+    <h3>10-1. 신규 생성 파일</h3>
+    <table>
+      <tr><th>파일</th><th>위치</th><th>내용</th></tr>
+      <tr><td><code>ff_motion.csproj</code></td><td>ff_motion/</td><td>프로젝트 파일, flexfab_interfaces 참조</td></tr>
+      <tr><td><code>Motion.cs</code></td><td>ff_motion/</td><td>Motion 클래스: INIT, VIBE_MOTION, TILT_MOTION, HOME, STOP</td></tr>
+      <tr><td><code>workspace_motion.json</code></td><td>프로젝트 루트</td><td>모션검사 워크스페이스 예시</td></tr>
+    </table>
+
+    <h3>10-2. 수정 파일</h3>
+    <table>
+      <tr><th>파일</th><th>수정 내용</th></tr>
+      <tr><td><code>flexfab.sln</code></td><td>ff_motion 프로젝트 추가</td></tr>
+    </table>
+
+    <h3>10-3. 변경 없는 파일</h3>
+    <table>
+      <tr><th>파일</th><th>사유</th></tr>
+      <tr><td><code>ff_vibetilt/VibeTilt.cs</code></td><td>수동 보드레벨 검사 그대로 유지</td></tr>
+      <tr><td><code>ff_common/uart.cs</code></td><td>UART 통신 그대로 사용</td></tr>
+      <tr><td><code>ff_emio/Emio.cs</code></td><td>EMIO 단독 제어 참고용으로 유지</td></tr>
+    </table>
+
+    <h3>10-4. 구현 순서</h3>
+    <ol style="margin-top:10px;">
+      <li>ff_motion 폴더 및 csproj 생성</li>
+      <li>Motion.cs — INIT, HOME, STOP 구현 (EMIO TCP 연결 + 명령 시퀀스)</li>
+      <li>Motion.cs — TILT_MOTION 구현 (이동 + 위치 확인 + AN 측정)</li>
+      <li>Motion.cs — VIBE_MOTION 구현 (이동 시작 + GAC 동시 수집)</li>
+      <li>flexfab.sln에 ff_motion 추가</li>
+      <li>workspace_motion.json 작성 및 Debug 경로에 배포</li>
+      <li>실장비 연결 테스트 및 위치값/범위값 교정</li>
+    </ol>
+  </div>
+
+  <hr>
+  <div class="card" style="background:#edf2f7; text-align:center; padding:16px;">
+    <p style="color:#718096; font-size:0.9em;">
+      CTS_BG01_MOS_Tester 모션검사 계획 &nbsp;|&nbsp; Rev. 04 &nbsp;|&nbsp; 2026-02-22
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

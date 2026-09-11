@@ -1,0 +1,80 @@
+{
+  "time": "2026-04-17T05:42:05.1261805Z",
+  "Ins": "홍길동",
+  "Proj": "VL20 보드검사 (RS-485)_MP",
+  "project_type": "board",
+  "comm_type": "RS-485",
+  "lib": [
+    "{ff_common.dll},{1.0}",
+    "{ff_vibetilt.dll},{0.3.0.60409}",
+    "{ff_dpm.dll},{1.0}"
+  ],
+  "sn": "00014",
+  "mac": null,
+  "result": [
+    {
+      "Name": "24V 검사",
+      "id": "DPM_24V",
+      "Range": "23.280-24.720",
+      "Measure": "23.603",
+      "Unit": "V",
+      "error_rate": "3%",
+      "result": "OK"
+    },
+    {
+      "Name": "진동검사 RS-485",
+      "id": "VIBE_485",
+      "data": [
+        {
+          "item": "진동 X(0축)",
+          "value": -0.04,
+          "min": -0.3,
+          "max": 0.3,
+          "result": "OK"
+        },
+        {
+          "item": "진동 Y(0축)",
+          "value": -0.08,
+          "min": -0.3,
+          "max": 0.3,
+          "result": "OK"
+        },
+        {
+          "item": "진동 Z(1축)",
+          "value": 1.11,
+          "min": 0.5,
+          "max": 1.5,
+          "result": "OK"
+        },
+        {
+          "item": "진동 RMS",
+          "value": 0.65,
+          "min": 0.1,
+          "max": 2,
+          "result": "OK"
+        },
+        {
+          "item": "샘플수",
+          "value": 112,
+          "result": "INFO"
+        },
+        {
+          "item": "판정시점(ms)",
+          "value": 1295,
+          "result": "INFO"
+        },
+        {
+          "item": "연속 PASS 샘플",
+          "value": 1,
+          "result": "INFO"
+        },
+        {
+          "item": "모션 감지",
+          "value": true,
+          "result": "INFO"
+        }
+      ],
+      "result": "OK"
+    }
+  ]
+}

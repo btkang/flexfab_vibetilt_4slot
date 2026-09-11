@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>VL20_RS485_보드레벨검사_계획_20260213</title>
+<style>
+body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+       max-width: 1000px; margin: 30px auto; padding: 0 25px;
+       line-height: 1.65; color: #333; background: #fafafa; }
+h1 { border-bottom: 3px solid #00695c; padding-bottom: 10px; color: #00695c; }
+h2 { border-left: 5px solid #00897b; padding-left: 12px; color: #00695c; margin-top: 35px; }
+h3 { color: #424242; margin-top: 22px; }
+h4 { color: #555; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background-color: #e0f2f1; font-weight: 600; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px;
+       font-family: 'Consolas', monospace; font-size: 0.92em; }
+pre { background: #263238; color: #aed581; padding: 15px; border-radius: 5px;
+      overflow-x: auto; font-size: 0.85em; line-height: 1.4; }
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote { border-left: 4px solid #00897b; padding: 6px 14px; color: #555;
+             background: #e0f2f1; margin: 12px 0; }
+a { color: #00695c; }
+ul, ol { margin: 6px 0 6px 22px; }
+li { margin: 3px 0; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1 id="vl20-rs-485">VL20 RS-485 보드레벨 검사 계획서</h1>
+<ul>
+<li>송수신 명령은 하드코딩하지 않는다</li>
+</ul>
+<p><strong>문서 버전:</strong> 1.0
+<strong>작성일:</strong> 2026-02-13
+<strong>대상 제품:</strong> VL20 (진동기울기센서, RS-485)
+<strong>검사 단계:</strong> Step 2 - 보드레벨 검사 (RS-485)</p>
+<hr />
+<h2 id="1">1. 개요</h2>
+<h3 id="11">1.1 목적</h3>
+<ul>
+<li>VL20 보드(RS-485 통신) 기본 동작 검증</li>
+<li>RS-232(VL10) 대비 RS-485 통신 차이 확인</li>
+<li>센서 데이터 정상 수신 및 판정 기준 확립</li>
+</ul>
+<h3 id="12">1.2 전제 조건</h3>
+<ul>
+<li>Step 1 (VL10 RS-232 보드레벨 검사) 완료 ✅</li>
+<li>VibeTilt.cs에 RS-485 메서드 구현 완료 ✅</li>
+<li>workspace_vibetilt.json에 RS-485 설정 추가 완료 ✅</li>
+</ul>
+<h3 id="13">1.3 범위</h3>
+<ul>
+<li><strong>대상:</strong> VL20 보드 (RS-485)</li>
+<li><strong>검사 항목:</strong> 5개 (VER, SENTEMP, APPCFG, VIBE, TILT)</li>
+<li><strong>제외:</strong> 제품 레벨 검사, VL30 검사</li>
+</ul>
+<hr />
+<h2 id="2">2. 하드웨어 및 통신 설정</h2>
+<h3 id="21">2.1 통신 방식 비교</h3>
+<table>
+<thead>
+<tr>
+<th>구분</th>
+<th>VL10 (Step 1)</th>
+<th>VL20 (Step 2)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>통신 방식</td>
+<td>RS-232</td>
+<td>RS-485</td>
+</tr>
+<tr>
+<td>COM 포트</td>
+<td>COM3</td>
+<td>COM10</td>
+</tr>
+<tr>
+<td>Baudrate</td>
+<td>115200</td>
+<td>115200</td>
+</tr>
+<tr>
+<td>주소(ID)</td>
+<td>없음</td>
+<td>ID=1 (고정)</td>
+</tr>
+<tr>
+<td>응답 형식</td>
+<td><code>[CMD,data...]</code></td>
+<td><code>[CMD,1,data...]</code></td>
+</tr>
+<tr>
+<td>통신 모드</td>
+<td>1</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-rs-485">2.2 RS-485 특성</h3>
+<ul>
+<li><strong>멀티드롭 지원:</strong> 여러 장비 연결 가능 (주소로 구분)</li>
+<li><strong>ID(주소):</strong> 기본값 1 (읽기 전용, 검사 시 변경 불필요)</li>
+<li><strong>송신 명령:</strong> RS-232와 동일 (<code>&lt;VER&gt;</code>, <code>&lt;GAC&gt;</code> 등)</li>
+<li><strong>수신 응답:</strong> 첫 번째 필드에 ID 포함</li>
+</ul>
+<h3 id="23">2.3 하드웨어 연결</h3>
+<pre><code>PC (COM10) ←→ RS-485 컨버터 ←→ VL20 보드
+</code></pre>
+<hr />
+<h2 id="3">3. 검사 항목 및 시퀀스</h2>
+<h3 id="31">3.1 검사 항목 목록</h3>
+<table>
+<thead>
+<tr>
+<th>No</th>
+<th>검사 ID</th>
+<th>검사명</th>
+<th>목적</th>
+<th>예상 시간</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>VER_485</td>
+<td>버전 통신검사</td>
+<td>기본 통신 확인</td>
+<td>1초</td>
+</tr>
+<tr>
+<td>2</td>
+<td>SENTEMP_485</td>
+<td>센서온도 검사</td>
+<td>온도 센서 동작 확인</td>
+<td>1초</td>
+</tr>
+<tr>
+<td>3</td>
+<td>APPCFG_485</td>
+<td>Config 확인</td>
+<td>설정값 검증</td>
+<td>2초</td>
+</tr>
+<tr>
+<td>4</td>
+<td>VIBE_485</td>
+<td>진동검사</td>
+<td>가속도 센서 동작 확인</td>
+<td>5초</td>
+</tr>
+<tr>
+<td>5</td>
+<td>TILT_485</td>
+<td>기울기검사</td>
+<td>기울기 센서 동작 확인</td>
+<td>5초</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4">4. 검사 항목별 상세</h2>
+<h3 id="41-ver_485">4.1 VER_485: 버전 통신검사</h3>
+<p><strong>목적:</strong> RS-485 기본 통신 및 펌웨어 버전 확인</p>
+<p><strong>시퀀스:</strong></p>
+<pre><code>1. TX: &lt;VER&gt;
+2. RX: [VER,1,&lt;버전정보&gt;]
+3. 판정: &quot;VER&quot; 문자열 포함 여부
+</code></pre>
+<p><strong>예상 응답:</strong></p>
+<pre><code>[VER,1,VL20_FW_v1.2.3]
+</code></pre>
+<p><strong>PASS 조건:</strong>
+- 응답에 "VER" 포함
+- RV=1 (정상 수신)
+- 타임아웃 5초 이내 응답</p>
+<p><strong>주의사항:</strong>
+- RS-232 응답 <code>[VER,0,...]</code>과 달리 ID=1 포함</p>
+<hr />
+<h3 id="42-sentemp_485">4.2 SENTEMP_485: 센서온도 검사</h3>
+<p><strong>목적:</strong> 온도 센서 정상 동작 확인</p>
+<p><strong>시퀀스:</strong></p>
+<pre><code>1. TX: &lt;SENTEMP&gt;
+2. RX: [SENTEMP,1,&lt;온도값&gt;]
+3. 판정: 온도 범위 20~40°C
+</code></pre>
+<p><strong>예상 응답:</strong></p>
+<pre><code>[SENTEMP,1,25.3]
+</code></pre>
+<p><strong>PASS 조건:</strong>
+- RV=1
+- 온도: 20°C ≤ temp ≤ 40°C
+- 타임아웃 5초 이내</p>
+<p><strong>주의사항:</strong>
+- 응답 파싱 시 ID 필드(offset=2) 고려
+- <code>parts[2]</code>에서 온도값 추출</p>
+<hr />
+<h3 id="43-appcfg_485-config">4.3 APPCFG_485: Config 확인</h3>
+<p><strong>목적:</strong> 장비 설정값 검증 (통신 모드, Baudrate 등)</p>
+<p><strong>시퀀스:</strong></p>
+<pre><code>1. TX: &lt;MODE,0&gt;
+2. RX: [MODE,1,00]
+3. TX: &lt;APPCFG&gt;
+4. RX: [APPCFG,1,00/10/2/115200]
+5. 판정: 설정값 일치 여부
+</code></pre>
+<p><strong>예상 응답:</strong></p>
+<pre><code>[MODE,1,00]
+[APPCFG,1,00/10/2/115200]
+</code></pre>
+<p><strong>PASS 조건:</strong>
+- MODE,0 응답: <code>[MODE,1,00]</code>
+- APPCFG 응답: 통신모드=2, Baudrate=115200 포함
+- RV=1</p>
+<p><strong>주의사항:</strong>
+- <strong>통신 모드 필드:</strong> RS-232(1) → RS-485(2)
+- expected_response 비교 시 ID 고려</p>
+<hr />
+<h3 id="44-vibe_485">4.4 VIBE_485: 진동검사</h3>
+<p><strong>목적:</strong> 가속도 센서 정상 동작 및 진동 데이터 범위 확인</p>
+<p><strong>시퀀스:</strong></p>
+<pre><code>1. TX: &lt;MODE,0&gt;   (초기화)
+2. TX: &lt;MODE,2&gt;   (진동 모드)
+3. TX: &lt;SAM,10&gt;   (샘플링 10ms)
+4. TX: &lt;START&gt;    (측정 시작)
+5. 반복: TX: &lt;GAC&gt;, RX: [GAC,1,X,Y,Z,RMS]
+6. TX: &lt;STOP&gt;
+7. TX: &lt;MODE,0&gt;   (모드 복귀)
+8. 판정: PASS 조건 충족 여부
+</code></pre>
+<p><strong>예상 응답 (데이터 수집 중):</strong></p>
+<pre><code>[GAC,1,0.05,0.03,1.02,0.58]
+[GAC,1,0.04,0.02,1.01,0.57]
+...
+</code></pre>
+<p><strong>PASS 조건:</strong>
+- 1축(중력 방향): 0.9 ≤ value ≤ 1.1
+- 0축(나머지 축): -0.1 ≤ value ≤ 0.1
+- RMS: 0.5 ≤ rms ≤ 0.65
+- 연속 5회 PASS 샘플 감지
+- 타임아웃: 5초</p>
+<p><strong>주의사항:</strong>
+- RS-485 응답 파싱: <code>parts[2~5]</code> = X,Y,Z,RMS (offset=2)
+- RV=1 확인 (비정상 RV 프레임 무시)</p>
+<hr />
+<h3 id="45-tilt_485">4.5 TILT_485: 기울기검사</h3>
+<p><strong>목적:</strong> 기울기 센서 정상 동작 및 alive 확인</p>
+<p><strong>시퀀스:</strong></p>
+<pre><code>1. TX: &lt;MODE,0&gt;   (초기화)
+2. TX: &lt;MODE,6&gt;   (기울기 모드)
+3. TX: &lt;SAM,10&gt;   (샘플링 10ms)
+4. TX: &lt;START&gt;    (측정 시작)
+5. 반복: RX: [AN,X,Y] (스트림 수신)
+6. TX: &lt;STOP&gt;
+7. TX: &lt;MODE,0&gt;   (모드 복귀)
+8. 판정: alive_check 통과 여부
+</code></pre>
+<p><strong>예상 응답 (데이터 수집 중):</strong></p>
+<pre><code>[AN,45.2,1.3]
+[AN,45.5,1.4]
+...
+</code></pre>
+<p><strong>PASS 조건 (alive_check 모드):</strong>
+- X축 변화폭(ΔX): ≥ 0.2
+- Y축 변화폭(ΔY): ≥ 0.2
+- 연속 1회 이상 조건 충족
+- 타임아웃: 5초</p>
+<p><strong>주의사항:</strong>
+- RS-485 응답: <code>[AN,X,Y]</code> (ID 없음, 스트림 데이터)
+- alive_check=true 설정 확인</p>
+<hr />
+<h2 id="5-rs-232-vs-rs-485">5. RS-232 vs RS-485 차이점 요약</h2>
+<h3 id="51">5.1 응답 포맷 차이</h3>
+<table>
+<thead>
+<tr>
+<th>명령</th>
+<th>RS-232 (VL10)</th>
+<th>RS-485 (VL20)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VER</td>
+<td><code>[VER,&lt;ver&gt;]</code></td>
+<td><code>[VER,1,&lt;ver&gt;]</code></td>
+</tr>
+<tr>
+<td>SENTEMP</td>
+<td><code>[SENTEMP,0,25.3]</code></td>
+<td><code>[SENTEMP,1,25.3]</code></td>
+</tr>
+<tr>
+<td>MODE,0</td>
+<td><code>[MODE,0,00]</code></td>
+<td><code>[MODE,1,00]</code></td>
+</tr>
+<tr>
+<td>APPCFG</td>
+<td><code>[APPCFG,0,00/10/1/115200]</code></td>
+<td><code>[APPCFG,1,00/10/2/115200]</code></td>
+</tr>
+<tr>
+<td>GAC</td>
+<td><code>[GAC,X,Y,Z,RMS]</code></td>
+<td><code>[GAC,1,X,Y,Z,RMS]</code></td>
+</tr>
+<tr>
+<td>AN</td>
+<td><code>[AN,X,Y]</code></td>
+<td><code>[AN,X,Y]</code> (동일)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52">5.2 코드 처리 차이</h3>
+<p><strong>VibeTilt.cs:</strong>
+- <code>isRs485</code> 플래그로 분기
+- RS-485: offset=2 (ID 필드 건너뛰기)
+- RS-232: offset=1</p>
+<p><strong>예시 (GAC 파싱):</strong></p>
+<pre><code class="language-csharp">// RS-232: parts[1,2,3,4] = X,Y,Z,RMS
+// RS-485: parts[2,3,4,5] = X,Y,Z,RMS (parts[1]=ID)
+</code></pre>
+<hr />
+<h2 id="6">6. 테스트 계획</h2>
+<h3 id="61">6.1 테스트 환경</h3>
+<ul>
+<li><strong>장비:</strong> VL20 보드 (RS-485)</li>
+<li><strong>연결:</strong> COM10, 115200 baud</li>
+<li><strong>소프트웨어:</strong> flexfab_VibeTilt (step2-board-vl20-rs485 브랜치)</li>
+<li><strong>설정 파일:</strong> workspace_vibetilt.json</li>
+</ul>
+<h3 id="62">6.2 테스트 순서</h3>
+<ol>
+<li>
+<p><strong>환경 확인</strong>
+   - [ ] VL20 보드 COM10 연결
+   - [ ] 전원 공급 확인
+   - [ ] 프로그램 실행 (workspace_vibetilt.json 로드)</p>
+</li>
+<li>
+<p><strong>개별 항목 테스트</strong>
+   - [ ] VER_485: 통신 확인
+   - [ ] SENTEMP_485: 온도 범위 확인
+   - [ ] APPCFG_485: 설정값 검증 (통신모드=2)
+   - [ ] VIBE_485: 진동 데이터 수집 및 판정
+   - [ ] TILT_485: 기울기 데이터 수집 및 판정</p>
+</li>
+<li>
+<p><strong>통합 테스트</strong>
+   - [ ] 5개 항목 연속 실행
+   - [ ] PASS 판정 확인
+   - [ ] 로그 검토</p>
+</li>
+<li>
+<p><strong>예외 상황 테스트</strong>
+   - [ ] 타임아웃 처리
+   - [ ] 비정상 응답 (RV≠1)
+   - [ ] 통신 에러 복구</p>
+</li>
+</ol>
+<h3 id="63">6.3 예상 결과</h3>
+<ul>
+<li>모든 검사 항목 PASS</li>
+<li>RS-232 대비 동일한 동작 (응답 포맷만 차이)</li>
+</ul>
+<h3 id="64">6.4 실패 시 대응</h3>
+<ul>
+<li><strong>통신 실패:</strong> COM 포트, 케이블, Baudrate 재확인</li>
+<li><strong>ID 불일치:</strong> 장비 ID 설정 확인 (기본값 1)</li>
+<li><strong>데이터 범위 NG:</strong> 센서 캘리브레이션, 환경 조건 확인</li>
+</ul>
+<hr />
+<h2 id="7-step-3">7. 다음 단계 (Step 3)</h2>
+<p>Step 2 완료 후:
+- <strong>Step 3 옵션 A:</strong> VL30(RS-485, 다른 모델) 지원
+- <strong>Step 3 옵션 B:</strong> 제품 레벨 검사 (보드 → 제품)
+- <strong>Step 3 옵션 C:</strong> 고급 검사 항목 추가</p>
+<hr />
+<h2 id="8">8. 체크리스트</h2>
+<h3 id="81">8.1 사전 준비</h3>
+<ul>
+<li>[x] VibeTilt.cs에 RS-485 메서드 구현</li>
+<li>[x] workspace_vibetilt.json에 RS-485 설정 추가</li>
+<li>[x] uart_485 라이브러리 설정 (COM10, 115200)</li>
+<li>[x] 검사 계획 문서 작성</li>
+<li>[ ] VL20 장비 준비 및 연결</li>
+</ul>
+<h3 id="82">8.2 테스트 완료</h3>
+<ul>
+<li>[ ] VER_485 테스트 통과</li>
+<li>[ ] SENTEMP_485 테스트 통과</li>
+<li>[ ] APPCFG_485 테스트 통과 (통신모드=2 확인)</li>
+<li>[ ] VIBE_485 테스트 통과</li>
+<li>[ ] TILT_485 테스트 통과</li>
+<li>[ ] 통합 테스트 통과</li>
+</ul>
+<h3 id="83">8.3 완료 조건</h3>
+<ul>
+<li>[ ] 모든 검사 항목 PASS</li>
+<li>[ ] 테스트 결과 문서 작성</li>
+<li>[ ] main 브랜치 병합</li>
+<li>[ ] step2-board-vl20-rs485 태그 생성</li>
+</ul>
+<hr />
+<h2 id="_1">부록</h2>
+<h3 id="a">A. 참고 문서</h3>
+<ul>
+<li><code>진동기울기센서(CTS-IOTS-VL20)_통신사양서_R3_260127.pdf</code></li>
+<li><code>진동기울기센서_자동화검사_구현계획_20260210.md</code></li>
+<li><code>VibeTilt_PASS조건_레벨별_설정_20260211.md</code></li>
+</ul>
+<h3 id="b">B. 관련 파일</h3>
+<ul>
+<li><code>ff_vibetilt/VibeTilt.cs</code> (검사 로직)</li>
+<li><code>workspace_vibetilt.json</code> (설정 파일)</li>
+<li><code>docs/VL20_RS485_보드레벨검사_계획_20260213.md</code> (본 문서)</li>
+</ul>
+<h3 id="c-git">C. Git 정보</h3>
+<ul>
+<li><strong>브랜치:</strong> step2-board-vl20-rs485</li>
+<li><strong>커밋:</strong> e993654 "RS-485(VL20) 보드레벨 검사 추가: 5개 프로세스 설정 완료"</li>
+<li><strong>이전 태그:</strong> step1-board-vl01-rs232</li>
+</ul>
+<hr />
+<p><strong>문서 끝</strong></p>
+</body>
+</html>

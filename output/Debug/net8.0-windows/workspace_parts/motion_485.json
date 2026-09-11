@@ -1,0 +1,89 @@
+{
+  "project": {
+    "id": "prj-motion-485",
+    "name": "모션지그 검사 (RS-485)"
+  },
+  "libraries": [
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Tcp",
+      "id": "tcp_emio",
+      "config": {
+        "ip": "100.100.100.70",
+        "port": 2233
+      }
+    },
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_485",
+      "config": {
+        "port": "COM3",
+        "baudrate": 115200,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_gyro",
+      "config": {
+        "port": "COM6",
+        "baudrate": 38400,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Ctsp",
+      "id": "ctsp",
+      "config": {
+        "commlib": "uart_485"
+      }
+    },
+    {
+      "filename": "ff_vibetilt.dll",
+      "classname": "Cantops.FlexFab.VibeTilt",
+      "id": "vibetilt",
+      "config": {
+        "uart_485": "uart_485"
+      }
+    },
+    {
+      "filename": "ff_vibetilt.dll",
+      "classname": "Cantops.FlexFab.MotionJig",
+      "id": "motionjig",
+      "config": {}
+    }
+  ],
+  "library_depencency": [
+    "tcp_emio",
+    "uart_485",
+    "uart_gyro",
+    "ctsp",
+    "vibetilt",
+    "motionjig"
+  ],
+  "procs": [
+    {
+      "libid": "motionjig",
+      "id": "MOTION_VIBE_485",
+      "name": "모션지그 진동검사 (VL20)",
+      "param": {
+        "longrun": false
+      }
+    },
+    {
+      "libid": "motionjig",
+      "id": "MOTION_TILT_485",
+      "name": "모션지그 기울기검사 (VL20)",
+      "param": {
+        "longrun": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,170 @@
+{
+  "project": {
+    "id": "prj-vibetilt-232",
+    "name": "VibeTilt 검사 (RS-232)"
+  },
+  "libraries": [
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_232",
+      "config": {
+        "port": "COM3",
+        "baudrate": 115200,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Ctsp",
+      "id": "ctsp",
+      "config": {
+        "commlib": "uart_232"
+      }
+    },
+    {
+      "filename": "ff_vibetilt.dll",
+      "classname": "Cantops.FlexFab.VibeTilt",
+      "id": "vibetilt",
+      "config": {
+        "uart_232": "uart_232",
+        "dpm": "dpm"
+      }
+    }
+  ],
+  "library_depencency": ["uart_232", "vibetilt", "ctsp"],
+  "procs": [
+    {
+      "libid": "vibetilt",
+      "id": "VER_232",
+      "name": "버전 통신검사",
+      "param": {
+        "TIMEOUT": 5000,
+        "tests": [
+          {
+            "command": "<VER>",
+            "expected_response": "VER"
+          }
+        ]
+      }
+    },
+    {
+      "libid": "vibetilt",
+      "id": "SENTEMP_232",
+      "name": "센서온도",
+      "param": {
+        "TIMEOUT": 5000,
+        "min": 20,
+        "max": 40,
+        "tests": [
+          {
+            "command": "<SENTEMP>"
+          }
+        ]
+      }
+    },
+    {
+      "libid": "vibetilt",
+      "id": "APPCFG_232",
+      "name": "Config확인",
+      "param": {
+        "TIMEOUT": 5000,
+        "tests": [
+          {
+            "command": "<MODE,0>",
+            "expected_response": "[MODE,0,00]"
+          },
+          {
+            "command": "<APPCFG>",
+            "expected_response": "[APPCFG,0,00/10/1/115200]"
+          }
+        ]
+      }
+    },
+    {
+      "libid": "vibetilt",
+      "id": "VIBE_232",
+      "name": "진동검사",
+      "param": {
+        "TIMEOUT": 10000,
+        "line_ending": "lf",
+        "one_min": 0.9,
+        "one_max": 1.1,
+        "zero_min": -0.1,
+        "zero_max": 0.1,
+        "rms_min": 0.5,
+        "rms_max": 0.65,
+        "sampling_ms": 10,
+        "sample_log_interval_ms": 500,
+        "operator_prompt": "지그를 앞/뒤 좌/우로 움직여주세요.\nPASS 조건: 1축 0.9~1.1, 0축 -0.1~0.1, RMS 0.5~0.65",
+        "tests": [
+          {
+            "command": "<MODE,2>"
+          },
+          {
+            "command": "<START>"
+          },
+          {
+            "command": "<STOP>"
+          }
+        ]
+      }
+    },
+    {
+      "libid": "vibetilt",
+      "id": "TILT_X_232",
+      "name": "기울기검사 X축",
+      "param": {
+        "TIMEOUT": 10000,
+        "DURATION": 3000,
+        "line_ending": "lf",
+        "_comment": "2026-03-24 X축 기울기 범위 검사 | 앞으로 기울여 70~95도 확인 | 한축 고장 감지 목적",
+        "alive_check": false,
+        "check_axis": "x",
+        "x_min": 5.0,
+        "x_max": 95.0,
+        "sampling_ms": 10,
+        "sample_log_interval_ms": 500,
+        "tilt_baud": 115200,
+        "normal_baud": 115200,
+        "pass_consecutive_count": 1,
+        "operator_prompt": "좌우로 기울이세요.\nX축 기울기를 확인합니다.",
+        "tests": [
+          { "command": "<MODE,6>" },
+          { "command": "<START>" },
+          { "command": "<AN>" },
+          { "command": "<STOP>" }
+        ]
+      }
+    },
+    {
+      "libid": "vibetilt",
+      "id": "TILT_Y_232",
+      "name": "기울기검사 Y축",
+      "param": {
+        "TIMEOUT": 10000,
+        "DURATION": 3000,
+        "line_ending": "lf",
+        "_comment": "2026-03-24 Y축 기울기 범위 검사 | 오른쪽으로 기울여 -95~-70도 확인 | 한축 고장 감지 목적",
+        "alive_check": false,
+        "check_axis": "y",
+        "y_min": 5.0,
+        "y_max": 95.0,
+        "sampling_ms": 10,
+        "sample_log_interval_ms": 500,
+        "tilt_baud": 115200,
+        "normal_baud": 115200,
+        "pass_consecutive_count": 1,
+        "operator_prompt": "앞뒤로 기울이세요.\nY축 기울기를 확인합니다.",
+        "tests": [
+          { "command": "<MODE,6>" },
+          { "command": "<START>" },
+          { "command": "<AN>" },
+          { "command": "<STOP>" }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>PLAN: 밀어내기식 VL10 2개 동시 검사 (2026-04-03)</title>
+<style>
+body { font-family: 'Malgun Gothic', sans-serif; max-width: 1200px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.7; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; color: #2c3e50; font-size: 22px; }
+h2 { border-bottom: 1px solid #bdc3c7; padding-bottom: 6px; margin-top: 40px; color: #34495e; }
+h3 { color: #2c3e50; margin-top: 30px; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+th, td { border: 1px solid #bdc3c7; padding: 8px 12px; text-align: center; }
+th { background: #2c3e50; color: #fff; }
+tr:nth-child(even) { background: #f8f9fa; }
+td.left { text-align: left; }
+.ok { background: #e0ffe0; color: #27ae60; font-weight: bold; }
+.fix { background: #fff3cd; color: #856404; font-weight: bold; }
+.new { background: #d4edff; color: #2980b9; font-weight: bold; }
+.success-box { background: #eafaf1; border-left: 4px solid #27ae60; padding: 12px 16px; margin: 16px 0; }
+.warn-box { background: #fef9e7; border-left: 4px solid #f39c12; padding: 12px 16px; margin: 16px 0; }
+.info-box { background: #eaf2f8; border-left: 4px solid #3498db; padding: 12px 16px; margin: 16px 0; }
+.meta { color: #95a5a6; font-size: 13px; }
+pre { background: #2c3e50; color: #ecf0f1; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+code { background: #ecf0f1; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+.flow-box { background: #f8f9fa; border: 2px solid #34495e; border-radius: 8px; padding: 16px; margin: 16px 0; font-family: monospace; font-size: 13px; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<h1>PLAN: 밀어내기식 VL10 2개 동시 검사</h1>
+<p class="meta">작성일: 2026-04-03 | 브랜치: step6-motion-jig-test | 1차 구현 (사양서 유지, 포트 분기)</p>
+
+<h2>1. 배경 및 목적</h2>
+
+<div class="info-box">
+<strong>현재:</strong> VL10 1개를 X축결합 &rarr; Y축결합으로 옮기면서 검사 (팝업 대기 ~10초)<br>
+<strong>변경:</strong> X축결합(COM13) + Y축결합(COM14)에 VL10 2개 동시 장착, 밀어내기식 검사<br>
+<strong>효과:</strong> 제품 이동 불필요, 처리량 증가
+</div>
+
+<h2>2. 밀어내기 흐름</h2>
+
+<div class="flow-box">
+<strong>[1회차]</strong> 제품A &rarr; X축결합(COM13)에 장착, Y축 비어있음<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&rarr; X축 검사만 (#0~#6)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&rarr; 제품A X축 결과 &rarr; <span style="color:#e74c3c;">pending_x_result.json 임시 저장</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&rarr; Y축: pending 없으므로 스킵<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&rarr; 업로드 없음<br>
+<br>
+<strong>[2회차]</strong> 제품B &rarr; X축결합(COM13), 제품A &rarr; Y축결합(COM14)으로 밀림<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&rarr; 제품B X축 검사(COM13) + 제품A Y축 검사(COM14)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&rarr; 제품A: pending X축 결과 + 이번 Y축 결과 &rarr; <span style="color:#27ae60;">12항목 완성 &rarr; PASS/FAIL &rarr; MongoDB 업로드</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&rarr; 제품B X축 결과 &rarr; pending 저장<br>
+<br>
+<strong>[3회차]</strong> 제품C &rarr; X축, 제품B &rarr; Y축<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&rarr; 제품B 완성 &rarr; 업로드, 제품C pending 저장<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&rarr; ...반복<br>
+<br>
+<strong>[마지막]</strong> X축 비어있음, 마지막 제품 Y축만 검사<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&rarr; 마지막 제품 완성 &rarr; 업로드
+</div>
+
+<h2>3. 검사 항목 (엑셀 사양서 유지, 포트만 분기)</h2>
+
+<table>
+<tr><th>#</th><th>항목</th><th>VL 포트</th><th>제품</th><th>비고</th></tr>
+<tr><td colspan="5" style="background:#34495e; color:#fff; text-align:left; font-weight:bold;">X축 검사 (새 제품 &mdash; COM13)</td></tr>
+<tr><td>0-X</td><td class="left">FW 버전 확인</td><td>COM13</td><td>새 제품</td><td></td></tr>
+<tr><td>1</td><td class="left">X축 영점 초기화 (0도)</td><td>-</td><td>공통 (모터+자이로)</td><td></td></tr>
+<tr><td>2</td><td class="left">X축 Calibration (OFFSET)</td><td>COM13</td><td>새 제품</td><td></td></tr>
+<tr><td>3</td><td class="left">X축 파라미터 저장</td><td>COM13</td><td>새 제품</td><td></td></tr>
+<tr><td>4</td><td class="left">X축 기울기 측정 (-20,-45,+20,+45)</td><td>COM13</td><td>새 제품</td><td></td></tr>
+<tr><td>5</td><td class="left">Y축 진동 측정 (+90도)</td><td>COM13</td><td>새 제품</td><td></td></tr>
+<tr><td>6</td><td class="left">Z축 진동 측정 (0도)</td><td>COM13</td><td>새 제품</td><td></td></tr>
+<tr><td colspan="5" style="background:#34495e; color:#fff; text-align:left; font-weight:bold;">Y축 검사 (이전 제품 &mdash; COM14) &mdash; pending 있을 때만 실행</td></tr>
+<tr><td>0-Y</td><td class="left">FW 버전 확인</td><td class="new">COM14</td><td>이전 제품</td><td class="new">포트 변경</td></tr>
+<tr><td>7</td><td class="left">Y축 영점 초기화 (0도)</td><td>-</td><td>공통 (모터+자이로)</td><td class="fix">팝업 제거</td></tr>
+<tr><td>8</td><td class="left">Y축 Calibration (OFFSET)</td><td class="new">COM14</td><td>이전 제품</td><td class="new">포트 변경</td></tr>
+<tr><td>9</td><td class="left">Y축 파라미터 저장</td><td class="new">COM14</td><td>이전 제품</td><td class="new">포트 변경</td></tr>
+<tr><td>10</td><td class="left">Y축 기울기 측정 (+20,+45,-20,-45)</td><td class="new">COM14</td><td>이전 제품</td><td class="new">포트 변경</td></tr>
+<tr><td>11</td><td class="left">X축 진동 측정 (-90도)</td><td class="new">COM14</td><td>이전 제품</td><td class="new">포트 변경</td></tr>
+<tr><td>12</td><td class="left">Z축 진동 측정 (0도)</td><td class="new">COM14</td><td>이전 제품</td><td class="new">포트 변경</td></tr>
+</table>
+
+<h2>4. 시리얼번호 관리</h2>
+
+<table>
+<tr><th>항목</th><th>설명</th></tr>
+<tr><td class="left">입력 방식</td><td class="left">시작 팝업에 X축 시리얼 + Y축 시리얼 2개 입력 필드</td></tr>
+<tr><td class="left">자동증가 ON (디폴트)</td><td class="left">X축: 이전 X축 시리얼 +1 자동 채움<br>Y축: 이전 X축 시리얼 자동 가져옴 (밀어내기)</td></tr>
+<tr><td class="left">자동증가 OFF</td><td class="left">이전 시리얼 그대로 표시 (증가 없음), 작업자 직접 수정</td></tr>
+<tr><td class="left">수정 가능</td><td class="left">자동 채움 후 작업자가 확인/수정 가능</td></tr>
+<tr><td class="left">시리얼 일치 확인</td><td class="left">Y축 시리얼과 pending 파일의 X축 시리얼 일치 여부 확인. 불일치 시 경고</td></tr>
+</table>
+
+<div class="info-box">
+<strong>예시 (자동증가 ON):</strong><br>
+1회차: X축=00001, Y축=없음 &rarr; 검사<br>
+2회차 팝업: X축=<strong>00002</strong>(+1), Y축=<strong>00001</strong>(이전X) &rarr; 확인/수정 &rarr; 검사<br>
+3회차 팝업: X축=<strong>00003</strong>(+1), Y축=<strong>00002</strong>(이전X) &rarr; 확인/수정 &rarr; 검사
+</div>
+
+<h2>5. PASS 판정 방식</h2>
+
+<div class="success-box">
+<strong>사이클 단위 판정:</strong><br>
+&bull; Y축 완료 시점에 이전 X축 결과(pending) + 이번 Y축 결과 합쳐서 12항목 판정<br>
+&bull; 12항목 전부 OK &rarr; <strong>최종 PASS</strong> &rarr; MongoDB 1건 업로드<br>
+&bull; 하나라도 FAIL &rarr; <strong>최종 FAIL</strong><br>
+&bull; 프로그램에서 판정 완결 (DB 조회 불필요)
+</div>
+
+<h2>6. 결과 저장 (pending 파일)</h2>
+
+<table>
+<tr><th>시점</th><th>동작</th><th>파일</th></tr>
+<tr><td class="left">X축 검사 완료</td><td class="left">X축 결과 + X시리얼 + 시간 저장</td><td><code>pending_x_result.json</code></td></tr>
+<tr><td class="left">Y축 검사 시작 전</td><td class="left">pending 파일 존재 확인 + 시리얼 일치 확인</td><td>없으면 Y축 스킵</td></tr>
+<tr><td class="left">Y축 검사 완료</td><td class="left">X+Y 합쳐서 판정 &rarr; MongoDB 업로드</td><td>업로드 후 파일 삭제</td></tr>
+<tr><td class="left">프로그램 재시작</td><td class="left">pending 파일 있으면 자동 복구</td><td>Y축 검사 가능</td></tr>
+</table>
+
+<h2>7. 수정 파일 및 작업 목록</h2>
+
+<table>
+<tr><th>#</th><th>파일</th><th>수정 내용</th><th>난이도</th></tr>
+<tr><td>1</td><td class="left"><code>ff_vibetilt/MotionJig.cs</code></td><td class="left">VL 포트를 param의 <code>uart_id</code>로 선택 (1줄 추가)</td><td class="ok">쉬움</td></tr>
+<tr><td>2</td><td class="left"><code>ff_vibetilt/VibeTilt.cs</code></td><td class="left">VL 포트를 param의 <code>uart_id</code>로 선택 (동일)</td><td class="ok">쉬움</td></tr>
+<tr><td>3</td><td class="left"><code>workspace_motion_232.json</code></td><td class="left"><code>uart_232_y</code> 라이브러리 추가, Y축 proc에 <code>uart_id</code> 지정, 팝업 변경</td><td class="ok">쉬움</td></tr>
+<tr><td>4</td><td class="left"><code>ff_vibetilt/SerialDualForm.cs</code></td><td class="left">2개 시리얼 입력 폼 신규 생성 (자동증가 옵션)</td><td class="fix">중간</td></tr>
+<tr><td>5</td><td class="left"><code>flexfab_mini/FlexfabForm.cs</code></td><td class="left">시리얼 2개 관리, proc별 시리얼 분기, pending 파일 저장/읽기, 결과 합산 업로드</td><td class="fix">중간</td></tr>
+</table>
+
+<h2>8. 구현 단계</h2>
+
+<table>
+<tr><th>단계</th><th>내용</th><th>검증</th></tr>
+<tr><td class="ok">1단계</td><td class="left">포트 분기 (#1~#3): MotionJig, VibeTilt에 uart_id 지원 + workspace Y축 proc 포트 변경</td><td class="left">X축 COM13 + Y축 COM14 각각 통신 확인</td></tr>
+<tr><td class="fix">2단계</td><td class="left">시리얼 2개 입력 (#4): SerialDualForm 생성 + FlexfabForm에서 호출</td><td class="left">2개 시리얼 입력 + 자동증가 동작 확인</td></tr>
+<tr><td class="fix">3단계</td><td class="left">결과 분리 + pending (#5): X축 결과 파일 저장, Y축 완료 시 합산 판정 + MongoDB 업로드</td><td class="left">밀어내기 2~3회 반복 테스트, PASS/FAIL 판정 + DB 확인</td></tr>
+</table>
+
+<h2>9. 2차 작업 (나중)</h2>
+
+<div class="warn-box">
+<strong>동시 측정 최적화 (2차):</strong><br>
+&bull; 같은 모터 위치에서 X축(COM13) + Y축(COM14) AN/GAC 동시 쿼리<br>
+&bull; X축=-20도 &harr; Y축=+20도 (부호 반대, 같은 물리 위치)<br>
+&bull; 검사 시간 거의 절반 예상<br>
+&bull; 엑셀 사양서 순서 변경 필요 &rarr; 별도 검토 후 진행
+</div>
+
+</body>
+</html>

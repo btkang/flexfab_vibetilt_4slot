@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>RS-485 STOP 응답 드레인 수정 (2026-04-16)</title>
+<style>
+  body { font-family: 'Malgun Gothic', 'Segoe UI', sans-serif; margin: 30px; background: #f8f9fa; color: #222; line-height: 1.7; }
+  h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 8px; font-size: 1.5em; }
+  h2 { color: #2c3e50; margin-top: 30px; font-size: 1.2em; border-left: 4px solid #3498db; padding-left: 10px; }
+  h3 { color: #34495e; font-size: 1.05em; margin-top: 20px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.92em; }
+  th, td { border: 1px solid #bbb; padding: 7px 10px; text-align: left; }
+  th { background: #2c3e50; color: #fff; font-weight: 600; }
+  tr:nth-child(even) { background: #eef2f7; }
+  .pass { color: #27ae60; font-weight: bold; }
+  .fail { color: #e74c3c; font-weight: bold; }
+  .info-box { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 16px 20px; margin: 14px 0; }
+  .warn-box { background: #fef9e7; border: 1px solid #f0c674; border-radius: 6px; padding: 16px 20px; margin: 14px 0; }
+  code { background: #ecf0f1; padding: 1px 5px; border-radius: 3px; font-size: 0.93em; }
+  pre { background: #2c3e50; color: #ecf0f1; padding: 14px; border-radius: 6px; overflow-x: auto; font-size: 0.88em; line-height: 1.5; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.85em; font-weight: 600; }
+  .tag-fix { background: #d5f5e3; color: #1e8449; }
+  .tag-new { background: #d6eaf8; color: #2471a3; }
+  .tag-prev { background: #fadbd8; color: #c0392b; }
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  .summary-card { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 14px 18px; }
+  .summary-card h3 { margin-top: 0; }
+  ul { margin: 6px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 0.85em; color: #888; }
+  .flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+  .flow-box { background: #fff; border: 1px solid #bbb; border-radius: 4px; padding: 4px 10px; font-size: 0.88em; }
+  .flow-box.new-box { background: #d5f5e3; border-color: #27ae60; font-weight: bold; }
+  .flow-arrow { font-size: 1.1em; color: #999; }
+</style>
+</head>
+<body>
+
+<h1>RS-485 STOP 응답 드레인 수정</h1>
+
+<div class="info-box">
+  <strong>기준 버전:</strong> v0.6.2.60415 &nbsp;|&nbsp;
+  <strong>수정일:</strong> 2026-04-16 &nbsp;|&nbsp;
+  <strong>수정 파일:</strong> MotionJig.cs, VibeTilt.cs
+</div>
+
+<!-- ============================================ -->
+<h2>1. 문제 현상</h2>
+
+<table>
+  <tr><th>테스트</th><th>첫 FAIL</th><th>패턴</th><th>최종</th></tr>
+  <tr>
+    <td>0414-15 퇴근 (241회)</td>
+    <td>115회차</td>
+    <td>간헐 FAIL (8회) + 자력 복구</td>
+    <td>241회 완주</td>
+  </tr>
+  <tr>
+    <td>0415-16 퇴근 (226회)</td>
+    <td class="fail">82회차</td>
+    <td class="fail">누적 악화 → 130회 Y축 사망</td>
+    <td>226회 수동 중단</td>
+  </tr>
+</table>
+
+<p>공통 FAIL 항목: Y축 시리얼번호(UID), FW버전, Calibration, 파라미터 저장, 통신검사 — 모두 <strong>Y축 통신 관련</strong></p>
+
+<!-- ============================================ -->
+<h2>2. 원인 분석</h2>
+
+<h3>근본 원인: STOP 5x 응답 미소비</h3>
+
+<div class="info-box">
+<strong>VL20 개발팀 유의사항:</strong> "STOP,1 명령을 약 10ms 주기로 여러 번 송신하여 [STOP,0,1] 응답의 ret(0)을 파싱합니다. 충돌로 인하여 응답이 없는 경우가 있습니다."
+<br><br>
+<strong>현재 구현:</strong> STOP 5회 송신은 유의사항대로 구현했으나, <strong>응답을 읽지 않고 다음 명령으로 진행</strong>하고 있었음.
+</div>
+
+<h3>문제 흐름</h3>
+
+<pre>
+PC TX:   &lt;STOP,1&gt; ─10ms─ &lt;STOP,1&gt; ─10ms─ &lt;STOP,1&gt; ─10ms─ &lt;STOP,1&gt; ─10ms─ &lt;STOP,1&gt;
+                   (응답 안 봄)   (응답 안 봄)   (응답 안 봄)   (응답 안 봄)
+
+버퍼에 쌓임: [GAC잔류...][STOP,0,1][STOP,2,1][STOP,2,1][STOP,2,1][STOP,2,1]
+                                                    ↑ 이 응답들이 다음 검사에 혼입
+</pre>
+
+<h3>로그 증거</h3>
+
+<table>
+  <tr><th>증거</th><th>내용</th><th>의미</th></tr>
+  <tr>
+    <td>garbled data</td>
+    <td><code>??b?r??b?r????</code> (04-15: 66건, 04-16: 51건)</td>
+    <td>485 반이중 TX/RX 전환 시 데이터 깨짐 — 1회차부터 발생</td>
+  </tr>
+  <tr>
+    <td>STOP RV=2</td>
+    <td><code>[STOP,2,1]</code> (177건)</td>
+    <td>이미 정지된 상태에서 추가 STOP → 불필요한 에러 응답 생성</td>
+  </tr>
+  <tr>
+    <td>UID 응답 형식 이상</td>
+    <td><code>Device id : 1</code> (프로토콜 형식 아닌 덤프)</td>
+    <td>잔류 응답 혼입 → 보드 상태 꼬임</td>
+  </tr>
+  <tr>
+    <td>VlClear 조기 종료</td>
+    <td>빈 응답 1회에 즉시 break</td>
+    <td>응답이 뭉쳐 오면 1회 빈 타이밍에 종료 → 잔류 데이터 남음</td>
+  </tr>
+</table>
+
+<h3>이전 수정과의 관계</h3>
+
+<table>
+  <tr><th>이전 수정 (ed61011, f5fcc4c)</th><th>해결한 것</th><th>해결 못 한 것</th></tr>
+  <tr>
+    <td>COMM 시작 전 STOP 3x + 클리어</td>
+    <td><strong>회차 간</strong> 잔류 방지</td>
+    <td rowspan="2"><strong>회차 내 검사 항목 간</strong> 잔류<br>(MOTION_VIBE → UID 사이 혼입)</td>
+  </tr>
+  <tr>
+    <td>STOP RV=1 무시</td>
+    <td>RV=1 오판정 방지</td>
+  </tr>
+</table>
+
+<!-- ============================================ -->
+<h2>3. 수정 내용 (5건)</h2>
+
+<h3>변경 1: <code>StopVlStreaming</code>에 VlDrain 추가 <span class="tag tag-fix">핵심</span></h3>
+<p><strong>파일:</strong> MotionJig.cs:1567 &nbsp;|&nbsp; <strong>대상:</strong> 485만</p>
+
+<p>변경 전 흐름:</p>
+<div class="flow">
+  <span class="flow-box">STOP x5 (10ms)</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">Sleep(100)</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">MODE,0</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">VlRecv</span>
+</div>
+
+<p>변경 후 흐름:</p>
+<div class="flow">
+  <span class="flow-box">STOP x5 (10ms)</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">Sleep(100)</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box new-box">VlDrain (200ms)</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">MODE,0</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">VlRecv</span>
+</div>
+
+<h3>변경 2: <code>VlDrain</code> 메서드 신규 <span class="tag tag-new">신규</span></h3>
+<p><strong>파일:</strong> MotionJig.cs (VlClear 아래) &nbsp;|&nbsp; <strong>대상:</strong> 485 전용</p>
+
+<pre>
+private static void VlDrain(IComm vl, Action&lt;string&gt; log, int timeoutMs = 200)
+{
+    var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+    int emptyCount = 0;
+    while (emptyCount &lt; 3 && DateTime.UtcNow &lt; deadline)
+    {
+        var resp = vl.Recv(timeout: 50, recv_mode: "line");
+        if (empty)
+            emptyCount++;       // 빈 응답 카운트
+        else
+            emptyCount = 0;     // 데이터 있으면 리셋
+    }
+    // 연속 3회 빈 응답 (150ms) 또는 200ms 타임아웃 → 버퍼 비었다고 판단
+}
+</pre>
+
+<h3>변경 3: <code>VlClear</code> 강화 <span class="tag tag-fix">강화</span></h3>
+<p><strong>파일:</strong> MotionJig.cs:1842 &nbsp;|&nbsp; <strong>대상:</strong> 485+232 공용</p>
+<table>
+  <tr><th></th><th>변경 전</th><th>변경 후</th></tr>
+  <tr><td>종료 조건</td><td>빈 응답 <strong>1회</strong>에 break</td><td>연속 <strong>2회</strong> 빈 응답에 break</td></tr>
+  <tr><td>maxAttempts</td><td>5</td><td>10</td></tr>
+</table>
+
+<h3>변경 4: <code>ClearCommBuffer</code> 강화 <span class="tag tag-fix">강화</span></h3>
+<p><strong>파일:</strong> VibeTilt.cs:498 &nbsp;|&nbsp; <strong>대상:</strong> 485+232 공용</p>
+<table>
+  <tr><th></th><th>변경 전</th><th>변경 후</th></tr>
+  <tr><td>종료 조건</td><td>빈 응답 <strong>1회</strong>에 break</td><td>연속 <strong>2회</strong> 빈 응답에 break</td></tr>
+  <tr><td>maxAttempts</td><td>5</td><td>10</td></tr>
+</table>
+
+<h3>변경 5: <code>rollback_mode0</code> 수정 <span class="tag tag-fix">수정</span></h3>
+<p><strong>파일:</strong> MotionJig.cs:552 &nbsp;|&nbsp; <strong>대상:</strong> 485+232</p>
+<table>
+  <tr><th>변경 전</th><th>변경 후</th></tr>
+  <tr>
+    <td>STOP 1회 + Sleep + MODE (응답 안 읽음)</td>
+    <td><code>StopVlStreaming()</code> 호출 (드레인 + MODE + 응답 읽기 포함)</td>
+  </tr>
+</table>
+
+<!-- ============================================ -->
+<h2>4. 영향 분석</h2>
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <h3>시간 영향</h3>
+    <ul>
+      <li>STOP당 ~150-200ms 추가 (VlDrain)</li>
+      <li>라운드당 STOP 2~3회 → <strong>~0.5초/라운드 증가</strong></li>
+      <li>300회 기준 ~2.5분 증가 (무시 가능)</li>
+    </ul>
+  </div>
+  <div class="summary-card">
+    <h3>양산 영향</h3>
+    <ul>
+      <li>양산은 매 보드 전원 OFF/ON → UART hang 누적 불가</li>
+      <li>1회 내 오불량 확률 극히 낮음 (81회 연속 정상 실적)</li>
+      <li><strong>양산 리스크 없음</strong></li>
+      <li>제품 메모리/캘리브레이션 영향 없음 (UART 레벨 문제)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="info-box">
+  <strong>변경하지 않은 것:</strong>
+  <ul>
+    <li>STOP 5x @ 10ms 패턴 — VL20 개발팀 권장 유지</li>
+    <li>RS-232 STOP 흐름 — 단일 STOP이라 충돌 없음</li>
+    <li>Framework / Architecture — 절대 규칙 준수</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>5. 검증 계획</h2>
+
+<table>
+  <tr><th>단계</th><th>방법</th><th>판정 기준</th></tr>
+  <tr>
+    <td>1. 빌드</td>
+    <td>dotnet build Debug</td>
+    <td class="pass">오류 0개 (완료)</td>
+  </tr>
+  <tr>
+    <td>2. 단기 확인</td>
+    <td>485 테스트 10회 반복</td>
+    <td>ALL PASS</td>
+  </tr>
+  <tr>
+    <td>3. 퇴근 롱런</td>
+    <td>300회 반복 (야간)</td>
+    <td>82회 이상 FAIL 없이 통과<br>(이전: 82회차 첫 FAIL)</td>
+  </tr>
+</table>
+
+<div class="footer">
+  작성일: 2026-04-16 | 기준 버전: v0.6.2.60415 | 수정 파일: MotionJig.cs, VibeTilt.cs
+</div>
+
+</body>
+</html>

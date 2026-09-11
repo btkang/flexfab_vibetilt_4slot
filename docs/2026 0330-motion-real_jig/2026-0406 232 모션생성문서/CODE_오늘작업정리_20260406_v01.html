@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>2026-04-06 작업 정리</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; margin: 30px; background: #fafafa; color: #333; line-height: 1.7; }
+  h1 { color: #1a5276; border-bottom: 3px solid #1a5276; padding-bottom: 8px; }
+  h2 { color: #2c3e50; margin-top: 30px; border-left: 4px solid #3498db; padding-left: 10px; }
+  h3 { color: #555; margin-top: 20px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th { background: #2c3e50; color: white; padding: 10px; text-align: left; font-size: 14px; }
+  td { border: 1px solid #ddd; padding: 8px; font-size: 13px; }
+  tr:nth-child(even) { background: #f2f2f2; }
+  .done { color: #27ae60; font-weight: bold; }
+  .todo { color: #e74c3c; font-weight: bold; }
+  .hold { color: #f39c12; font-weight: bold; }
+  .risk-high { background: #fadbd8; }
+  .risk-mid { background: #fdebd0; }
+  .commit { font-family: monospace; background: #eee; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+  .section-done { background: #eafaf1; border: 1px solid #27ae60; border-radius: 8px; padding: 15px; margin: 10px 0; }
+  .section-todo { background: #fef9e7; border: 1px solid #f39c12; border-radius: 8px; padding: 15px; margin: 10px 0; }
+  .section-risk { background: #fdedec; border: 1px solid #e74c3c; border-radius: 8px; padding: 15px; margin: 10px 0; }
+  ul { padding-left: 20px; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<h1>2026-04-06 작업 정리</h1>
+
+<h2>오늘 커밋 (6건)</h2>
+<table>
+  <tr><th>#</th><th>커밋</th><th>내용</th></tr>
+  <tr><td>1</td><td><span class="commit">98a5c5d</span></td><td>label_cycle UI 개선 + MoveSteps 재시도 타임아웃 2배</td></tr>
+  <tr><td>2</td><td><span class="commit">d8819bf</span></td><td>MoveSteps 단순화: 타임아웃 최대 10초→15초</td></tr>
+  <tr><td>3</td><td><span class="commit">07f009d</span></td><td>finally 수평 복귀 추가 (PMO011)</td></tr>
+  <tr><td>4</td><td><span class="commit">a2e72f9</span></td><td>Stop 안전 종료: 현재 항목 완료 후 중단 (graceful stop)</td></tr>
+  <tr><td>5</td><td><span class="commit">fe99e9c</span></td><td>IN2 과회전 감지 인프라 (PII00 폴링)</td></tr>
+  <tr><td>6</td><td><span class="commit">6c8c7a8</span></td><td>소프트 리밋: 영점 후 ±8000 펄스 과회전 방지</td></tr>
+</table>
+
+<h2>완료 항목</h2>
+<div class="section-done">
+<table>
+  <tr><th>#</th><th>항목</th><th>상태</th></tr>
+  <tr><td>1</td><td>label_cycle 위치/스타일 수정 + 항상 표시</td><td class="done">✅ 완료</td></tr>
+  <tr><td>2</td><td>MoveSteps 타임아웃 15초 (Z축 TIMEOUT 대응)</td><td class="done">✅ 완료</td></tr>
+  <tr><td>3</td><td>FAIL 시 수평 복귀 (finally PMO011)</td><td class="done">✅ 완료</td></tr>
+  <tr><td>4</td><td>Stop 안전 종료 (graceful stop)</td><td class="done">✅ 완료</td></tr>
+  <tr><td>5</td><td>소프트 리밋 (PMS ±8000 펄스)</td><td class="done">✅ 완료</td></tr>
+  <tr><td>6</td><td>IN2 PII00 폴링 인프라</td><td class="done">✅ 코드 준비</td></tr>
+  <tr><td>7</td><td>IN2 비트 매핑 실측 확인</td><td class="done">✅ bit0=IN1, bit1=IN2, bit2=IN3</td></tr>
+  <tr><td>8</td><td>팝업 알림 skill 생성</td><td class="done">✅ 완료</td></tr>
+</table>
+</div>
+
+<h2>미완료 (TODO)</h2>
+<div class="section-todo">
+<table>
+  <tr><th>#</th><th>항목</th><th>비고</th></tr>
+  <tr><td>1</td><td><strong>485 워크스페이스 (VL20)</strong></td><td>232 완성 후 복사 + 485 명령어 변경</td></tr>
+  <tr><td>2</td><td><strong>하드코딩 → JSON 파라미터화</strong></td><td>타임아웃, 재시도 횟수 등 일괄 정리</td></tr>
+  <tr><td>3</td><td><strong>IN2 과회전 감지 활성화</strong></td><td>원판 홈 구조 변경 필요 (아래 리스크 참조)</td></tr>
+</table>
+</div>
+
+<h2>IN2 과회전 감지 — 리스크 정리</h2>
+<div class="section-risk">
+
+<h3>현재 상태</h3>
+<ul>
+  <li>IN2 센서: <span class="done">정상 동작</span> (LED 확인)</li>
+  <li>EMIO 배선: <span class="done">정상</span> (PII00 비트 매핑 확인)</li>
+  <li>원판 홈: <strong>1개만 열림</strong> (IN1 영점용)</li>
+  <li>소프트 리밋(PMS): <span class="done">구현 완료, 테스트 통과</span></li>
+</ul>
+
+<h3>IN2 홈 추가 시 리스크</h3>
+<table>
+  <tr><th>리스크</th><th>설명</th><th>심각도</th></tr>
+  <tr class="risk-high"><td><strong>IN1 영점 오동작</strong></td><td>홈 추가 시 PMO011이 새 홈에서 잘못 정지</td><td><strong>높음</strong></td></tr>
+  <tr class="risk-high"><td><strong>원판 360도 회전</strong></td><td>어디에 홈을 열어도 IN1이 지나감</td><td><strong>높음</strong></td></tr>
+  <tr class="risk-mid"><td><strong>홈 크기 구분 불가</strong></td><td>IN1/IN2 센서가 같은 종류라 구분 안 됨</td><td><strong>중간</strong></td></tr>
+</table>
+
+<h3>결론</h3>
+<ul>
+  <li><strong>소프트 리밋(PMS)</strong>: 영점 후 ±8000 펄스 제한 → <span class="done">채택 (구현 완료)</span></li>
+  <li><strong>IN2 폴링</strong>: 코드 준비 완료 → <span class="hold">원판 구조 변경 시 활성화</span></li>
+  <li>IN2 홈 추가: IN1 영점 오동작 리스크 → <span class="todo">현재 보류</span></li>
+</ul>
+
+<h3>비교표</h3>
+<table>
+  <tr><th>방식</th><th>센서</th><th>PMO011 충돌</th><th>전원 리셋</th><th>실시간 정지</th><th>신뢰성</th></tr>
+  <tr><td>PMO011 영점 (현재)</td><td>IN1</td><td>-</td><td>없음</td><td>HW 자동</td><td>높음</td></tr>
+  <tr><td>소프트 리밋 (PMS) ✅</td><td>없음</td><td>없음 (영점 후 설정)</td><td>있음</td><td>HW 자동</td><td>중간</td></tr>
+  <tr><td>IN2 폴링 (PII00) 보류</td><td>IN2</td><td>없음</td><td>없음</td><td>SW 지연</td><td>높음</td></tr>
+</table>
+</div>
+
+<h2>테스트 결과</h2>
+
+<h3>정상 동작</h3>
+<table>
+  <tr><th>테스트</th><th>결과</th></tr>
+  <tr><td>X축 롱런 1회 (소프트 리밋 포함)</td><td class="done">✅ OK</td></tr>
+  <tr><td>듀얼 4회 반복</td><td class="done">✅ 전체 OK</td></tr>
+  <tr><td>Y축 2회 반복</td><td class="done">✅ 전체 OK</td></tr>
+</table>
+
+<h3>Stop 안전 종료 테스트</h3>
+<table>
+  <tr><th>테스트</th><th>결과</th><th>비고</th></tr>
+  <tr><td>영점 중 Stop</td><td class="done">✅ PASS</td><td>항목 완료 후 중단 + 수평 복귀</td></tr>
+  <tr><td>기울기 중 Stop</td><td class="done">✅ PASS</td><td>4각도 완료 후 중단 + 수평 복귀</td></tr>
+  <tr><td>진동 중 Stop</td><td class="done">✅ PASS</td><td>항목 완료 후 중단 + 수평 복귀</td></tr>
+  <tr><td>Stop 후 재실행</td><td class="done">✅ PASS</td><td>정상 동작</td></tr>
+  <tr><td>Start 버튼 활성화</td><td class="done">✅ PASS</td><td>finally에서만 활성화</td></tr>
+</table>
+
+<h3>IN2 비트 매핑 실측</h3>
+<table>
+  <tr><th>PII00 값</th><th>IN1</th><th>IN2</th><th>IN3</th><th>상태</th></tr>
+  <tr><td><span class="commit">00</span></td><td>0</td><td>0</td><td>-</td><td>센서 없음</td></tr>
+  <tr><td><span class="commit">01</span></td><td>1</td><td>0</td><td>-</td><td>IN1만 감지</td></tr>
+  <tr><td><span class="commit">02</span></td><td>0</td><td>1</td><td>-</td><td>IN2만 감지</td></tr>
+  <tr><td><span class="commit">03</span></td><td>1</td><td>1</td><td>-</td><td>IN1+IN2 감지</td></tr>
+  <tr><td><span class="commit">05</span></td><td>1</td><td>0</td><td>1</td><td>IN1+IN3 감지</td></tr>
+</table>
+
+<hr>
+<p style="color:#888; font-size:12px;">Generated by Claude Code — 2026-04-06</p>
+</body>
+</html>

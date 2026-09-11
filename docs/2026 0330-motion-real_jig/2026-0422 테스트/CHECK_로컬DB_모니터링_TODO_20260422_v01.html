@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>TODO: 로컬DB + 모니터링 프로그램</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; font-size: 14px; margin: 40px; color: #222; }
+  h1 { font-size: 20px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+  h2 { font-size: 15px; margin-top: 28px; border-left: 4px solid #0078d4; padding-left: 10px; }
+  ul { margin: 8px 0 8px 20px; line-height: 2; }
+  li { list-style: none; }
+  li::before { margin-right: 8px; }
+  .todo::before { content: "☐"; color: #888; }
+  .done::before { content: "☑"; color: #107c10; }
+  .sub { margin-left: 24px; font-size: 13px; color: #555; }
+  .tag-a { background: #dff0d8; color: #276211; padding: 1px 6px; border-radius: 3px; font-size: 12px; }
+  .tag-b { background: #dce8f7; color: #0050a0; padding: 1px 6px; border-radius: 3px; font-size: 12px; }
+  .tag-c { background: #fdf3d0; color: #856404; padding: 1px 6px; border-radius: 3px; font-size: 12px; }
+  .note { background: #fff4ce; border-left: 4px solid #f0ad00; padding: 10px 14px; margin-top: 16px; font-size: 13px; }
+  .ref { font-size: 12px; color: #888; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>TODO: 로컬DB(SQLite) + 모니터링 프로그램</h1>
+<p class="ref">참조: PLAN_로컬DB_모니터링_로드맵_20260420_v01.md &nbsp;|&nbsp; 기준: v0.6.3.60420 이후 확장</p>
+
+<!-- ===== A. SQLite ===== -->
+<h2><span class="tag-a">A</span> 검사 프로그램에 SQLite 추가 (flexfab_mini)</h2>
+<ul>
+  <li class="todo"><span class="tag-a">A-1</span> NuGet: <code>Microsoft.Data.Sqlite</code> 추가 (flexfab_mini/flexfab.csproj)</li>
+  <li class="todo"><span class="tag-a">A-2</span> <code>DbHelper.cs</code> 신규 작성
+    <ul class="sub">
+      <li class="todo">Initialize() — 스키마 생성 + WAL 모드</li>
+      <li class="todo">SerialExists(serial, project) → bool</li>
+      <li class="todo">InsertResult(...) → long id</li>
+      <li class="todo">UpdateMongoId(id, mongoId)</li>
+    </ul>
+  </li>
+  <li class="todo"><span class="tag-a">A-3</span> FlexfabForm.cs 수정
+    <ul class="sub">
+      <li class="todo">Form_Load → DbHelper.Initialize()</li>
+      <li class="todo">시리얼 중복 체크: 파일 탐색 → DbHelper.SerialExists() 교체</li>
+      <li class="todo">SaveLog: JSON 저장 직후 InsertResult() 호출</li>
+      <li class="todo">Mongo 업로드 성공 시 UpdateMongoId() 호출</li>
+    </ul>
+  </li>
+</ul>
+
+<h2><span class="tag-a">A</span> 검증 (SQLite)</h2>
+<ul>
+  <li class="todo">Debug 빌드 성공</li>
+  <li class="todo">앱 실행 → flexfab.db 자동 생성, 스키마/인덱스 확인</li>
+  <li class="todo">검사 1회 → JSON + SQLite INSERT + Mongo 업로드 모두 확인</li>
+  <li class="todo">동일 시리얼 재실행 → 중복 차단/경고 동작 확인</li>
+  <li class="todo">Mongo 연결 끊고 검사 → mongo_id=NULL 레코드 생성 확인</li>
+  <li class="todo">Mongo 복구 후 재동기화 → mongo_id 업데이트 확인</li>
+</ul>
+
+<!-- ===== B. 모니터링 ===== -->
+<h2><span class="tag-b">B</span> 모니터링 프로그램 신규 (flexfab_monitor)</h2>
+
+<p style="margin-left:4px; font-size:13px;">🟢 MVP (1차 필수)</p>
+<ul>
+  <li class="todo"><span class="tag-b">B-1</span> 상태 대시보드 — 오늘 PASS/FAIL 수, 불량률, 프로젝트별 집계, 시리얼 검색</li>
+  <li class="todo"><span class="tag-b">B-2</span> 동기화 상태 패널 — 미업로드 건수, 자동 재시도(5분), 수동 버튼</li>
+  <li class="todo"><span class="tag-b">B-3</span> 로그 패널 — [SYNC] 업로드 완료 등</li>
+  <li class="todo"><span class="tag-b">B-4</span> Raw Data 내보내기 레벨1 (CSV: serial, project, pass_fail, tested_at, duration_sec)</li>
+</ul>
+
+<p style="margin-left:4px; font-size:13px;">🟡 2차 (편의/분석)</p>
+<ul>
+  <li class="todo"><span class="tag-b">B-5</span> 일별 추이 차트 (최근 7일)</li>
+  <li class="todo"><span class="tag-b">B-6</span> FAIL 원인 step 빈도 분석</li>
+  <li class="todo"><span class="tag-b">B-7</span> 검사자별/시간대별 통계</li>
+  <li class="todo"><span class="tag-b">B-8</span> 결과 JSON 뷰어</li>
+  <li class="todo"><span class="tag-b">B-9</span> Raw Data 내보내기 레벨2 (측정값 평면화 CSV)</li>
+</ul>
+
+<p style="margin-left:4px; font-size:13px;">🔵 3차 (고급)</p>
+<ul>
+  <li class="todo"><span class="tag-b">B-10</span> 센서값 시계열 차트 (TILT 편차/VIBE GAC 추세)</li>
+  <li class="todo"><span class="tag-b">B-11</span> 불량 연속 발생 알림</li>
+  <li class="todo"><span class="tag-b">B-12</span> 일일 리포트 자동 출력 (HTML/PDF)</li>
+</ul>
+
+<p style="margin-left:4px; font-size:13px;">🟣 4차 (품질 분석, 스펙 산출)</p>
+<ul>
+  <li class="todo"><span class="tag-b">B-13</span> 시료군 선택 → 측정값 통계 산출 (평균/σ/Cp/Cpk/μ±3σ)</li>
+  <li class="todo"><span class="tag-b">B-14</span> Raw Data 내보내기 레벨3 (JSON 통째로, pandas 분석용)</li>
+</ul>
+
+<h2><span class="tag-b">B</span> 검증 (모니터링)</h2>
+<ul>
+  <li class="todo">모니터링 exe 실행 → DB 읽기 OK</li>
+  <li class="todo">검사 프로그램과 동시 실행 → WAL 모드 동시 접근 확인</li>
+  <li class="todo">오늘 PASS/FAIL 수 표시 정확성</li>
+  <li class="todo">미업로드 건수 표시 정확성</li>
+  <li class="todo">수동 동기화 버튼 → mongo_id 업데이트 + 로그 기록</li>
+</ul>
+
+<!-- ===== C. 매뉴얼 ===== -->
+<h2><span class="tag-c">C</span> 매뉴얼 작업 (사용자 직접)</h2>
+<ul>
+  <li class="todo"><span class="tag-c">C-1</span> v0.6.3 기준 1차 작성 (D:\03.메뉴얼작업\)</li>
+  <li class="todo"><span class="tag-c">C-2</span> SQLite/모니터링 기능 확정 후 2차 업데이트</li>
+</ul>
+
+<div class="note">
+  ※ 진행 순서: A (SQLite 추가) → B-MVP (모니터링 1차) → B 2차 이후<br>
+  ※ 공통 라이브러리(flexfab_interfaces 등) 수정 없음<br>
+  ※ 기존 JSON 파일 저장 + MongoDB 업로드 로직 유지 (3중 저장)<br>
+  ※ 과거 Result/ 데이터 마이그레이션 없음 (이제부터만 DB 적재)
+</div>
+
+</body>
+</html>

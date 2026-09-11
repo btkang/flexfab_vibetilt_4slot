@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>CODE: 2포트 분기 - 밀어내기식 1단계 (2026-04-03)</title>
+<style>
+body { font-family: 'Malgun Gothic', sans-serif; max-width: 1200px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.7; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; color: #2c3e50; font-size: 22px; }
+h2 { border-bottom: 1px solid #bdc3c7; padding-bottom: 6px; margin-top: 40px; color: #34495e; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+th, td { border: 1px solid #bdc3c7; padding: 8px 12px; text-align: center; }
+th { background: #2c3e50; color: #fff; }
+tr:nth-child(even) { background: #f8f9fa; }
+td.left { text-align: left; }
+.ok { background: #e0ffe0; color: #27ae60; font-weight: bold; }
+.new { background: #d4edff; color: #2980b9; font-weight: bold; }
+.fix { background: #fff3cd; color: #856404; font-weight: bold; }
+.success-box { background: #eafaf1; border-left: 4px solid #27ae60; padding: 12px 16px; margin: 16px 0; }
+.info-box { background: #eaf2f8; border-left: 4px solid #3498db; padding: 12px 16px; margin: 16px 0; }
+.warn-box { background: #fef9e7; border-left: 4px solid #f39c12; padding: 12px 16px; margin: 16px 0; }
+.meta { color: #95a5a6; font-size: 13px; }
+pre { background: #2c3e50; color: #ecf0f1; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+code { background: #ecf0f1; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1>CODE: 2포트 분기 - 밀어내기식 1단계</h1>
+<p class="meta">작성일: 2026-04-03 | 브랜치: step6-motion-jig-test | S/N: 00626</p>
+
+<div class="success-box">
+<strong>결과:</strong> 14/14 ALL PASS<br>
+X축(COM13) 7항목 + Y축(COM14) 7항목 동시 검사 성공<br>
+소요시간: 3분 41초 (15:48:15 ~ 15:51:56, 팝업 15초 포함)
+</div>
+
+<h2>1. 변경 내용</h2>
+
+<div class="info-box">
+<strong>목적:</strong> 밀어내기식 2개 제품 동시 검사를 위한 포트 분기 구현<br>
+<strong>방식:</strong> Y축 검사 항목(#0-Y, #7~#12)에 <code>uart_id: uart_232_y</code> 지정 &rarr; COM14로 통신<br>
+<strong>X축:</strong> 기존 COM13 유지 (변경 없음)
+</div>
+
+<h2>2. 수정 파일</h2>
+
+<table>
+<tr><th>파일</th><th>수정 내용</th></tr>
+<tr><td class="left"><code>ff_vibetilt/MotionJig.cs</code></td><td class="left">param에 <code>uart_id</code> 있으면 VL 포트 오버라이드 (2줄 추가)</td></tr>
+<tr><td class="left"><code>ff_vibetilt/VibeTilt.cs</code></td><td class="left">ResolveUart()에 <code>uart_id</code> 오버라이드 우선 적용 (7줄 추가)</td></tr>
+<tr><td class="left"><code>workspace_motion_232.json</code></td><td class="left">uart_232_y 라이브러리 추가, Y축 proc에 uart_id 지정, Y축 FW버전 추가, 팝업 변경</td></tr>
+</table>
+
+<h2>3. 검사 항목 (14항목)</h2>
+
+<table>
+<tr><th>#</th><th>항목</th><th>포트</th><th>결과</th><th>비고</th></tr>
+<tr><td colspan="5" style="background:#34495e; color:#fff; text-align:left; font-weight:bold;">X축 (COM13 &mdash; 새 제품)</td></tr>
+<tr><td>0</td><td class="left">FW 버전 확인</td><td>COM13</td><td class="ok">OK</td><td>F/W ver.1.0.4</td></tr>
+<tr><td>1</td><td class="left">X축 영점 초기화</td><td>모터+자이로</td><td class="ok">OK</td><td>오차 0.007&deg;</td></tr>
+<tr><td>2</td><td class="left">X축 Calibration</td><td>COM13</td><td class="ok">OK</td><td>AN X=0.003</td></tr>
+<tr><td>3</td><td class="left">X축 파라미터 저장</td><td>COM13</td><td class="ok">OK</td><td></td></tr>
+<tr><td>4</td><td class="left">X축 기울기 (-20,-45,+20,+45)</td><td>COM13</td><td class="ok">OK</td><td>오차 +0.020~+0.071</td></tr>
+<tr><td>5</td><td class="left">Y축 진동 (+90도)</td><td>COM13</td><td class="ok">OK</td><td>GAC Y=1.00</td></tr>
+<tr><td>6</td><td class="left">Z축 진동 (0도)</td><td>COM13</td><td class="ok">OK</td><td>GAC Z=1.00</td></tr>
+<tr><td colspan="5" style="background:#34495e; color:#fff; text-align:left; font-weight:bold;">Y축 (COM14 &mdash; 이전 제품) &mdash; 팝업 없이 자동 진행</td></tr>
+<tr><td>0-Y</td><td class="left">FW 버전 확인</td><td class="new">COM14</td><td class="ok">OK</td><td class="new">F/W ver.1.0.4</td></tr>
+<tr><td>7</td><td class="left">Y축 영점 초기화</td><td>모터+자이로</td><td class="ok">OK</td><td class="fix">팝업 제거됨</td></tr>
+<tr><td>8</td><td class="left">Y축 Calibration</td><td class="new">COM14</td><td class="ok">OK</td><td>AN Y=0.005</td></tr>
+<tr><td>9</td><td class="left">Y축 파라미터 저장</td><td class="new">COM14</td><td class="ok">OK</td><td></td></tr>
+<tr><td>10</td><td class="left">Y축 기울기 (+20,+45,-20,-45)</td><td class="new">COM14</td><td class="ok">OK</td><td>오차 -0.054~+0.022</td></tr>
+<tr><td>11</td><td class="left">X축 진동 (-90도)</td><td class="new">COM14</td><td class="ok">OK</td><td>GAC X=1.00</td></tr>
+<tr><td>12</td><td class="left">Z축 진동 (0도)</td><td class="new">COM14</td><td class="ok">OK</td><td>GAC Z=1.00</td></tr>
+</table>
+
+<h2>4. 코드 변경 상세</h2>
+
+<h3>MotionJig.cs — uart_id param 오버라이드</h3>
+<pre>
+// VL 센서 (232 or 485, param의 uart_id로 오버라이드 가능)
+string vlKey = isRs485 ? "uart_485" : "uart_232";
+if (param.TryGetValue("uart_id", out var uartIdObj) && uartIdObj != null)
+    vlKey = uartIdObj.ToString();
+</pre>
+
+<h3>VibeTilt.cs — ResolveUart() uart_id 우선 적용</h3>
+<pre>
+// param에서 uart_id로 오버라이드 가능 (밀어내기식 2포트 지원)
+if (param.TryGetValue("uart_id", out var uartIdOverride) &&
+    uartIdOverride != null &&
+    !string.IsNullOrWhiteSpace(uartIdOverride.ToString()))
+{
+    uartId = uartIdOverride.ToString();
+}
+</pre>
+
+<h3>workspace JSON — Y축 proc 예시</h3>
+<pre>
+{
+    "libid": "vibetilt",
+    "id": "OFFSET_232",
+    "name": "#8 Y축 Calibration (0도)",
+    "param": {
+        "uart_id": "uart_232_y",   // ← COM14로 통신
+        "TIMEOUT": 5000,
+        ...
+    }
+}
+</pre>
+
+<h2>5. 시간 비교 (최적화 누적)</h2>
+
+<table>
+<tr><th>버전</th><th>S/N</th><th>소요시간</th><th>항목수</th><th>변경점</th></tr>
+<tr><td class="left">기존 (최적화 전)</td><td>623</td><td>4분 21초</td><td>13</td><td>1포트, 팝업 대기 ~10초</td></tr>
+<tr><td class="left">시간 최적화 후</td><td>626</td><td>3분 22초</td><td>13</td><td>PMO011 폴링, 대기 단축</td></tr>
+<tr style="font-weight:bold;">
+<td class="left">2포트 분기 (현재)</td><td>626</td><td>3분 41초</td><td>14</td><td>Y축 FW버전 추가, Y축 팝업 제거</td></tr>
+</table>
+
+<div class="info-box">
+<strong>참고:</strong> 14항목(Y축 FW추가)이지만 Y축 팝업 제거로 시간 증가 최소화.<br>
+밀어내기식 2~3단계 완료 후 실제 양산 시에는 연속 사이클로 체감 시간 더 짧아짐.
+</div>
+
+<h2>6. 남은 작업 (2~3단계)</h2>
+
+<div class="warn-box">
+<strong>2단계:</strong> 시리얼 2개 입력 폼 (SerialDualForm) — X축 시리얼 + Y축 시리얼, 자동증가 옵션<br>
+<strong>3단계:</strong> 결과 분리 + pending 파일 — X축 결과 임시 저장, Y축 완료 시 합산 판정 + MongoDB 업로드
+</div>
+
+</body>
+</html>

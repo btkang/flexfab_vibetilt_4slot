@@ -1,0 +1,31 @@
+{
+  "time": "2026-04-15T06:34:12.9669313Z",
+  "Ins": "INSPECTOR",
+  "Proj": "VL20 보드검사 (RS-485)_TEST",
+  "lib": [
+    "{ff_common.dll},{1.0}",
+    "{ff_vibetilt.dll},{0.3.0.60409}",
+    "{ff_dpm.dll},{1.0}"
+  ],
+  "sn": "00003",
+  "mac": null,
+  "result": [
+    {
+      "Name": "통신검사 RS-485",
+      "id": "COMM_485",
+      "data": [
+        {
+          "command": "<MODE,1,0>",
+          "value": "[MODE,0,1,00]",
+          "result": "OK"
+        },
+        {
+          "command": "<VER,1>",
+          "value": "[VER,0,1,F/W ver.2.0.2]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    }
+  ]
+}

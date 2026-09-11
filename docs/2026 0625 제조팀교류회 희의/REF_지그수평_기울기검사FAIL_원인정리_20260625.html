@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>REF_지그수평_기울기검사FAIL_원인정리_20260625</title>
+<style>
+body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+       max-width: 1000px; margin: 30px auto; padding: 0 25px;
+       line-height: 1.65; color: #333; background: #fafafa; }
+h1 { border-bottom: 3px solid #00695c; padding-bottom: 10px; color: #00695c; }
+h2 { border-left: 5px solid #00897b; padding-left: 12px; color: #00695c; margin-top: 35px; }
+h3 { color: #424242; margin-top: 22px; }
+h4 { color: #555; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background-color: #e0f2f1; font-weight: 600; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px;
+       font-family: 'Consolas', monospace; font-size: 0.92em; }
+pre { background: #263238; color: #aed581; padding: 15px; border-radius: 5px;
+      overflow-x: auto; font-size: 0.85em; line-height: 1.4; }
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote { border-left: 4px solid #00897b; padding: 6px 14px; color: #555;
+             background: #e0f2f1; margin: 12px 0; }
+a { color: #00695c; }
+ul, ol { margin: 6px 0 6px 22px; }
+li { margin: 3px 0; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1 id="fail">지그 수평과 기울기검사 FAIL — 원인 정리 (제조팀 교류회용)</h1>
+<ul>
+<li><strong>작성일:</strong> 2026-06-25</li>
+<li><strong>대상:</strong> VibeTilt 양산 모션검사 #6 X축 / #14 Y축 기울기값 측정 (MOTION_TILT)</li>
+<li><strong>용도:</strong> 제조팀 교류회 — "지그가 수평이 안 맞으면 기울기검사가 FAIL 나는가" 질의 정리</li>
+<li><strong>범위:</strong> <strong>지그 자체의 물리적 수평/정렬</strong> 관점 (영점 명령 오조작 이슈는 본 문서 제외)</li>
+<li><strong>근거:</strong> 실측 로그(output/Release Log) + SOLAR-360-420 데이터시트 교차검증</li>
+<li><strong>핵심 전제:</strong> 레퍼런스 자이로(SOLAR-360-420)는 <strong>단축(1축) 경사계</strong>다 → 롤(직교) 방향은 모터·자이로 <strong>둘 다 못 봄(사각)</strong>.</li>
+</ul>
+<hr />
+<h2 id="0">0. 결론 — 물음에 대한 답</h2>
+<p><strong>Q. 지그가 수평이 안 맞으면 기울기검사가 FAIL 나는가? 양산에 상관있는가?</strong></p>
+<blockquote>
+<p><strong>A. 난다. 그리고 양산에 상관있다. 버블이 중앙을 벗어났으면 그 상태로 CAL 저장·양산 진행 금지.</strong></p>
+</blockquote>
+<p>기운 <strong>방향</strong>에 따라 결과가 갈린다:
+- <strong>피치(측정축 방향):</strong> 자이로+모터(FineAdjust)가 <strong>~28도까지 거의 완전 보정</strong> → 웬만한 기울기는 <strong>무관</strong>. 단 너무 기울어 극단각(±45/±90)에 모터가 못 닿으면 <code>TILT_FINE_FAIL</code>(도달 실패).
+- <strong>롤(직교 방향):</strong> <strong>단축 자이로(SOLAR-360)가 못 보는 완전 사각</strong> → 모터도 못 잡음 → ±45°에서 각도비례 오차(<code>TILT_SPEC_OUT</code>).
+  - 크게 기울면 → SPEC 초과 → <strong>FAIL로 걸러짐</strong>
+  - 작게 기울면 → <strong>검사 통과하지만 마진 깎인 CAL이 제품에 저장·출하</strong> ← <strong>양산의 진짜 위험</strong></p>
+<p><strong>왜 양산에 상관있나:</strong> CAL(OFFSET)은 <code>APPCFG,SAVE</code>로 <strong>제품에 영구 저장되어 출하</strong>된다. 기운 채 저장하면 편향이 제품에 박혀, 고객 단에서 오차로 드러나고 온도·경년으로 마진이 빨리 소진된다. <strong>"검사 통과 = 안전"이 아니다.</strong></p>
+<p><strong>조치:</strong> 셋업 시 <strong>버블 수평계로 지그 수평을 (롤 방향 포함) 사람이 직접 맞춘 뒤</strong> CAL 저장·검사. 롤은 자이로가 단축이라 <strong>소프트웨어로는 못 거르므로 사람의 수평 맞춤이 유일한 방어선.</strong></p>
+<hr />
+<h2 id="1">1. 자이로 보정 원리 (왜 웬만한 기울기는 무관한가)</h2>
+<p>검사 영점 시퀀스:
+1. 모터로 대략 수평 근처 이동
+2. <strong>FineAdjust</strong> — 자이로 <strong>실제값</strong>을 읽으며 모터를 돌려 <strong>gyro = 0(진짜 중력 수평)</strong> 까지 수렴
+3. 그 수평 위치에서 VL 센서 <strong>OFFSET(캘리브레이션)</strong>
+4. 이후 ±20/±45도는 이 진짜 수평 기준 상대 이동</p>
+<p>→ 지그 베이스가 몇 도 기울어 있어도, 모터가 그만큼 더 돌아 <strong>OFFSET 기준점은 항상 절대 수평</strong>. 그래서 무관.
+→ <strong>단, 이 보정은 "기운 방향이 모터 회전축 방향일 때"만 성립.</strong> (아래 5번이 핵심)</p>
+<hr />
+<h2 id="2-fail-3">2. 기울기검사 FAIL은 3가지 유형 (구분 필수)</h2>
+<p>로그 <code>[ERROR_TABLE]</code> 태그 기준 실측 분류:</p>
+<table>
+<thead>
+<tr>
+<th>유형</th>
+<th>로그 태그</th>
+<th>모터(FINE) 상태</th>
+<th>실제 원인</th>
+<th>"지그 수평"과 관계</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A. 미세조정 실패</strong></td>
+<td><code>TILT_FINE_FAIL</code></td>
+<td><strong>FAIL</strong> (목표각 못 감)</td>
+<td>EMIO 모터 이동 TIMEOUT / 소프트리밋 / 케이블</td>
+<td>△ <strong>너무 많이 기울면</strong> 발생 가능</td>
+</tr>
+<tr>
+<td><strong>B. 센서 차이</strong></td>
+<td><code>TILT_SENSOR_DIFF</code></td>
+<td>수렴 완료(정상)</td>
+<td>COM 포트/장착 방향/제품 (VL이 0 읽음)</td>
+<td>✗ 무관</td>
+</tr>
+<tr>
+<td><strong>C. 스펙 초과</strong></td>
+<td><code>TILT_SPEC_OUT</code></td>
+<td><strong>수렴 완료(정상)</strong></td>
+<td><strong>지그 수평/정렬 틀어짐(롤·크로스축) → 각도비례 오차</strong></td>
+<td>✅ <strong>이것이 "지그 수평" 이슈</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ 혼동 주의: "지그가 기울어져서 FAIL"은 두 뜻이다.
+(a) 지그가 <strong>목표각도까지 못 기울어짐</strong> = A(FINE_FAIL, 모터)
+(b) 지그 <strong>베이스 수평이 안 맞은 채</strong> 검사 = C(SPEC_OUT) ← <strong>본 문서 주제</strong></p>
+</blockquote>
+<hr />
+<h2 id="3-tilt_spec_out">3. "지그 수평 틀어짐"의 실제 모습 — TILT_SPEC_OUT 지문</h2>
+<p>실측 로그 예시 (모터는 정확히 도달했는데 VL 읽음값만 벗어남):</p>
+<pre><code>[FINE] 수렴 완료: target=-20.00, actual=-19.987   ← 모터는 목표각 정확히 도달
+[TILT] -20도: 자이로=-19.987, VL=-19.380, 오차=0.607  NG
+[FINE] 수렴 완료: target=-45.00, actual=-45.040   ← 모터는 목표각 정확히 도달
+[TILT] -45도: 자이로=-45.038, VL=-44.200, 오차=0.838  NG
+</code></pre>
+<ul>
+<li><strong>모터(FINE)는 완벽히 수렴</strong> → "못 기울어진" 문제가 아님.</li>
+<li>VL 읽음값만 자이로 대비 <strong>20도 0.607 → 45도 0.838로 각도 클수록 오차 증가</strong>.</li>
+<li>이 <strong>"0도 오차 0, 각도 클수록 오차 큼"(비선형) 패턴이 지그 수평/정렬 틀어짐의 확정 지문.</strong></li>
+</ul>
+<h3 id="_1">왜 각도가 클수록 커지나</h3>
+<ul>
+<li>자이로(경사계): 각도 기준 선형 출력.</li>
+<li>VL(가속도): angle = <strong>arcsin</strong>(중력 성분). 지그에 롤(직교) 성분이 남아 있으면, 측정축을 θ로 기울일수록 그 성분이 VL 출력에 섞여 <strong>오차가 각도에 비례해 커진다.</strong> (작은 각도는 거의 안 보이고 ±45°에서 터짐)</li>
+</ul>
+<h3 id="31-cal">3.1 왜 양산에 중요한가 — CAL은 제품에 저장되어 출하된다</h3>
+<ul>
+<li>
+<h1 id="511-caloffset-appcfgsave">5/#11의 CAL(OFFSET)은 <code>APPCFG,SAVE</code>로 <strong>제품 비휘발성에 영구 저장되어 고객에게 출하</strong>된다.</h1>
+</li>
+<li>지그가 (롤로) 기운 채 CAL+SAVE 하면 그 편향이 제품에 박힌다. 검사(#6/#14)가 1차 안전망이지만:</li>
+<li><strong>크게 틀어짐</strong> → ±45° SPEC 초과 → FAIL → 출하 안 됨 (걸러짐)</li>
+<li><strong>애매하게 틀어짐(예 ~1°)</strong> → 검사 <strong>통과</strong> but <strong>마진 깎인 CAL이 그대로 출하</strong> ← 진짜 위험</li>
+<li>출하된 편향 제품은 고객이 (지그와 다른) 평평한 면에 장착해 쓰면 오차가 드러나고, 온도·경년으로 마진이 더 빨리 소진된다.</li>
+<li>→ <strong>"검사 통과 = 안전"이 아니다.</strong> 통과해도 출하 마진을 깎으므로, 셋업 수평 맞춤이 통과/불통과와 무관하게 필수.</li>
+</ul>
+<hr />
+<h2 id="4">4. 지그 수평(수평계 기포)이 미치는 영향 — 방향이 핵심</h2>
+<h3 id="41-vs">4.1 피치 vs 롤 (★ 자이로 단축이 핵심)</h3>
+<p>레퍼런스 자이로 SOLAR-360-420은 <strong>단축(1축) 경사계</strong>다 (데이터시트: <em>"Single axis measurement"</em>, <em>"SOLAR-360 Single axis ... 360° measurement range"</em>). 측정축(피치) 한 방향만 읽는다. 그래서:</p>
+<table>
+<thead>
+<tr>
+<th>구분</th>
+<th>모터 회전(보정)</th>
+<th><strong>자이로(단축) 측정</strong></th>
+<th>결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>피치 = 회전축 = 측정 방향</strong></td>
+<td>O (돌림)</td>
+<td><strong>O (읽음)</strong></td>
+<td>FineAdjust로 gyro=0 맞춤 → <strong>상쇄됨</strong> ✅</td>
+</tr>
+<tr>
+<td><strong>롤 = 직교 방향</strong></td>
+<td>X (못 돌림)</td>
+<td><strong>X (못 읽음 — 단축)</strong></td>
+<td>아무도 못 봄 → <strong>그대로 제품에 박힘</strong> ⚠️</td>
+</tr>
+<tr>
+<td><strong>과도한 기울기(전체)</strong></td>
+<td>수평까지 못 감/소프트리밋</td>
+<td>—</td>
+<td><strong>A. 미세조정 실패(FINE_FAIL)</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-blind-spot">4.2 롤은 "완전 사각(blind spot)"</h3>
+<ul>
+<li>롤 방향 기울기는 <strong>모터도 못 잡고, 단축 자이로도 못 본다.</strong> → 검사 시스템은 롤이 있는지 <strong>존재 자체를 모른다.</strong></li>
+<li>데이터시트도 단축 센서 출력은 <em>"includes cross axis errors"</em> — 크로스축 오차가 측정값에 섞여 들어가 분리 불가.</li>
+<li>유일한 증상: <strong>VibeTilt(제품) 센서가 ±45°에서 보이는 크로스축 오차</strong> → <code>TILT_SPEC_OUT</code>(각도비례 오차)로만 나타남.</li>
+<li>롤이 크면 → SPEC 초과 → FAIL로 걸러짐</li>
+<li>롤이 작으면 → 검사 통과하지만 <strong>마진 깎인 CAL이 제품에 저장·출하</strong> (3.1 참고)</li>
+</ul>
+<p>→ <strong>결론: 롤은 소프트웨어로 절대 못 거른다. 버블 수평계로 사람이 롤까지 맞추는 게 유일한 방법.</strong> 이것이 수평계가 셋업 필수 항목인 진짜 이유다.</p>
+<hr />
+<h2 id="5-sop">5. 셋업 SOP / 재발 방지 (제조팀 적용)</h2>
+<ol>
+<li><strong>셋업 시 지그 수평을 먼저 맞춘다</strong> — 수평계 기포 중앙, <strong>롤 방향 포함</strong>. (표준 항목화)</li>
+<li><strong>VL 안착면/지그 정렬</strong>을 함께 확인 — 제품이 비뚤게 안착하면 롤 성분과 동일 효과.</li>
+<li><strong>검증은 기울기 4각도(-20/-45/+20/+45) 측정값</strong>으로 한다.
+   - -20° 오차가 ~0.05대인지 / -45°가 PASS 마진 안에 드는지 → 연속 3~5회 첫 시도 PASS면 양산 GO.</li>
+<li><strong>기울기 FAIL을 SPEC 완화로 덮지 말 것</strong> — 원인은 지그 수평/정렬이므로 수평을 잡아야 근본 해결.</li>
+<li>FAIL 시 <strong>유형부터 구분</strong>: 로그 <code>[ERROR_TABLE]</code> 태그 확인 →
+   - <code>TILT_FINE_FAIL</code> = 모터/EMIO/소프트리밋 점검 (또는 지그가 과도하게 기울었는지)
+   - <code>TILT_SENSOR_DIFF</code> = COM/장착 방향/제품
+   - <code>TILT_SPEC_OUT</code> = <strong>지그 수평·정렬</strong> (본 문서) → 수평계로 롤 포함 재정렬 후 재검</li>
+</ol>
+<hr />
+<h2 id="6-dut">6. 권장 안전장치 (향후 개선 제안) — 롤을 DUT로 잡기</h2>
+<p>롤은 모터·단축 자이로 둘 다 못 보는 사각(4.2)이라 <strong>자이로로는 못 거른다.</strong> 하지만 <strong>DUT(진동기울기센서)는 X·Y 2축 = 중력 절대 기준</strong>이라, 단축 자이로가 못 보는 롤을 읽을 수 있다. → <strong>자이로 대신 DUT로 지그 수평을 본다</strong>는 발상. 두 가지 방식이 있다.</p>
+<h3 id="60">6.0 왜 안전장치가 "롤 전용"인가 — 피치는 이미 보정됨 (수치)</h3>
+<p>피치(측정축)는 FineAdjust가 알아서 끌어와 보정하므로 <strong>별도 안전장치가 필요 없다.</strong> 실제 보정 한도(JSON 실측):</p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+<th>각도 환산</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fine_adjust_max_steps</code></td>
+<td>250 step</td>
+<td><strong>≈ 28도</strong></td>
+<td>FineAdjust가 끌어와 수평 맞추는 피치 보정 한도</td>
+</tr>
+<tr>
+<td><code>home_skip_max_deg</code></td>
+<td>7도</td>
+<td>7도</td>
+<td>skip 사이클서 자이로 0±7도 벗어나면 강제 홈복귀(드리프트 가드)</td>
+</tr>
+<tr>
+<td>소프트리밋(레지스터 28/29)</td>
+<td>±8000 step</td>
+<td>≈ ±900도</td>
+<td>매우 넓음 → 피치 제약 아님</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>환산 기준: <strong>0.1125 도/step (= 8.9 step/도)</strong>, 검사범위 ±90도 = ±800 step.</li>
+<li>→ <strong>피치는 ~28도까지 흡수.</strong> 현실 지그 기울기(몇 도)는 한참 안쪽이라 사실상 완전 보정. (그 이상이면 보정 아니라 <code>TILT_FINE_FAIL</code>)</li>
+<li>그래서 <strong>이 안전장치(A/B)는 피치가 아니라, 자이로·모터가 못 보는 "롤(직교)" 전용</strong>이다.</li>
+</ul>
+<h3 id="a-dut-raw-hw">옵션 A — DUT-raw 인터록 (HW 추가 없음, 즉시 적용용)</h3>
+<ul>
+<li><strong>CAL(OFFSET) 저장 직전</strong>, 검사 대상 DUT의 <strong>OFFSET 적용 전 raw</strong>를 읽는다.</li>
+<li>측정축은 FineAdjust가 이미 0으로 만들었으므로, <strong>raw의 크로스축(롤) 성분</strong>(X검사면 Y축 raw) 또는 <strong>총 기울기 크기</strong>를 본다.</li>
+<li><code>abs(롤 성분) &gt; 임계값</code> 이면 <strong>저장 차단 + "지그 재수평" 알람</strong> → 버블(사람 눈) + DUT raw(센서) 이중 체크.</li>
+<li><strong>★ 한계:</strong> raw는 캘 <em>전</em> 값이라 <code>raw = 진짜 지그 기울기 + 그 제품 고유 바이어스</code> → 둘을 못 분리. <strong>정밀 도구 아님, "큰 기울기 잡는 조대(coarse) 2차 그물".</strong> 임계는 제품 정상 바이어스 위로(버블 가시 이탈 ≈ 1~수 도, 제품 바이어스 ≈ sub-0.5도 → 0.5~1.0도 권장, 양산 데이터로 확정).</li>
+</ul>
+<h3 id="b">옵션 B — 골든샘플 붙박이 장착 (정석, 권장)</h3>
+<p>정밀 수평계로 잘 맞춘 <strong>우리 제품 1개(골든)</strong> 를 지그에 <strong>고정 장착</strong>해서 "살아있는 2축 수평계"로 쓴다. 캘됨(개체바이어스 0) + 2축(롤 검출) + 상시(매 사이클 자동) → A의 한계를 모두 해소.</p>
+<ul>
+<li><strong>만드는 법 (★ 제품 내부 OFFSET을 쓰지 말 것):</strong></li>
+<li>제품 OFFSET(CAL)은 <strong>축별</strong>이고 자세를 바꿔가며(X결합/Y결합) 해야 한다. 한 축만 하면 반대 축이 스펙아웃 FAIL. (근거: <code>2026-0413 485 테스트/TEST_OFFSET_SAVE후_축별검증_...Y축 OFFSET 후 Y축 PASS, X축 FAIL...html</code>)</li>
+<li>골든은 <strong>한 자세로 붙박이 고정</strong>이라 자세를 못 바꾼다 → <strong>제품 내부 OFFSET 방식은 부적합.</strong></li>
+<li><strong>대신:</strong> 정밀 수평계로 지그를 진짜 수평으로 맞춘 그 순간, <strong>골든이 읽는 raw X·Y값을 "기준 0"으로 한 번 기록</strong> → 이후 그 기준에서 벗어나면 "지그 기울었다" 알람. (제품 캘 안 건드림 → 위 축별 OFFSET 함정 자체를 회피)</li>
+<li><strong>장점:</strong> 사람 버블 안 봐도 매 사이클 자동, 피치·롤 동시.</li>
+<li><strong>주의:</strong> ① 골든도 경년·온도 드리프트 → <strong>주기적으로 마스터와 재검증.</strong> ② DUT 안착면과 <strong>동평면·견고·정렬</strong> 장착. ③ 지그(안착면) 수평만 봄 — 개별 DUT 비뚤 안착은 별개(SENSOR_DIFF).</li>
+<li><strong>자이로(SOLAR-360)와 역할 분담:</strong> 피치 FineAdjust 기준은 SOLAR 유지(검증된 레퍼런스), <strong>골든은 SOLAR가 못 보는 롤 축을 추가</strong> 담당.</li>
+</ul>
+<h3 id="_2">적용 메모</h3>
+<ul>
+<li>둘 다 코드 변경이라 <strong>착수 전 PLAN 작성 + 임계값 양산 데이터 확정</strong> 필요(현 시점 미구현 제안). A=빠른 임시안, B=정석 권장안.</li>
+</ul>
+<hr />
+<h2 id="7">7. 실증 사례 (로그 전수 검증)</h2>
+<p><code>output/Release</code> 모션 로그 + 배포본 + 제조 셋업 이슈를 전수 검토한 결과. <strong>유형(태그)별로 원인이 다름</strong>을 실측으로 확인:</p>
+<table>
+<thead>
+<tr>
+<th>시기 / 버전</th>
+<th>태그</th>
+<th>검증 결과</th>
+<th>지그 수평?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>4/1</strong></td>
+<td>SPEC_OUT</td>
+<td><strong>setzcur premature</strong> (FineAdjust 전에 영점) → 영점 자체 오염. 4/1에 수정(setzcur 제거).</td>
+<td>영점 명령 이슈 (본 문서 범위 밖)</td>
+</tr>
+<tr>
+<td><strong>4/13</strong></td>
+<td>SPEC_OUT</td>
+<td><strong>OFFSET 축별 실험</strong> — 의도적으로 Y OFFSET 제거 → Y FAIL.</td>
+<td>셋업 문제 아님 (실험)</td>
+</tr>
+<tr>
+<td><strong>★ 4/14·17</strong></td>
+<td>SPEC_OUT</td>
+<td><strong>영점·setzcur 정상</strong>(FineAdjust 후 setzcur, 0도 <code>AN=0.000</code> 검증 통과)<strong>인데도</strong> -20=0.607 / -45=0.838 NG</td>
+<td>✅ <strong>물리적 지그 롤의 가장 깨끗한 증거</strong></td>
+</tr>
+<tr>
+<td><strong>6/9 (0.7.1)</strong></td>
+<td>FINE_FAIL</td>
+<td>지그 셋업 직후 -45 모터 타임아웃 1회 → 회복/풀PASS. -45 마진 0.18(이상치 0.05보다 높음) = 작은 수평 잔차 동반</td>
+<td>△ 모터 본체 + <strong>작은 수평 잔차</strong> (직접원인 분리 불가)</td>
+</tr>
+<tr>
+<td>6/10</td>
+<td>FINE_FAIL + SENSOR_DIFF</td>
+<td>모터 타임아웃 + VL=0(장착)</td>
+<td>✗ 모터·장착</td>
+</tr>
+<tr>
+<td>6/18~19</td>
+<td>(제조 셋업)</td>
+<td>setzcur 오염 재발 → setzfac 복구</td>
+<td>영점 명령 이슈 (범위 밖)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="fail-41417">핵심 — 가장 깨끗한 "지그 수평(롤) → FAIL" 실증 = <strong>4/14·17</strong></h3>
+<ul>
+<li>영점 시퀀스 정상: <code>[FINE] 수렴 완료 actual=-0.008 → setzcur → OFFSET 검증 AN X=-0.000 OK</code></li>
+<li><strong>0도는 완벽한데 각도에서만 오차</strong> (-20=0.607, -45=0.838) → <strong>영점/소프트웨어 문제가 아니라, 0도 검증으로 안 보이는 롤(직교).</strong></li>
+<li>즉 <strong>"코드는 정상인데 지그가 롤로 기울어서 난 SPEC_OUT"</strong> — 본 문서 주장의 직접 증거.</li>
+</ul>
+<h3 id="41-setzcur">참고 — 4/1 setzcur 건과 혼동 주의</h3>
+<p>"FineAdjust 전에 setzcur 먼저"의 영점 오염 버그는 <strong>4/1 한정</strong>이며 그때 수정됨. 4/13~17은 그 이후라 영점 순서는 정상. (4/1=영점버그 / 4/14·17=물리 롤 — <strong>서로 다른 원인, 증상만 같음</strong>)</p>
+<hr />
+<h2 id="8">8. 근거 출처</h2>
+<ul>
+<li>실측 로그: <code>output/Release/net8.0-windows/Log/</code></li>
+<li><strong>SPEC_OUT(롤) 깨끗한 실증</strong>: <code>BACKUP/모션지그검사(RS-232)/2026-04-14.log</code>(영점 정상 시퀀스+각도오차), <code>..._TEST/2026-04-17.log</code></li>
+<li>SPEC_OUT(실험): <code>BACKUP/모션지그검사(RS-232)/2026-04-13.log</code>(OFFSET 축별 제거)</li>
+<li>FINE_FAIL(모터 TIMEOUT): <code>VL10모션검사(RS-232)_TEST/2026-06-10.log</code>, <code>VL20모션검사(RS-485)_MP/2026-06-09·10.log</code></li>
+<li>6/9 사용자건(0.7.1): <code>Release_Under_Test/...260601_0.7.1.../VL20모션검사(RS-485)_MP/2026-06-09.log</code>(15:31 -45 FINE_FAIL→15:37+ 회복)</li>
+<li>SENSOR_DIFF: <code>VL20모션검사(RS-485)_MP/2026-06-10.log</code> (line 119)</li>
+<li>제조 셋업 이슈(setzcur/setzfac, 범위 밖): <code>30.양산문제검토/...2026-0618-셋업문제_x축기울기/</code></li>
+<li>setzcur 정상순서 확인(4/14): <code>[FINE] 수렴 → setzcur → OFFSET AN=0.000</code> (영점 오염 아님 입증)</li>
+<li>자이로 단축 사양: <code>docs/2026 0223- 모션지그/SOLAR-360-420_Inclinometer_Sensor_4-20mA_Output.md</code></li>
+<li>39행 <em>"Single axis measurement"</em> / 1223행 <em>"SOLAR-360 Single axis ... 360° measurement range"</em> / 381행 <em>"includes cross axis errors"</em></li>
+</ul>
+<hr />
+<h2 id="_3">부록 — 핵심 메시지 한 줄</h2>
+<blockquote>
+<p>기울기검사 FAIL을 보면 <strong>로그 태그부터 본다.</strong>
+<code>SPEC_OUT</code>(모터는 수렴했는데 각도 클수록 오차↑) = <strong>지그 수평/정렬 문제</strong> → 수평계로 롤 포함 재정렬.
+<code>FINE_FAIL</code> = 모터(또는 과도한 기울기), <code>SENSOR_DIFF</code> = 장착/제품. <strong>세 개를 섞지 말 것.</strong></p>
+<p><strong>그리고 핵심: 자이로가 단축이라 롤은 소프트웨어로 못 거른다 → 버블 수평계로 사람이 롤까지 맞추는 게 유일한 방법.</strong></p>
+</blockquote>
+</body>
+</html>

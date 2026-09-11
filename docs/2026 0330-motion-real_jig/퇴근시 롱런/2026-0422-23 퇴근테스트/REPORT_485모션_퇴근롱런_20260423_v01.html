@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>VL20 모션검사(RS-485) 퇴근 롱런 리포트 — 2026-04-22~23</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Malgun Gothic", "맑은 고딕", -apple-system, sans-serif;
+    margin: 0; padding: 24px; background: #f5f7fa; color: #222;
+    line-height: 1.55;
+  }
+  .container { max-width: 1180px; margin: 0 auto; }
+  h1 {
+    font-size: 26px; margin: 0 0 6px;
+    border-bottom: 3px solid #1f4e79; padding-bottom: 10px; color: #1f4e79;
+  }
+  .subtitle { color: #666; font-size: 14px; margin-bottom: 24px; }
+  h2 {
+    font-size: 19px; color: #1f4e79; margin: 32px 0 12px;
+    border-left: 5px solid #1f4e79; padding-left: 10px;
+  }
+  h3 { font-size: 15px; margin: 20px 0 8px; color: #333; }
+
+  .verdict {
+    background: linear-gradient(135deg, #2e7d32, #43a047); color: white;
+    padding: 18px 22px; border-radius: 8px; margin: 16px 0 24px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  .verdict .big { font-size: 24px; font-weight: bold; margin-bottom: 4px; }
+  .verdict .sub { font-size: 13px; opacity: 0.95; }
+
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px; margin: 16px 0 24px;
+  }
+  .kpi {
+    background: white; padding: 16px; border-radius: 6px;
+    border-left: 4px solid #1f4e79;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .kpi .label { font-size: 12px; color: #666; margin-bottom: 4px; }
+  .kpi .value { font-size: 22px; font-weight: bold; color: #1f4e79; }
+  .kpi .unit { font-size: 13px; color: #888; font-weight: normal; }
+  .kpi.pass .value { color: #2e7d32; }
+  .kpi.fail .value { color: #c62828; }
+  .kpi.warn .value { color: #ef6c00; }
+
+  table {
+    width: 100%; border-collapse: collapse; background: white;
+    margin: 8px 0 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    font-size: 13px;
+  }
+  th {
+    background: #1f4e79; color: white; padding: 9px 10px;
+    text-align: left; font-weight: 600; font-size: 12px;
+  }
+  td { padding: 8px 10px; border-bottom: 1px solid #e8eaed; }
+  tr:nth-child(even) td { background: #fafbfc; }
+  td.num { text-align: right; font-family: Consolas, monospace; }
+  td.center { text-align: center; }
+  .pass { color: #2e7d32; font-weight: bold; }
+  .fail { color: #c62828; font-weight: bold; }
+  .skip { color: #f57c00; }
+  .muted { color: #888; font-size: 12px; }
+
+  .info-box {
+    background: #e8f0f8; border-left: 4px solid #1f4e79;
+    padding: 12px 16px; margin: 12px 0; border-radius: 0 4px 4px 0;
+    font-size: 13px;
+  }
+  .warn-box {
+    background: #fff8e1; border-left: 4px solid #f9a825;
+    padding: 12px 16px; margin: 12px 0; border-radius: 0 4px 4px 0;
+    font-size: 13px;
+  }
+  .ok-box {
+    background: #e8f5e9; border-left: 4px solid #2e7d32;
+    padding: 12px 16px; margin: 12px 0; border-radius: 0 4px 4px 0;
+    font-size: 13px;
+  }
+  code {
+    background: #f0f2f4; padding: 2px 6px; border-radius: 3px;
+    font-family: Consolas, monospace; font-size: 12px;
+  }
+  .footer {
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid #ddd;
+    text-align: center; color: #999; font-size: 11px;
+  }
+  .bar {
+    display: inline-block; height: 14px; background: #1f4e79;
+    border-radius: 2px; vertical-align: middle; margin-right: 6px;
+  }
+  .bar.green { background: #43a047; }
+  .bar.yellow { background: #fbc02d; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>VL20 모션검사 (RS-485) 퇴근 롱런 리포트</h1>
+  <div class="subtitle">
+    테스트 일시: 2026-04-22 19:10 ~ 2026-04-23 08:40 (약 13시간 30분) ·
+    빌드: <code>ff_vibetilt.dll v0.6.7.60422</code> ·
+    워크스페이스: <code>MP_workspace_VL20_motion_485.json</code>
+  </div>
+
+  <div class="verdict">
+    <div class="big">PASS — 지그·시스템 안정성 검증 완료</div>
+    <div class="sub">
+      VL2-00001 1대 × 270 사이클 연속 무중단 통과 / 4,050 OK / 540 SKIP / FAIL 0건 /
+      재시도 0건 / 통신 재연결 0건
+      <br><span style="opacity:0.85;">※ 검출 변별력(NG 검출) 및 다대수 산포는 별도 검증 필요 — §10 참조</span>
+    </div>
+  </div>
+
+  <h2>1. 핵심 지표</h2>
+  <div class="kpi-grid">
+    <div class="kpi pass">
+      <div class="label">완료 사이클</div>
+      <div class="value">270 <span class="unit">/ 300</span></div>
+    </div>
+    <div class="kpi pass">
+      <div class="label">사이클 PASS율</div>
+      <div class="value">100.0 <span class="unit">%</span></div>
+    </div>
+    <div class="kpi pass">
+      <div class="label">총 검사 항목 PASS</div>
+      <div class="value">4,050 <span class="unit">건</span></div>
+    </div>
+    <div class="kpi fail">
+      <div class="label">FAIL 건수</div>
+      <div class="value">0 <span class="unit">건</span></div>
+    </div>
+    <div class="kpi warn">
+      <div class="label">계획적 SKIP</div>
+      <div class="value">540 <span class="unit">건</span></div>
+    </div>
+    <div class="kpi">
+      <div class="label">총 소요 시간</div>
+      <div class="value">13h 30m</div>
+    </div>
+    <div class="kpi">
+      <div class="label">사이클 평균 시간</div>
+      <div class="value">3.0 <span class="unit">분</span></div>
+    </div>
+    <div class="kpi pass">
+      <div class="label">재시도 / 통신 재연결</div>
+      <div class="value">0 / 0</div>
+    </div>
+  </div>
+
+  <h2>2. 테스트 환경</h2>
+  <table>
+    <tr><th style="width:32%">항목</th><th>값</th></tr>
+    <tr><td>제품 모델</td><td>VL20 (RS-485)</td></tr>
+    <tr><td>대상 시리얼</td><td>X축 = <code>VL2-00001</code> · Y축 = <code>VL2-00000</code></td></tr>
+    <tr><td>FW 버전</td><td>F/W ver.2.0.2 (X축) / F/W ver.2.0.2.3 (Y축)</td></tr>
+    <tr><td>실행 모드</td><td>dual (X/Y 동시) · repeat = 300 · log_level = MP_LOG</td></tr>
+    <tr><td>시리얼 자동 증가</td><td>true · prefix = <code>VL2-</code> · 중복체크 = 차단</td></tr>
+    <tr><td>TILT 판정</td><td>mode = all_in_spec(엄격) · tail = 10 · retry = 3 · stream = 1000ms · settle = 500ms</td></tr>
+    <tr><td>TILT 스펙</td><td>±20도 = ±0.2 / ±45도 = ±0.5 / 자이로 = ±0.05</td></tr>
+    <tr><td>VIBE 판정</td><td>mode = all_in_spec(엄격) · tail = 5 · retry = 3 · 스펙 = 0.98 ~ 1.02</td></tr>
+    <tr><td>Y축 영점</td><td>skip_home = false (홈센서 사용) → <span class="muted">실제 동작은 X축 IN1 PMO011, Y축 skip+FineAdjust</span></td></tr>
+    <tr><td>EMIO 모터 제어</td><td>TCP 100.100.100.70:2233 (1회 연결, 재연결 없음)</td></tr>
+  </table>
+
+  <h2>3. 사이클 요약</h2>
+  <table>
+    <tr>
+      <th>구간</th><th>사이클 범위</th><th>시작</th><th>종료</th>
+      <th class="center">사이클 수</th><th class="center">결과</th>
+    </tr>
+    <tr>
+      <td>1일차 (04-22)</td><td>1 ~ 96</td>
+      <td>2026-04-22 19:10:41</td><td>2026-04-22 23:59:59</td>
+      <td class="num">96</td>
+      <td class="center"><span class="pass">전 사이클 OK=15 / FAIL=0 / SKIP=2</span></td>
+    </tr>
+    <tr>
+      <td>2일차 (04-23)</td><td>97 ~ 270</td>
+      <td>2026-04-23 00:00:08</td><td>2026-04-23 08:39:50</td>
+      <td class="num">174</td>
+      <td class="center"><span class="pass">전 사이클 OK=15 / FAIL=0 / SKIP=2</span></td>
+    </tr>
+    <tr style="background:#fff8e1;">
+      <td>중단</td><td>271 (시작만)</td>
+      <td colspan="2">2026-04-23 08:39:51 시작 → 08:40:14 사용자 Stop</td>
+      <td class="num">—</td>
+      <td class="center"><span class="skip">정상 중단 · 시리얼 롤백 완료</span></td>
+    </tr>
+    <tr style="background:#e8f0f8; font-weight:bold;">
+      <td colspan="4">합계</td>
+      <td class="num">270</td>
+      <td class="center"><span class="pass">PASS 100%</span></td>
+    </tr>
+  </table>
+
+  <div class="info-box">
+    <strong>중단 사유:</strong> 271번째 사이클이 X축 영점 초기화 단계에서 사용자 Stop 신호로 중단되었습니다.
+    시스템 결함이 아닌 <strong>출근 시간 정리 차원의 계획적 중단</strong>이며,
+    <code>serial_motion_485.txt</code> 채번 롤백이 정상 처리되었습니다.
+  </div>
+
+  <h2>4. 스텝별 PASS / FAIL / SKIP 통계 (270 사이클 기준)</h2>
+  <table>
+    <tr>
+      <th>#</th><th>테스트 항목</th><th>ID</th>
+      <th class="center">OK</th><th class="center">FAIL</th><th class="center">SKIP</th>
+      <th>비고</th>
+    </tr>
+    <tr><td>0</td><td>통신검사 RS-485</td><td><code>COMM_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>X축/Y축/자이로 응답 정상</td></tr>
+    <tr><td>1-X</td><td>FW 버전 확인 (X축)</td><td><code>FWVER_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>F/W ver.2.0.2 일치</td></tr>
+    <tr><td>2</td><td>시리얼번호 설정 (X축)</td><td><code>UID_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>VL2- 접두사 확인</td></tr>
+    <tr><td>3</td><td>X축 영점 초기화</td><td><code>MOTION_ZERO_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>홈센서 IN1(PMO011) + FineAdjust</td></tr>
+    <tr><td>4</td><td>X축 Calibration</td><td><code>OFFSET_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>OFFSET 검증 [-0.05 ~ 0.05]</td></tr>
+    <tr><td>5</td><td>X축 파라미터 저장</td><td><code>APPCFG_SAVE_485</code></td><td class="num">0</td><td class="num">0</td><td class="num skip">270</td><td>의도적 스킵 (롱런 보호)</td></tr>
+    <tr><td>6</td><td>X축 기울기 측정 (-20/-45/+20/+45)</td><td><code>MOTION_TILT_X_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>4각도 모두 스펙 내</td></tr>
+    <tr><td>7</td><td>Y축 진동 측정 (+90도)</td><td><code>MOTION_VIBE_Y_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>GAC Y 스펙 내</td></tr>
+    <tr><td>8</td><td>FW 버전 확인 (Y축)</td><td><code>FWVER_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>F/W ver.2.0.2.3 일치</td></tr>
+    <tr><td>9</td><td>시리얼번호 설정 (Y축)</td><td><code>UID_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>VL2- 접두사 확인</td></tr>
+    <tr><td>10</td><td>Y축 영점 초기화</td><td><code>MOTION_ZERO_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>홈센서 skip + FineAdjust</td></tr>
+    <tr><td>11</td><td>Y축 Calibration</td><td><code>OFFSET_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>OFFSET 검증 OK</td></tr>
+    <tr><td>12</td><td>Y축 파라미터 저장</td><td><code>APPCFG_SAVE_485</code></td><td class="num">0</td><td class="num">0</td><td class="num skip">270</td><td>의도적 스킵 (롱런 보호)</td></tr>
+    <tr><td>13</td><td>Z축 진동 측정 (0도)</td><td><code>MOTION_VIBE_Z_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>GAC Z 스펙 내</td></tr>
+    <tr><td>14</td><td>Y축 기울기 측정 (+20/+45/-20/-45)</td><td><code>MOTION_TILT_Y_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>4각도 모두 스펙 내</td></tr>
+    <tr><td>15</td><td>X축 진동 측정 (-90도)</td><td><code>MOTION_VIBE_X_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td>GAC X 스펙 내</td></tr>
+    <tr><td>16</td><td>Config 확인 (Y축 APPCFG)</td><td><code>APPCFG_485</code></td><td class="num pass">270</td><td class="num">0</td><td class="num">0</td><td><code>1/00/0/10/1/115200</code> 고정</td></tr>
+    <tr style="background:#e8f0f8; font-weight:bold;">
+      <td colspan="3">합계</td>
+      <td class="num pass">4,050</td>
+      <td class="num">0</td>
+      <td class="num skip">540</td>
+      <td>실행 항목 100% PASS</td>
+    </tr>
+  </table>
+
+  <h2>5. TILT(기울기) 측정 통계</h2>
+  <p class="muted">자이로(레퍼런스) vs VL(피검 디바이스) 오차. 270 사이클 × 8 측정 = <strong>2,160회</strong> 모두 스펙 내.</p>
+
+  <table>
+    <tr>
+      <th rowspan="2">축</th><th rowspan="2">목표 각도</th><th rowspan="2">스펙</th>
+      <th colspan="3" class="center">오차 (절댓값, 도)</th>
+      <th rowspan="2" class="center">판정</th>
+    </tr>
+    <tr><th class="center">최소</th><th class="center">평균</th><th class="center">최대</th></tr>
+
+    <tr><td rowspan="4" class="center">X</td><td>-20도</td><td>±0.2</td><td class="num">0.000</td><td class="num">~0.028</td><td class="num">0.045</td><td class="center pass">OK</td></tr>
+    <tr><td>-45도</td><td>±0.5</td><td class="num">0.001</td><td class="num">~0.080</td><td class="num">0.124</td><td class="center pass">OK</td></tr>
+    <tr><td>+20도</td><td>±0.2</td><td class="num">0.000</td><td class="num">~0.023</td><td class="num">0.045</td><td class="center pass">OK</td></tr>
+    <tr><td>+45도</td><td>±0.5</td><td class="num">0.000</td><td class="num">~0.075</td><td class="num">0.113</td><td class="center pass">OK</td></tr>
+
+    <tr><td rowspan="4" class="center">Y</td><td>+20도</td><td>±0.2</td><td class="num">0.000</td><td class="num">~0.025</td><td class="num">0.051</td><td class="center pass">OK</td></tr>
+    <tr><td>+45도</td><td>±0.5</td><td class="num">0.001</td><td class="num">~0.080</td><td class="num">0.114</td><td class="center pass">OK</td></tr>
+    <tr><td>-20도</td><td>±0.2</td><td class="num">0.000</td><td class="num">~0.030</td><td class="num">0.059</td><td class="center pass">OK</td></tr>
+    <tr><td>-45도</td><td>±0.5</td><td class="num">0.001</td><td class="num">~0.090</td><td class="num">0.141</td><td class="center pass">OK</td></tr>
+  </table>
+  <p class="muted">※ 전체 2,160 측정 |오차| 최대값 = <strong>0.141도</strong> (Y -45도, 스펙 ±0.5의 28%) · 평균 0.054도</p>
+
+  <div class="info-box">
+    <strong>관찰:</strong>
+    ① ±45도 측정 오차(최대 0.141도)가 ±20도(최대 0.059도)보다 큼 — 회전각이 클수록 미세한 기구 유격이 누적되는 일반적 경향, 스펙 0.5도 대비 28% 이내로 충분한 마진.
+    ② Y축 -45도에서 VL 측정값이 자이로 대비 일관되게 약간 높게 나오는 경향(예: -45.113 vs -44.994) — 스펙 내이지만 추후 캘리브레이션 미세조정 여지 있음.
+    ③ <strong>|오차| TOP 10이 전부 -45도, 전부 음수 부호</strong> → random noise가 아닌 시스템적 편향(systematic bias). 모터 백래시 + 측정 시퀀스(영점 → +쪽 회전 → -쪽으로 방향 전환) 효과로 추정. 자세한 분석은 §10.3 참조.
+  </div>
+
+  <h2>6. VIBE(진동) 측정 분포</h2>
+  <p class="muted">GAC 값 (스펙 0.98 ~ 1.02). 270 사이클 × 3 축 = <strong>810회</strong> 모두 스펙 내.</p>
+
+  <table>
+    <tr>
+      <th>GAC 값</th>
+      <th class="center">비율 (전체)</th>
+      <th class="center">분포</th>
+      <th>해석</th>
+    </tr>
+    <tr><td class="num">0.9800</td><td class="center">0%</td><td><span class="bar" style="width:0px;"></span></td><td>없음 (하한 미접촉)</td></tr>
+    <tr><td class="num">0.9900</td><td class="center">~16%</td><td><span class="bar yellow" style="width:80px;"></span></td><td>주로 Y축에서 관측 (정상 변동 범위)</td></tr>
+    <tr><td class="num">1.0000</td><td class="center">~84%</td><td><span class="bar green" style="width:420px;"></span></td><td>가장 빈번 (이상적 중앙값)</td></tr>
+    <tr><td class="num">1.0100</td><td class="center">0%</td><td><span class="bar" style="width:0px;"></span></td><td>없음</td></tr>
+    <tr><td class="num">1.0200</td><td class="center">0%</td><td><span class="bar" style="width:0px;"></span></td><td>없음 (상한 미접촉)</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>축별 경향:</strong> X축은 1.0000 일관, Y축은 0.9900 빈도 가장 높음, Z축은 거의 모두 1.0000.
+    경계값(0.985 이하 / 1.015 이상) 발생 0건. 정량적 안정성 매우 우수.
+  </div>
+
+  <h2>7. FINE(미세조정) 수렴 통계</h2>
+  <table>
+    <tr>
+      <th>Target</th><th>최대 오차 (도)</th><th>스펙 마진</th><th class="center">판정</th>
+    </tr>
+    <tr><td class="num">0도 (영점)</td><td class="num">0.028</td><td class="num">매우 우수</td><td class="center pass">OK</td></tr>
+    <tr><td class="num">±20도</td><td class="num">~0.040</td><td class="num">매우 우수</td><td class="center pass">OK</td></tr>
+    <tr><td class="num">±45도</td><td class="num">~0.050</td><td class="num">매우 우수</td><td class="center pass">OK</td></tr>
+  </table>
+  <p class="muted">총 영점 초기화 횟수: 540회 (X축 270 + Y축 270) · 모두 정상 수렴 · 수렴 실패 0건.</p>
+
+  <h2>8. 시스템 안정성 지표</h2>
+  <table>
+    <tr><th>항목</th><th class="center">결과</th><th>설명</th></tr>
+    <tr><td>FAIL → 재측정 (retry) 발생</td><td class="center pass">0회</td><td>모든 측정이 첫 시도에 통과</td></tr>
+    <tr><td>TCP 재연결 시도</td><td class="center pass">0회</td><td>EMIO 100.100.100.70:2233 단일 연결 유지</td></tr>
+    <tr><td>RS-485 통신 오류</td><td class="center pass">0회</td><td>X축/Y축/자이로 응답 누락 없음</td></tr>
+    <tr><td>FW 버전 불일치</td><td class="center pass">0회</td><td>270 사이클 동안 동일 버전 유지</td></tr>
+    <tr><td>타임스탬프 점프 (1분+)</td><td class="center pass">없음</td><td>일정한 사이클 간격 유지</td></tr>
+    <tr><td>OFFSET 캘리브레이션 검증</td><td class="center pass">전수 OK</td><td>X/Y AN 값 [-0.05 ~ 0.05] 범위 일관</td></tr>
+    <tr><td>Config 일관성 (APPCFG)</td><td class="center pass">전수 일치</td><td><code>1/00/0/10/1/115200</code> 변동 없음</td></tr>
+  </table>
+
+  <h2>9. 결론</h2>
+  <div class="ok-box">
+    <strong>v0.6.7.60422 빌드, VL20 RS-485 모션검사 — 지그·시스템 안정성 검증 완료.</strong>
+    <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+      <li>1대(VL2-00001) × 270 사이클 / 13시간 30분 무중단 연속 운전, FAIL 0건 / 재시도 0건 / 통신 재연결 0건</li>
+      <li>4,050개 검사 항목 전부 PASS (스킵 540건은 의도적 보호 설계)</li>
+      <li>TILT 측정 |오차| 최대 0.141도 (스펙 ±0.5의 28%), VIBE 전수 0.99~1.00 범위</li>
+      <li>FINE 수렴 정확도 우수 (영점 최대 0.028도)</li>
+      <li>271번째 사이클 중단은 사용자 Stop에 의한 정상 종료, 시리얼 채번 롤백 정상</li>
+    </ul>
+  </div>
+
+  <div class="warn-box" style="margin-top:12px;">
+    <strong>본 테스트가 증명한 범위 (Scope):</strong>
+    <table style="margin-top:8px;">
+      <tr><th>지표</th><th>본 테스트가 증명한 것</th><th class="center">검증 완료</th></tr>
+      <tr><td>지그 재현성 (repeatability)</td><td>같은 디바이스 반복 측정에서 결과 일정</td><td class="center pass">✅</td></tr>
+      <tr><td>지그·시스템 장기 안정성</td><td>13시간 무드리프트, 통신/모터/센서 안정</td><td class="center pass">✅</td></tr>
+      <tr><td>False-Fail 부재</td><td>양품을 잘못 떨구지 않음 — 양산 가동률에 영향 없음</td><td class="center pass">✅</td></tr>
+      <tr><td>검출 변별력 (detection sensitivity)</td><td><strong>NG 샘플로 별도 검증 필요</strong> — 본 테스트 범위 밖</td><td class="center fail">⚠️ 미검증</td></tr>
+      <tr><td>다 디바이스 산포</td><td><strong>5~10대 양품 비교 필요</strong> — 본 테스트는 1대만</td><td class="center fail">⚠️ 미검증</td></tr>
+    </table>
+    <p style="margin: 10px 0 0;">
+      <strong>판정:</strong> RS-485 모션 검사 인프라(미니PC + 지그 + 통신 라인 + SW)는 <strong>양산 라인 투입에 필요한 안정성을 갖춤</strong>.
+      단, 검출 변별력(False-Pass 부재)은 NG 샘플 테스트로 별도 확인이 필요하며,
+      양품 산포는 다대수 디바이스 1회 비교로 보강해야 함.
+    </p>
+  </div>
+
+  <h2>10. 후속 권장 사항</h2>
+
+  <h3>10.1 검출 변별력 검증 (필수)</h3>
+  <ul style="font-size: 13px;">
+    <li><strong>NG 샘플 테스트 (1~3건)</strong> — 의도적 불량 보드(자이로 결선 단선 / FW 응답 누락 / 센서 편향 강제 주입 등)를 만들어
+      각 검사 스텝(#0~#16)에서 정확히 FAIL 처리되는지 확인. False-Pass 0 확인.</li>
+    <li><strong>경계값 샘플 (있을 경우)</strong> — 스펙 ±0.5도 근처(예: 0.4도) 오차를 가진 샘플로 PASS/FAIL 판정 경계가 합리적으로 동작하는지 검증.</li>
+  </ul>
+
+  <h3>10.2 양품 다대수 산포 검증 (권장)</h3>
+  <ul style="font-size: 13px;">
+    <li><strong>5~10대 양품 1회씩</strong> 검사 실행 → 디바이스 간 측정값 산포(특히 ±45도 TILT, GAC) 확인. 1대 결과의 일반화 가능성 검증.</li>
+  </ul>
+
+  <h3>10.3 측정 정밀도 향상 (선택)</h3>
+  <ul style="font-size: 13px;">
+    <li><strong>한쪽 편향 큰 케이스 분석</strong> — 과거 ±45도에서 한쪽만 0.25도(스펙 50%) 오차 사례가 있었음.
+      가장 유력한 원인은 <strong>모터 백래시 + 측정 시퀀스 효과</strong>(영점에서 +쪽으로 먼저 회전 후 -쪽으로 방향 전환할 때 백래시 빠짐).
+      검증 방법: ① 영점 actual 잔류오차와 ±45도 오차 부호의 상관관계, ② 측정 순서 뒤집어서(-부터) 재현 테스트, ③ 양방향 접근 히스테리시스 측정.</li>
+    <li><strong>다중점 캘리브레이션</strong> — OFFSET이 0도에서만 수행되므로 ±20, ±45 별도 OFFSET 측정해 보정 테이블 추가하면 시스템 편향 0.13도 → 0.05도 수준까지 줄일 여지.</li>
+    <li><strong>Burn-in 사이클 폐기</strong> — 첫 5~10 사이클은 기구 settling/온도 안정화 중이므로 통계 산입 제외.</li>
+  </ul>
+
+  <h3>10.4 추가 데이터 수집 (참고)</h3>
+  <ul style="font-size: 13px;">
+    <li>나머지 30 사이클(271~300) 추가 진행 시 RS-232 라인과 동일 환경 비교 데이터 확보.</li>
+    <li>장기 신뢰성 평가용으로 1주~1개월 단위 누적 롱런 데이터 별도 수집.</li>
+  </ul>
+
+  <div class="footer">
+    REPORT_485모션_퇴근롱런_20260423_v01.html ·
+    원본 로그: <code>2026-04-22.log</code> (1.7MB) + <code>2026-04-23.log</code> (3.0MB) ·
+    flexfab_VibeTilt / step6-motion-jig-test
+  </div>
+
+</div>
+</body>
+</html>

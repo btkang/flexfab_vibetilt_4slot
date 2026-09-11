@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>모션지그 TODO 전체 현황 — 2026-04-14</title>
+<style>
+body{font-family:'Malgun Gothic',sans-serif;max-width:1000px;margin:20px auto;padding:20px;background:#f5f5f5}
+h1{color:#1a237e;border-bottom:3px solid #1a237e;padding-bottom:10px}
+h2{color:#283593;margin-top:30px}
+table{border-collapse:collapse;width:100%;margin:10px 0}
+th,td{border:1px solid #ccc;padding:8px 12px;text-align:left}
+th{background:#e8eaf6;font-weight:bold;text-align:center}
+td:nth-child(1){text-align:center;width:40px}
+td:nth-child(3){text-align:center;width:100px}
+.done{background:#c8e6c9;color:#2e7d32;font-weight:bold;text-align:center}
+.todo{background:#e3f2fd;color:#1565c0;font-weight:bold;text-align:center}
+.hold{background:#fff9c4;color:#f57f17;font-weight:bold;text-align:center}
+.section{background:#fff;padding:20px;border-radius:8px;margin:15px 0;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+</style>
+</head>
+<body>
+
+<h1>모션지그 TODO 전체 현황</h1>
+<p><strong>날짜:</strong> 2026-04-14 | <strong>브랜치:</strong> step6-motion-jig-test</p>
+
+<div class="section">
+<h2>완료 항목 (14개)</h2>
+<table>
+<tr><th>#</th><th>항목</th><th>상태</th><th>비고</th></tr>
+<tr><td>1</td><td>485 워크스페이스 만들기</td><td class="done">완료</td><td>v0.5.0.60413 MP/TEST 분리, 깡통PC 3회 ALL PASS</td></tr>
+<tr><td>2</td><td>MP_LOG 구현</td><td class="done">완료</td><td>LogConfig.IsTest 가드 전반 적용</td></tr>
+<tr><td>5</td><td>485 모션지그 1회 PASS 확인</td><td class="done">완료</td><td>v0.5.0.60413 릴리즈 검증 3회 ALL PASS</td></tr>
+<tr><td>7</td><td>진동/기울기 스트리밍 통일</td><td class="done">완료</td><td>MODE 06/02 스트리밍, 5가지 판정모드, 232/485 전부 적용</td></tr>
+<tr><td>8</td><td>FW 업데이트 대기 항목</td><td class="done">완료</td><td>FW 2.0.2.3 OFFSET ID 필드 확인</td></tr>
+<tr><td>9</td><td>dual 모드 시작 시 제품 장착 확인</td><td class="done">완료</td><td>COMM에서 X/Y/자이로 통합 체크</td></tr>
+<tr><td>10</td><td>SAM/ATIM 불필요한 설정 제거</td><td class="done">완료</td><td>485: bc19aae, 232: SAM,1 제거</td></tr>
+<tr><td>12</td><td>APPCFG 검사 항목 추가</td><td class="done">완료</td><td>232/485 실기기 ALL PASS</td></tr>
+<tr><td>13</td><td>통신검사 프로시저</td><td class="done">완료</td><td>232/485 실기기 ALL PASS</td></tr>
+<tr><td>14</td><td>UID 시리얼번호 설정</td><td class="done">완료</td><td>232: VL1-, 485: VL2-</td></tr>
+<tr><td>15</td><td>시리얼 중복 체크 범위 개선</td><td class="done">완료</td><td>Result 폴더 전체 검색 (ccb9fa2)</td></tr>
+<tr><td>16</td><td>싱글모드 통신검사 개선</td><td class="done">완료</td><td>Y축 스킵 + 시리얼 취소 중단 (5a7547e)</td></tr>
+<tr><td>17</td><td>OFFSET 전 딜레이 추가</td><td class="done">완료</td><td>tilt_settle_wait/gac_settle_wait 500ms</td></tr>
+<tr><td>18</td><td>기울기(TILT) 판정 로직 변경</td><td class="done">완료</td><td>5가지 판정모드 + 노이즈P2P + 리트라이</td></tr>
+<tr><td>20</td><td>요약결과데이터(summary) 추가</td><td class="done">완료</td><td>median/std/p2p/norm/non_target/retry, 11회 ALL PASS (fa220a2)</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>남은 항목 (8개)</h2>
+<table>
+<tr><th>#</th><th>항목</th><th>상태</th><th>상세</th></tr>
+<tr><td>3</td><td>VL10 2개 동시 검사 구현</td><td class="hold">보류</td><td>현재 밀어내기식 동작 중</td></tr>
+<tr><td>4</td><td>485 장시간 통신 단절 원인 조사</td><td class="hold">보류</td><td>2026-04-10 롱런에서 발견, USB-485 컨버터 의심</td></tr>
+<tr><td>6</td><td>보드레벨 485 수평전개</td><td class="todo">미착수</td><td>SAM=10 통일, AN 폴링→스트리밍 변경</td></tr>
+<tr><td>11</td><td>시간 최적화</td><td class="hold">보류</td><td>STOP 축소 ~2초, FineAdjust 개선</td></tr>
+<tr><td>19</td><td>Y축 영점 홈 센서 생략 → FineAdjust만</td><td class="todo">미착수</td><td>~17초 절감 (MP 2m51s → ~2m34s)</td></tr>
+<tr><td>21</td><td>요약결과데이터 분석 프로그램</td><td class="todo">미착수</td><td>생산PC에서 바로 실행, 추세 차트/이상 징후, DB 연결 시 사무실PC 확장</td></tr>
+<tr><td>22</td><td>시리얼 접두사 검증</td><td class="todo">미착수</td><td>232→VL1-, 485→VL2- 강제, 양산 배포 전 적용</td></tr>
+<tr><td>23</td><td>SPC 공정관리 (2단계)</td><td class="todo">미착수</td><td>X-bar R chart, Cpk 일일 집계, Western Electric Rules 알람</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>진행 순서</h2>
+<table>
+<tr><th>순서</th><th>항목</th><th>선행조건</th></tr>
+<tr><td>1</td><td>#21 분석 프로그램</td><td>summary 데이터 축적 (완료)</td></tr>
+<tr><td>2</td><td>#22 시리얼 접두사 검증</td><td>양산 배포 전</td></tr>
+<tr><td>3</td><td>#19 Y축 홈 센서 생략</td><td>시간 절감 필요 시</td></tr>
+<tr><td>4</td><td>#23 SPC 공정관리</td><td>#21 완료 후 확장</td></tr>
+<tr><td>5</td><td>#6 보드레벨 485 수평전개</td><td>모션지그 안정화 후</td></tr>
+</table>
+</div>
+
+<hr>
+<p style="color:#999;font-size:0.85em">
+작성: Claude | 날짜: 2026-04-14 | 브랜치: step6-motion-jig-test
+</p>
+
+</body>
+</html>

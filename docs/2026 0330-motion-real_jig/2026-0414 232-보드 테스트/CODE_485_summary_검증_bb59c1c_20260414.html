@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>485 모션지그 summary 검증 + bb59c1c - 2026-04-14</title>
+<style>
+body{font-family:'Malgun Gothic',sans-serif;max-width:900px;margin:20px auto;padding:20px;background:#f5f5f5}
+h1{color:#1a237e;border-bottom:3px solid #1a237e;padding-bottom:10px}
+h2{color:#283593;margin-top:30px}
+table{border-collapse:collapse;width:100%;margin:10px 0}
+th,td{border:1px solid #ccc;padding:8px 12px;text-align:center}
+th{background:#e8eaf6;font-weight:bold}
+.pass{background:#c8e6c9;color:#2e7d32;font-weight:bold}
+.fail{background:#ffcdd2;color:#c62828;font-weight:bold}
+.warn{background:#fff9c4;color:#f57f17}
+.section{background:#fff;padding:20px;border-radius:8px;margin:15px 0;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+code{background:#eceff1;padding:2px 6px;border-radius:3px;font-size:0.9em}
+pre{background:#263238;color:#eee;padding:15px;border-radius:5px;overflow-x:auto;font-size:0.85em}
+</style>
+</head>
+<body>
+
+<h1>485 모션지그 summary 검증 결과 (bb59c1c+)</h1>
+<p><strong>날짜:</strong> 2026-04-14 | <strong>브랜치:</strong> step6-motion-jig-test | <strong>대상:</strong> RS-485 모션지그</p>
+
+<div class="section">
+<h2>1. 테스트 결과</h2>
+<table>
+<tr><th>회차</th><th>시리얼 (X/Y)</th><th>결과</th><th>test time</th><th>비고</th></tr>
+<tr><td>1</td><td>VL1-00025/VL1-00025</td><td class="fail">FW FAIL</td><td>-</td><td>X축 FW 2.0.2 ≠ 기대 2.0.2.3 → 워크스페이스 수정</td></tr>
+<tr><td>2</td><td>VL1-00024/VL1-00025</td><td class="pass">17/0/0</td><td>3m09s</td><td class="warn">pending 불일치 (결과 미저장)</td></tr>
+<tr><td>3</td><td>VL1-00026/VL1-00025</td><td class="pass">17/0/0</td><td>3m09s</td><td class="warn">pending 불일치 (결과 미저장)</td></tr>
+<tr><td>4</td><td>VL1-00027/VL1-00026</td><td class="pass">17/0/0</td><td>3m04s</td><td class="pass">결과 저장 + MongoDB 업로드</td></tr>
+<tr><th>총 결과</th><th colspan="2" class="pass">3회 ALL PASS</th><th>avg 3m07s</th><th>summary 정상 확인</th></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>2. summary 블록 검증</h2>
+<p>VL1-00026.json에서 확인된 summary 데이터:</p>
+
+<h3>TILT summary 예시 (X축 -20도)</h3>
+<table>
+<tr><th>항목</th><th>값</th><th>정상 범위</th><th>판정</th></tr>
+<tr><td>median</td><td>-0.011</td><td>±0.15</td><td class="pass">정상</td></tr>
+<tr><td>std</td><td>0.0233</td><td>&lt; 0.03</td><td class="pass">정상</td></tr>
+<tr><td>p2p</td><td>0.06</td><td>&lt; 0.08</td><td class="pass">정상</td></tr>
+<tr><td>sample_count</td><td>112</td><td>100~115</td><td class="pass">정상</td></tr>
+<tr><td>tail_count</td><td>10</td><td>10</td><td class="pass">정상</td></tr>
+<tr><td>retry_used</td><td>0</td><td>0</td><td class="pass">정상</td></tr>
+</table>
+
+<h3>VIBE summary 예시 (Y축 -90도)</h3>
+<table>
+<tr><th>항목</th><th>값</th><th>정상 범위</th><th>판정</th></tr>
+<tr><td>median</td><td>1.0</td><td>0.98~1.02</td><td class="pass">정상</td></tr>
+<tr><td>std</td><td>0.0</td><td>&lt; 0.005</td><td class="pass">정상</td></tr>
+<tr><td>p2p</td><td>0.0</td><td>&lt; 0.01</td><td class="pass">정상</td></tr>
+<tr><td>norm</td><td>1.0001</td><td>0.99~1.01</td><td class="pass">정상</td></tr>
+<tr><td>non_target_max</td><td>0.01</td><td>&lt; 0.03</td><td class="pass">정상</td></tr>
+<tr><td>sample_count</td><td>110</td><td>100~115</td><td class="pass">정상</td></tr>
+<tr><td>retry_used</td><td>0</td><td>0</td><td class="pass">정상</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>3. 확인 사항</h2>
+<ul>
+<li class="pass">485 TEST 3회 ALL PASS (동일 시료)</li>
+<li class="pass">summary 블록: TILT 8개 + VIBE 3개 전부 정상 포함</li>
+<li class="pass">MongoDB 업로드 정상 (_id=69ddfc3d3a478210628abbac)</li>
+<li class="pass">로컬 결과 JSON 저장 정상 (VL1-00026.json)</li>
+<li class="pass">232/485 공통 코드로 동작 확인</li>
+<li>FW 버전 불일치: X축 2.0.2 / Y축 2.0.2.3 → 워크스페이스 수정으로 해결</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>4. 결과 JSON 전/후 비교</h2>
+
+<h3>기존 (summary 없음) — VL1-00023 (232 MP)</h3>
+<pre>
+{
+  "item": "X축 기울기 -20도",
+  "value": 0.094,
+  "gyro": -19.984,
+  "vl": -19.89,
+  "min": -0.2,
+  "max": 0.2,
+  "judge_mode": "all_in_spec(엄격)",
+  "result": "OK"
+}
+</pre>
+
+<h3>신규 (summary 포함) — VL1-00026 (485 TEST)</h3>
+<pre>
+{
+  "item": "X축 기울기 -20도",
+  "value": 0.014,
+  "gyro": -19.964,
+  "vl": -19.95,
+  "min": -0.2,
+  "max": 0.2,
+  "judge_mode": "all_in_spec(엄격)",
+  "result": "OK",
+  <span style="color:#ff9800">"summary": {
+    "median": -0.011,
+    "std": 0.0233,
+    "p2p": 0.06,
+    "sample_count": 112,
+    "tail_count": 10,
+    "retry_used": 0
+  }</span>
+}
+</pre>
+
+<h3>VIBE 비교</h3>
+<table>
+<tr><th>항목</th><th>기존 (VL1-00023)</th><th>신규 (VL1-00026)</th></tr>
+<tr><td>item</td><td>X축 진동 (-90도)</td><td>X축 진동 (-90도)</td></tr>
+<tr><td>value</td><td>1.0</td><td>1.0</td></tr>
+<tr><td>min/max</td><td>0.99~1.01</td><td>0.99~1.01</td></tr>
+<tr><td>result</td><td>OK</td><td>OK</td></tr>
+<tr><td style="color:#ff9800">summary.median</td><td>-</td><td style="color:#ff9800">1.0</td></tr>
+<tr><td style="color:#ff9800">summary.std</td><td>-</td><td style="color:#ff9800">0.0</td></tr>
+<tr><td style="color:#ff9800">summary.p2p</td><td>-</td><td style="color:#ff9800">0.0</td></tr>
+<tr><td style="color:#ff9800">summary.norm</td><td>-</td><td style="color:#ff9800">1.0</td></tr>
+<tr><td style="color:#ff9800">summary.non_target_max</td><td>-</td><td style="color:#ff9800">0.01</td></tr>
+<tr><td style="color:#ff9800">summary.sample_count</td><td>-</td><td style="color:#ff9800">110</td></tr>
+<tr><td style="color:#ff9800">summary.retry_used</td><td>-</td><td style="color:#ff9800">0</td></tr>
+</table>
+<p><strong>변경점:</strong> 기존 필드 그대로 유지 + <code>summary</code> 블록만 추가. 판정 로직 변경 없음.</p>
+</div>
+
+<hr>
+<p style="color:#999;font-size:0.85em">
+작성: Claude | 날짜: 2026-04-14 | 브랜치: step6-motion-jig-test | 커밋: bb59c1c + summary 추가
+</p>
+
+</body>
+</html>

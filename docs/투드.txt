@@ -1,0 +1,262 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔴 [내일 즉시 작업 가능] 2026-04-24 오전 시작용
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▶ STEP 1 (5분): 워크스페이스 rename 커밋 + 푸시
+  - git status 보면 8개 파일 R (rename) 상태로 stage됨
+  - 커밋 메시지:
+      "워크스페이스 파일명 패턴 변경 (종류→프로토콜→모델)
+       8개 파일 (Release MP/TEST × VL10/VL20 board/motion)
+       MP_workspace_VL10_board_232.json → MP_workspace_board_232_VL10.json"
+  - git commit + git push origin step6-motion-jig-test
+
+▶ STEP 2 (10분): Debug 폴더도 동일 rename (일관성)
+  - output/Debug/net8.0-windows/ 의 8개 워크스페이스 동일 패턴으로
+  - git mv 사용 (history 보존)
+  - 같은 커밋에 묶거나 별도 커밋
+
+▶ STEP 3 (양산 진행): 미니피씨 v0.6.9 양산 시작
+  - 풀 시나리오 검사 진행
+  - 통신검사 PASS율 모니터링 (목표 99%)
+  - DPM_CURR 측정값 누적 (3.7mA 정상 여부 판단용)
+
+▶ STEP 4 (양산 1주 후): DPM_CURR 스펙 결정
+  - 1주 양산 데이터로 정상 보드 평균 전류 확인
+  - min 4.0mA 유지 vs 3.0mA 완화 결정
+  - JSON 9개 파일 일괄 변경 (스펙 변경 시)
+
+▶ STEP 5 (양산 2주 후): 품질 모니터링 단계 1 시작
+  - docs/2026 0423-품질모니터링/PLAN_품질모니터링_시스템_20260423_v01.md 참조
+  - Python 스크립트로 Result JSON 스캔
+  - HTML 리포트 출력
+  - 단계 0 (코드 수정)은 스킵 — Result JSON만으로 충분
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1.보드검사 전류 스펙 232 8밀리대 485 3밀리대.  전류 (VL20 485) │ ❌ spec 아웃 (실측 3.78mA / spec 4~7mA)
+2. 보드검사 몽고디비 연결  가시화     
+3. [진동검사에 정지(rest) 측정 1단계 추가 — 노이즈성 센서불량 감지] (2026-06-04 추가, B묶음 / 모션 기능추가 빌드 시)
+ - 배경: 6/2 485보드 200건 검토 중 발견. 현재 진동·기울기 검사 둘 다 "움직이는 중"만 측정 + 움직임 요구(require_motion)
+ - 사각: "가만히 있는데 값이 출렁(노이즈성)" = 정지 상태를 안 보니 진동·기울기 둘 다 못 잡음
+   * 고착/데드 센서는 진동 require_motion이 이미 잡음 (6/2 200건 모션 true) → 남는 진짜 사각은 "노이즈성" 하나뿐
+ - 해결: 보드검사 "진동검사 바로 앞"에 [정지 안정성 검사] 별도 스텝 신규 (VIBE 병합 아님 — 독립 strict 판정 위해)
+   * 위치: ...LED검사 → [신규 정지검사] → VIBE(흔들기) → TILT
+   * 정지("가만히 두세요") → MODE02 GAC ~1초 수집 → 0축 RMS(또는 p2p 변동폭) ≤ 낮은 임계면 PASS
+   * retry=0 (간헐 노이즈 안 가려지게) + 전 구간 판정(tail 끝 N개 아님) + ★평균(mean) 금지, RMS/p2p로★
+ - 왜 RMS/진동(각도 아님): 정지 노이즈는 AN(각도)가 아니라 진동 GAC의 RMS(진폭)로 봐야 함. RMS는 GAC에 이미 있으나 "흔드는 중+느슨spec(0.1~2.0)"이라 미활용
+ - verify_an이 약한 고리인 이유(코드확인 VibeTilt.cs:1286): OFFSET후 AN ~1초 스트림을 "평균"으로 ±0.05 판정 → 대칭노이즈 상쇄돼 못 봄(zero-mean blind). 단발 아니라 평균이라 약함
+ - 현재 사각: "정지 안정성 검사" = 보드·모션 통틀어 0개. 큰/지속 노이즈는 모션 all_in_spec(tilt tail10/vibe tail5)이 잡지만, 작은/간헐은 보드·모션 다 통과 가능(verify_an 평균+cal편향, tail 끝구간, retry3)
+ - 정지 기준값(예 RMS<0.1, p2p<0.05): 정상보드 정지 실측 후 확정 (현재 데이터 없음 → PLAN 1단계서 수집)
+ - 변경범위: VibeTilt.cs(신규 핸들러) + 보드 JSON(232+485, MP/TEST, Debug+Release) + 작업자 프롬프트. 코드+빌드 = 0.7.2
+ - PLAN: docs/2026 0604_모션_기능추가전보강/PLAN_보드정지노이즈검사_20260604_v01.md
+
+3-2. [모션검사에도 0도 정지 안정성 검사 추가 — #3의 모션 측 짝, B묶음] (2026-06-04 추가)
+ - 핵심 발견: 모션검사는 ★보드 2개 동시 검사★ 구조 (X결합=uart_485 / Y결합=uart_485_y, #3 안내문 "X축/Y축 결합위치 안착")
+ - 사각: 0도 진동(GAC) 스트림 항목은 #13(Y결합) 하나뿐 → X결합은 0도 진동 측정 자체가 없음(#4 verify_an 단발 ±0.05만)
+   * ⇒ #13만 손대면 Y결합만 필터됨, X결합 통째로 빠짐. 양쪽에 각각 넣어야 함
+ - 해결(B안 채택): 양쪽 보드에 ★동일한 별도 항목★ 추가 (기존 #4/#13 병합 아님 — 1G 사양판정 무손상 + 일관성)
+   * X결합: #5(X축 파라미터 저장) 직후 = MOTION_STAB_X_485
+   * Y결합: #13(Z축 진동 0도) 직후 = MOTION_STAB_Y_485
+   * 표시명: "정지 안정성 검사 (0도)" (#5-1 / #13-1)
+ - 판정: MODE02 GAC ~1초 → all_in_spec 전구간 + retry=0 + require_motion 없음, X/Y/Z/RMS 밴드 + ★X/Y p2p 병행★(RMS는 둔감→드롭아웃용)
+ - 데이터 시작밴드(6/2·6/4 보드로그): X -0.12~+0.05, Y -0.10~+0.10, Z 0.98~1.02, RMS 0.50~0.68 (0.00 드롭아웃 제외/허용)
+ - 선결 확인: check_axis_index 단일축 제약 → 다축판정 DLL 지원 여부를 #13 check_axis_index:3(RMS) 1회 시험으로 확정. 안되면 DLL에 다축 0도판정 추가
+   * 밴드는 보드(수동지그) 데이터라 넓음 → ★모션 0도 post-CAL 데이터로 재확정 필요★ (현 검사PC에 모션로그 없음)
+ - 변경범위: VibeTilt.cs(다축 정지판정 핸들러) + 모션 JSON(X결합/Y결합, MP/TEST, Debug+Release). 0.7.2 동시
+ - PLAN: docs/2026 0604_모션_기능추가전보강/PLAN_모션_0도정지정상필터_20260604_v01.md
+
+
+
+
+1.모션 485 2.0.2.3은 UID구현된거고 2.0.2는 UID 미구현이야
+2.롱런 COM 포트 락업 대응 (v0.6.8 후보)
+ - 2026-04-21~22 485 롱런 173회(9h35m) 정상 후 Y축 COM12 드롭아웃, 56회 허공반복 → 재부팅으로만 복구됨 (드라이버 락업)
+ - 양산에선 작업자가 USB 뽑꽂으로 즉시 복구하므로 실영향 낮음. 단 다음 개선 필요
+ - 연속 FAIL 2~3회시 부저/팝업 알람 크게
+ - UI "COM 포트 재연결" 버튼 추가 (내부 pnputil /restart-device)
+ - 연속 FAIL N회 하드스톱 (허공반복 차단)
+
+3.serial_board_232.txt 중복 append 버그 (v0.6.8에서 수정 완료, commit 35682b9)
+ - 보드검사 1회 실행 시 serial 파일에 다음번호가 2줄씩 중복 기록됨 (예: 00001, 00002, 00002)
+ - 원인: SerialMac.cs:204 와 FlexfabForm.cs:2086 두 곳에서 동일 auto_increment append 호출
+ - 해결: FlexfabForm.cs:2086 한 줄 제거 (SerialMac이 이미 처리하므로 상위 중복 제거)
+ - 양산 영향: 단순 가독성이 아니라 ★FAIL 시 시리얼 롤백 미작동★ 발생
+   (rollback이 1줄만 제거 → 다음 시리얼이 +1 올라가버림)
+ - 00001 seed(SerialMac.cs:182 빈 파일 초기화)는 의도된 설계이므로 유지
+
+4.미니피씨에 v0.6.8 publish 배포 (이관 D-1, 2026-04-23 추가)
+ - 현황: 미니피씨가 아직 v0.6.7.60422 사용 → 위 #3 버그 살아있음
+ - 증상: 보드검사 5회차 FAIL 시 다음 사이클 시리얼이 5가 아닌 6으로 표시됨
+ - 해결: 개발PC의 flexfab_mini\output\Release\net8.0-windows\win-x64\publish\ 폴더 통째로 미니피씨에 복사
+ - 검증: 새 EXE 실행 시 로그 첫 줄 "version: 0.6.8.60422" 확인 + 의도적 FAIL 1회 후 시리얼 정상 롤백 확인
+ - 시간: 10분 (코드 수정 없음, 단순 배포)
+
+7.보드검사 COMM_485 통신검사 간헐 FAIL (v0.6.9 후보, 2026-04-23 추가)
+ - 증상: 미니피씨 VL20 보드검사 (RS-485) 양산 사이클 중 통신검사 ~30% FAIL
+   (예: 7회 중 2회 — 00002, 00006 cycle에서 [VER] 응답 명령 불일치)
+ - 잔류 패킷 형식: [AN,1,-0.85,0.40] (MODE,6 = TILT streaming)
+ - 근본 원인: TILT_X/Y_485 검사 종료 시 finally 블록에서 MODE,1,0 후 buffer 정리 누락
+   → 보드의 MODE,6 streaming이 완전히 멈추기 전 다음 사이클 시작
+   → COMM_485의 ClearCommBuffer (1초만 정리)가 잔류 [AN,...] 패킷 못 비움
+   → VER 응답 파서가 마지막 [AN,...]을 응답으로 잘못 인식
+ - 232는 영향 없음 (full-duplex라 STOP이 line 충돌 없이 전달됨)
+ - 485만 발생 (half-duplex 특성으로 boards's TX 중에 호스트 STOP이 깨질 수 있음)
+ - 수정 방향:
+   A. ff_vibetilt/VibeTilt.cs:498 ClearCommBuffer 강화
+      - 시작 시 <STOP,1> 강제 송신 (응답 무시)
+      - maxAttempts 10 → 30 (1초 → 3초)
+      - 연속 빈 응답 2 → 3 (안전 마진)
+      - silence detection (ff_pim/pim.cs:820 ClearUartBufferSafe 패턴 차용)
+   B. (선택) ff_vibetilt/VibeTilt.cs:2260~2310 TILT_Internal finally 블록에
+      MODE,1,0 후 ClearCommBuffer 추가 호출
+ - 양산 임시 대응: "통신검사 FAIL 시 검사 정지 → 다시 시작" 운영 가이드로 커버
+ - 시간: 코드 수정 30분 + 빌드 30분 + 미니피씨 검증 (10회 연속) 30분 = 1.5시간
+
+5.런타임 포함/미포함 빌드 자동화 스크립트
+ - 현재 수동 절차: dotnet build → dotnet publish → 배포 폴더 생성 → 복사 → Log/Result/serial 정리 → 모션 JSON HEAD 원복 → RELEASE_NOTE 복사
+ - 실수 위험: dll 버전 불일치, 솔루션 최상위 output/Release 갱신 누락, 본인 테스트값(COM113 등) 섞여들어감
+ - 목표: 명령 1회로 끝나는 PowerShell/bash 스크립트
+ - 주요 단계:
+   - csproj 버전 확인 → 자동 폴더명 생성 (260MMDD_X.Y.Z_ff_vl)
+   - ff_vibetilt + flexfab_mini 빌드 (Release)
+   - publish (win-x64 self-contained)
+   - 미포함/런타임포함 폴더 생성 + 파일 복사
+   - 최신 ff_vibetilt.dll로 덮어쓰기 (publish 폴더 구버전 대응)
+   - 보드 JSON 그대로 / 모션 JSON은 git show HEAD로 원복
+   - Log/Result/csv_tilt/serial_*/last_serial_*/RELEASE_NOTE.txt 정리
+   - 최상위에 RELEASE_NOTE 복사
+   - _TEST_RUN 옵션 생성
+ - 파일 위치 후보: build_deploy.ps1 (프로젝트 루트)
+ - 참고: docs/REF_빌드_배포_절차.md
+
+8.last_serial_x.txt를 워크스페이스 JSON에 통합 (v0.7.x 후보, 2026-04-23 추가)
+ - 현재 구조: 4종 워크스페이스 × 2 (serial_*.txt + last_serial_x_*.txt) = 8개 파일
+   * serial_*.txt: 누적 이력 (append-only, 매 cycle +1줄) — 유지 필요
+   * last_serial_x_*.txt: 1줄만 (마지막 X축 시리얼, dual 모드 Y축 디폴트용) — 통합 후보
+ - 개선: last_serial_x_*.txt 4개 → 각 워크스페이스 JSON의 "_last_serial_x" 필드로 이동
+   * 파일 12개 → 8개 (33% 감소)
+   * 워크스페이스 옮기면 X시리얼 자동 따라감 (1:1 묶음)
+   * serial_*.txt는 이력 추적 위해 그대로 유지
+ - 코드 변경 위치 (flexfab_mini/FlexfabForm.cs):
+   * 1864~1866 lastXPath 읽기 → workspace._last_serial_x 읽기
+   * 1996~1998 File.WriteAllText → workspace._last_serial_x 업데이트 + JSON 저장
+   * 3230~3232 롤백 → 동일 패턴
+   * GetLastSerialXFileName() 함수 제거
+ - 매 cycle JSON 재직렬화 부담 (한 필드 update): 100ms 미만, 양산 cycle(30초) 대비 무시 가능
+ - 단 개발 PC에서 git 추적 시 workspace.json dirty 상태 빈번 → .gitignore 고려 또는 serial 관련만 별도 state.json
+ - 시간: 1시간 (코드 수정 + 빌드 + 검증)
+
+6.로컬 DB(SQLite) + 모니터링 프로그램 (v0.7.x 로드맵)
+ - 상세 로드맵: docs/2026 0330-motion-real_jig/2026-0420 sqllite 메뉴얼/PLAN_로컬DB_모니터링_로드맵_20260420_v01.md
+ - 요약:
+   A. 검사 프로그램에 SQLite 추가 (flexfab.db, WAL 모드, serial 중복체크 파일→DB 쿼리 교체, Mongo 실패 시 큐잉)
+   B. 모니터링 프로그램 신규 개발 (별도 exe, 대시보드 + 재동기화 + 품질분석)
+   C. 매뉴얼 작성 (사용자 직접)
+ - MVP 기능: 오늘 PASS/FAIL, 불량률, 동기화 상태, CSV 내보내기
+ - 고급 (4차): 시료군 기반 μ/σ/Cp/Cpk 산출, 관리도, 히스토그램
+ - 영향: 공용 라이브러리/워크스페이스 변경 없음, 기존 JSON+Mongo 로직 유지 (3중 저장)
+
+9.보드 485 STOP 패턴 일괄 강화 (4번째 재발, 2026-04-24 추가)
+ - 증상: 보드 TILT 485 검사 FAIL → 전원 재기동 후 PASS (10초 왼쪽 기울임에도 통과 안 됨)
+ - 이전 3번 수정:
+   * 2026-04-15: 통합테스트에서 첫 발견 (CODE_0415_스트리밍잔류_해결.html)
+   * 2026-04-16: STOP_drain 수정 (PLAN_수정계획서_STOP_drain_20260416_v01.md / CODE_*.html)
+   * 2026-04-23 v0.6.9: COMM_485 ClearCommBuffer 강화 (투드 #7)
+ - 코드 분석 결과 (ff_vibetilt/VibeTilt.cs):
+   * VIBE verify_an OFFSET 검증 종료 (line 1185): 5회 반복 STOP 적용 ✓
+   * VIBE_Internal finally (line 1835~1839): 단일 STOP만 송신 ✗
+   * TILT_Internal finally (line 2325~2329): 단일 STOP만 송신 ✗
+   * → 이게 이번 4번째 재발의 직접 원인 추정
+ - 사양서 권장 (개발팀 엑셀):
+   * VL20 STOP은 ~10ms 주기 5회 반복 송신
+   * 충돌 시 응답 없을 수 있음 (Receive enable 전환되어 동작 지장 없음)
+ - 수정 방향:
+   A. TILT/VIBE finally에 5회 반복 STOP 패턴 적용 (verify_an line 1185 패턴 복사) — 작은 변경, 2시간
+   B. 공용 헬퍼 함수 Send485Stop() 추출 (재발 자체 차단)
+   C. ff_pim, ff_dpm 등 다른 라이브러리도 485 STOP 점검
+   D. (백업) SAM100 변경 — 송신 빈도 1/10 감소, 단 측정 시간 10배
+   E. ★유력 백업★ 보드 검사만 폴링 분리 적용 (양산 지속 시 재발하면 적용)
+      - 보드 검사 스펙: "움직임 있으면 됨" (ON/OFF 판정) → 폴링 적합도 ↑
+      - 모션 지그는 스트리밍 유지 (정밀 각도 측정 ±0.2° 필요, 다중 샘플 통계)
+      - 폴링 시나리오: <MODE,1,06> 단발 → 1~3회 반복으로 변화 감지 → PASS. STOP 자체 불필요 → 잔류 패킷 0
+      - 이전 구현 흔적 (git history): f9cb1ca "기울기 STOP→START 폴링 방식", 08c276c "AN 스트리밍 전환"
+        → 이전 폴링 코드 git에 보존됨 (cherry-pick or 참고 가능)
+      - 사양서 폴링 명령 지원 여부는 개발팀 확인 필요 (이전 구현이 펌웨어 레벨인지 호스트만인지)
+      - 시간: 사양 확인 30분 + git history 분석 30분 + 코드 작업 1~2시간 + 워크스페이스 JSON 분기 30분 + 빌드/검증 1시간 = 약 4시간
+   F. ★강력 후보★ ATIM(Auto Output Time) 기반 자동 종료 — 보드검사 한정 (2026-04-29 추가)
+      - 사양서 4.2.9: <ATIM, ID, X> X초 동안 자동 출력 후 자동 종료 (Default 3600초=1시간)
+        → 현재 default 3600초라 사실상 무한 streaming, STOP 명령에 의존하는 구조
+        → ATIM을 짧게 (예: 5초) 설정하면 보드가 스스로 streaming 중단
+      - 핵심 장점: STOP 명령 race condition 자체가 사라짐 (4번째 재발의 근본 차단)
+      - 시나리오 (보드검사 사이클):
+        * 시작: <ATIM, ID, 5> (RAM에만 적용, SAVE 안 함)
+        * 측정: <MODE, ID, 6> or <START> → 5초 후 보드 자동 종료
+        * 종료: STOP 생략 가능 (보내도 무해)
+        * 다음 사이클: 잔류 streaming 0 → COMM_485 30% FAIL 원인 제거
+      - APPCFG 격리: ATIM 설정 후 <APPCFG,ID,SAVE> 안 호출 → 출하 보드 default 3600 그대로 유지
+        (양산 보드는 RAM 적용만으로 충분, 전원 OFF 시 default 복귀)
+      - 모션 지그 영향 없음: 모션은 ATIM 건드리지 않음 → default 3600초 유지 → 기존 동작 그대로
+      - 검증 필요 항목 (실기 30분):
+        1) 다음 START 시 ATIM 카운터 리셋 여부 (누적이면 첫 사이클만 동작)
+        2) ATIM=0 의미 (무한? 즉시 정지?)
+        3) 짧은 값(5초) 정확도 — 검사 윈도우 마진 산정용
+      - 시간: 실기 검증 30분 + 코드 수정 1시간 + 빌드/검증 1시간 = 약 2.5시간
+      - 우선순위: A(STOP 5회 반복) 적용 후에도 재발하면 F 적용. E보다 깔끔 (펌웨어 공식 지원)
+
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ★ 2026-04-29 검토: 1안(JSON 변경) vs 2안(코드 수정) — 내일 진행
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ [현재 상태 재확인]
+   - 양산 메인 사이클의 STOP은 사실상 1회 송신 중 (5회로 알고 있었으나 오해)
+     * VIBE_Internal finally / TILT_Internal finally 모두 JSON tests 배열의 <STOP,1> 1줄만 처리
+   - OFFSET verify_an (line 1185) 만 5회 반복 적용되어 있음
+   - 개발팀 권장 "5회→15(또는 20)회로 늘려라" → 실제로는 "1회→N회"로 늘리는 것
+     * 개발팀에 정정 보고 필요: 현재 양산 STOP은 1회였고, N회로 늘리겠다고 명확히 전달
+
+ [1안: JSON 변경으로 1회 → 5회 (코드 수정 없음)]
+   - 작업: 4개 워크스페이스 JSON × VIBE_485/TILT_X_485/TILT_Y_485 의 tests 배열에 <STOP,1> 4개 추가
+     * MP_workspace_board_485_VL20.json (Debug+Release)
+     * TEST_workspace_board_485_VL20.json (Debug+Release)
+     * POLLING 변형도 있으면 동일 적용 (확인 필요)
+   - 사이클 영향: STOP 1회 추가당 600ms~3.7초 (보드 상태 의존)
+     * 1회 비용 = ReadStep(500ms) + Sleep(200ms) + ClearCommBuffer(350~3000ms)
+     * 4회 추가시 +2.4초(양호) ~ +14.8초(잔류 많음)
+   - 장점: 코드 빌드 없이 즉시 적용, 양산 운영 중 횟수 조정 용이
+   - 단점: 사이클 시간 변동 큼 (검사 시간 편차), 간격 700ms 고정 — PDF 권장 10ms 간격 불가
+   - 시간: JSON 4개 수정 + 검증 = 약 30분
+
+ [2안: 코드 수정 + JSON 파라미터화]
+   - 작업: VibeTilt.cs 3곳 수정 + JSON에 stop_repeat_count 필드 추가
+     * 1185 (verify_an OFFSET): 하드코딩 5 → 파라미터
+     * 1835~1839 (VIBE finally): 단일 STOP → 반복 STOP 헬퍼 호출
+     * 2325~2329 (TILT finally): 단일 STOP → 반복 STOP 헬퍼 호출
+     * 공용 헬퍼: Send485StopRepeat(uart, param, logAction)
+   - JSON 추가 필드:
+       "stop_repeat_count": 5 (default),
+       "stop_interval_ms": 10,
+       "_stop_comment": "VL20 PDF 권장 다회 반복 STOP. 양산 재발 시 10~20 조정"
+   - 사이클 영향: 5회시 +50ms (10ms 간격), 거의 무시 가능
+   - 장점: PDF 권장 10ms 간격 정확 구현, 사이클 영향 최소, 향후 운영 중 JSON으로 자유 조정 (10/15/20회)
+          CLAUDE.md 규칙 부합 ("프로토콜은 하드코딩 금지, JSON에 작성")
+          기존 옵션 #9-A, #9-B, #9-F 동시 충족 (헬퍼 추출 + 파라미터화)
+   - 단점: 빌드 필요, 미니피씨 publish 배포 필요
+   - 시간: 코드 1.5시간 + 빌드 30분 + 미니피씨 검증 (10회 연속) 30분 = 약 2.5시간
+
+ [추천]
+   2안 선호 — 사이클 시간 영향 최소, PDF 권장 충실 구현, 향후 조정 용이.
+   1안은 "당장 양산 멈춰서 즉시 적용해야 할 때"의 임시안으로만 보유.
+   2안 적용 후 1주 양산 모니터링 → 재발 시 JSON에서 5→10→20 점진 상향 → 그래도 재발하면 F안(ATIM)으로 전환.
+
+ [내일 작업 순서 (2026-04-30 예정)]
+   1) 개발팀에 현 상태 정정 보고 (양산 STOP은 1회였음, N회로 늘릴 예정)
+   2) N 횟수 합의 (5/10/15/20 중 선택)
+   3) 2안 코드 수정 + JSON 4개 파라미터 추가 (같은 커밋)
+   4) 빌드 → 미니피씨 publish 배포 → 10회 연속 검증
+   5) 양산 1주 모니터링 후 재평가
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ - 양산 임시 대응: FAIL 시 전원 재기동 후 재테스트 (이미 운영 중)
+ - 시간: A 적용 코드 수정 1.5시간 + 빌드 30분 + 미니피씨 검증 (10회 연속) 30분
+ - 참고: docs/2026 0330-motion-real_jig/2026-0424-제조이관작업/
+ - 진행 전략: 2안 즉시 적용 → 1주 양산 모니터링 → 재발 빈도 잦으면 F (ATIM 자동 종료) > E (폴링 분리) 순으로 적용

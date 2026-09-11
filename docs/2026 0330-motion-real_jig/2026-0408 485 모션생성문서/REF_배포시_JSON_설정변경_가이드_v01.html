@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>REF: JSON 설정 변경 가이드 (개발용)</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; max-width: 950px; margin: 30px auto; padding: 0 20px; line-height: 1.6; color: #333; }
+  h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 8px; }
+  h2 { color: #2c3e50; border-bottom: 1px solid #bdc3c7; padding-bottom: 4px; margin-top: 30px; }
+  h3 { color: #34495e; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 20px; }
+  th, td { border: 1px solid #bdc3c7; padding: 8px 12px; text-align: left; }
+  th { background: #2c3e50; color: white; }
+  tr:nth-child(even) { background: #f8f9fa; }
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.95em; }
+  .meta { color: #666; margin-bottom: 20px; }
+  .search { background: #fff3cd; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+  blockquote { border-left: 4px solid #3498db; margin: 10px 0; padding: 8px 16px; background: #ebf5fb; }
+  .checklist { background: #f8f9fa; padding: 16px 20px; border-radius: 8px; border: 1px solid #dee2e6; }
+  .checklist li { margin: 6px 0; }
+</style>
+</head>
+<body>
+
+<h1>REF: 배포 시 JSON 설정 변경 가이드</h1>
+<div class="meta">
+  <strong>목적:</strong> 다른 PC/지그에 배포할 때 JSON에서 변경해야 할 항목 정리<br>
+  <strong>대상 파일:</strong> workspace_motion_232.json, longrun_motion_*.json
+</div>
+
+<h2>1. 반드시 확인/변경할 항목</h2>
+
+<h3>1.0 시리얼 포트 드라이버 설치 (신규 PC 최초 1회)</h3>
+<p>멀티포트 어댑터: <strong>NEXT RS232 4P</strong> (PL2303GC 칩)</p>
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td>드라이버 다운로드</td><td>Prolific 공식: <code>https://www.prolific.com.tw/portfolio-item/pl2303gc/</code></td></tr>
+  <tr><td>드라이버 버전</td><td><code>v4.9.0.0 (2026/03/06)</code> — 파일명: <code>PL23XX-M_LogoDriver_Setup_4900_20260306.exe</code></td></tr>
+  <tr><td>설치 방법</td><td>설치 파일 실행 (자동 설치)</td></tr>
+  <tr><td>확인</td><td>장치 관리자에서 <code>Prolific PL2303GC USB Serial COM</code>으로 4포트 인식</td></tr>
+</table>
+<blockquote>⚠ 드라이버 미설치 시 장치 관리자에 ? 또는 "USB Serial Port"로 표시되며 통신 불가</blockquote>
+
+<h3>1.1 COM 포트 (장치 관리자에서 확인)</h3>
+<p>검색 키워드: <span class="search">"port"</span></p>
+<table>
+  <tr><th>항목</th><th>JSON 키</th><th>현재 값</th><th>설명</th></tr>
+  <tr><td>VL 센서 X축</td><td>uart_232 → port</td><td><code>COM13</code></td><td>RS-232 X축 통신</td></tr>
+  <tr><td>VL 센서 Y축</td><td>uart_232_y → port</td><td><code>COM14</code></td><td>RS-232 Y축 통신</td></tr>
+  <tr><td>자이로</td><td>uart_gyro → port</td><td><code>COM15</code></td><td>SOLAR-360-420 레퍼런스</td></tr>
+  <tr><td>VL 센서 485</td><td>uart_485 → port</td><td><code>COM13</code></td><td>RS-485 통신 (컨버터 경유)</td></tr>
+</table>
+
+<h3>1.2 EMIO 모터 제어 (TCP)</h3>
+<p>검색 키워드: <span class="search">"ip"</span></p>
+<table>
+  <tr><th>항목</th><th>JSON 키</th><th>현재 값</th><th>설명</th></tr>
+  <tr><td>EMIO IP</td><td>tcp_emio → ip</td><td><code>100.100.100.70</code></td><td>EMIO 보드 IP</td></tr>
+  <tr><td>EMIO 포트</td><td>tcp_emio → port</td><td><code>2233</code></td><td>EMIO 보드 포트</td></tr>
+</table>
+
+<h3>1.2.1 PC 네트워크 설정 (신규 PC 최초 1회)</h3>
+<p>EMIO와 통신하려면 PC의 LAN 어댑터를 같은 IP 대역으로 설정해야 합니다.</p>
+<table>
+  <tr><th>단계</th><th>설명</th></tr>
+  <tr><td>1</td><td>Win+R → <code>ncpa.cpl</code> 입력 → 확인 (네트워크 연결 창 바로 열림)</td></tr>
+  <tr><td>2</td><td>EMIO와 연결된 이더넷 어댑터 우클릭 → 속성</td></tr>
+  <tr><td>3</td><td>인터넷 프로토콜 버전 4 (TCP/IPv4) 선택 → 속성</td></tr>
+  <tr><td>4</td><td>"다음 IP 주소 사용" 선택</td></tr>
+</table>
+<table>
+  <tr><th>항목</th><th>값</th><th>비고</th></tr>
+  <tr><td>IP 주소</td><td><code>100.100.100.10</code></td><td>70 제외, 같은 대역이면 됨</td></tr>
+  <tr><td>서브넷 마스크</td><td><code>255.255.255.0</code></td><td></td></tr>
+  <tr><td>기본 게이트웨이</td><td>(비워둠)</td><td></td></tr>
+</table>
+<p>설정 후 확인: <code>cmd → ping 100.100.100.70</code> → 응답 오면 정상</p>
+<blockquote>주의: EMIO 전용 LAN 포트에만 설정. 인터넷용 LAN과 혼동 금지.</blockquote>
+
+<h3>1.3 MongoDB</h3>
+<p>검색 키워드: <span class="search">"mongodb"</span></p>
+<table>
+  <tr><th>항목</th><th>JSON 키</th><th>현재 값</th><th>설명</th></tr>
+  <tr><td>DB 주소</td><td>mongodb_uri</td><td><code>mongodb://192.168.10.10:45029/...</code></td><td>검사 결과 저장 DB</td></tr>
+</table>
+
+<h2>2. 운영 모드 설정 (용도에 따라 변경)</h2>
+<p>검색 키워드: <span class="search">"log_level"</span>, <span class="search">"show_log"</span>, <span class="search">"test_mode"</span></p>
+<table>
+  <tr><th>항목</th><th>JSON 키</th><th>양산 권장</th><th>테스트</th><th>설명</th></tr>
+  <tr><td>로그 레벨</td><td>log_level</td><td><code>MP_LOG</code></td><td><code>TEST_LOG</code></td><td>MP_LOG: 핵심만, TEST_LOG: 전체</td></tr>
+  <tr><td>로그창 표시</td><td>show_log</td><td><code>false</code></td><td><code>true</code></td><td>양산: 숨김</td></tr>
+  <tr><td>시리얼 중복</td><td>serial_duplicate_check</td><td><code>2</code></td><td><code>0</code></td><td>2:차단, 1:경고, 0:안함</td></tr>
+  <tr><td>FAIL 시</td><td>fail_continue</td><td><code>false</code></td><td><code>true</code></td><td>false:중단, true:끝까지</td></tr>
+  <tr><td>검사 모드</td><td>test_mode</td><td><code>dual</code></td><td><code>single/dual</code></td><td>dual: X+Y 동시</td></tr>
+  <tr><td>반복 횟수</td><td>repeat_all_count</td><td>없음(1회)</td><td>N</td><td>롱런 시 설정</td></tr>
+</table>
+
+<h2>3. 스펙/모션 파라미터 (일반적으로 변경 불필요)</h2>
+<blockquote>변경 시 전 파일 수평전개 필요 (longrun_dual 기준)</blockquote>
+<table>
+  <tr><th>항목</th><th>JSON 키</th><th>현재 값</th><th>설명</th></tr>
+  <tr><td>기울기 ±20도 허용</td><td>tilt_tolerance_20</td><td><code>0.2</code></td><td>사양서 기준</td></tr>
+  <tr><td>기울기 ±45도 허용</td><td>tilt_tolerance_45</td><td><code>0.5</code></td><td>사양서 기준</td></tr>
+  <tr><td>진동 최소</td><td>vibe_min</td><td><code>0.99</code></td><td>사양서 기준</td></tr>
+  <tr><td>진동 최대</td><td>vibe_max</td><td><code>1.01</code></td><td>사양서 기준</td></tr>
+  <tr><td>OFFSET 검증 범위</td><td>verify_an_min / max</td><td><code>-0.05 / 0.05</code></td><td>사양서 기준</td></tr>
+  <tr><td>홈 센서</td><td>home_sensor</td><td><code>in1</code></td><td>in1/in2/auto</td></tr>
+  <tr><td>자이로 방향 X축</td><td>gyro_dir</td><td><code>setdir6</code></td><td>X축 지그</td></tr>
+  <tr><td>자이로 방향 Y축</td><td>gyro_dir</td><td><code>setdir5</code></td><td>Y축 지그</td></tr>
+</table>
+
+<h2>4. 232 vs 485 전환 시 변경할 것</h2>
+<table>
+  <tr><th>항목</th><th>232</th><th>485</th></tr>
+  <tr><td>uart id</td><td><code>uart_232</code></td><td><code>uart_485</code></td></tr>
+  <tr><td>baudrate</td><td><code>115200</code></td><td><code>115200</code></td></tr>
+  <tr><td>vibetilt config</td><td><code>"uart_232": "uart_232"</code></td><td><code>"uart_485": "uart_485"</code></td></tr>
+  <tr><td>ctsp commlib</td><td><code>uart_232</code></td><td><code>uart_485</code></td></tr>
+  <tr><td>VER 명령</td><td><code>&lt;VER&gt;</code></td><td><code>&lt;VER,1&gt;</code></td></tr>
+  <tr><td>OFFSET 명령</td><td><code>&lt;OFFSET,1&gt;</code> / <code>[OFFSET,0,1]</code></td><td><code>&lt;OFFSET,1,1&gt;</code> / <code>[OFFSET,0,1,1]</code></td></tr>
+  <tr><td>APPCFG 명령</td><td><code>&lt;APPCFG,SAVE&gt;</code> / <code>[APPCFG,0,SAVE]</code></td><td><code>&lt;APPCFG,1,SAVE&gt;</code> / <code>[APPCFG,0,1,SAVE]</code></td></tr>
+  <tr><td>UID</td><td>미구현</td><td><code>&lt;UID,1,VL2-{serial}&gt;</code></td></tr>
+  <tr><td>Y축 uart_id</td><td><code>uart_232_y</code> 지정</td><td>제거 (단일포트)</td></tr>
+</table>
+
+<h2>5. 빠른 변경 체크리스트</h2>
+<div class="checklist">
+  <p><strong>새 PC에 배포할 때:</strong></p>
+  <ul>
+    <li>☐ COM 포트 확인 (장치 관리자) → JSON 수정</li>
+    <li>☐ EMIO IP/포트 확인 → JSON 수정</li>
+    <li>☐ MongoDB 주소 확인 → JSON 수정</li>
+    <li>☐ 용도에 맞는 workspace 선택 (양산: workspace_motion_xxx, 테스트: longrun_motion_xxx)</li>
+    <li>☐ 실행 테스트 1회 → ALL PASS 확인</li>
+  </ul>
+</div>
+
+<h2>6. TIMEOUT 설정 (항목별)</h2>
+<p>검색 키워드: <span class="search">"TIMEOUT"</span></p>
+<table>
+  <tr><th>항목</th><th>JSON 위치</th><th>현재 값</th><th>설명</th></tr>
+  <tr><td>FW 버전 확인</td><td>FWVER → TIMEOUT</td><td><code>5000</code></td><td>VER 응답 대기 (ms)</td></tr>
+  <tr><td>UID 설정</td><td>UID → TIMEOUT</td><td><code>5000</code></td><td>UID 응답 대기</td></tr>
+  <tr><td>영점 초기화</td><td>MOTION_ZERO → TIMEOUT</td><td><code>60000</code></td><td>홈 복귀 + FineAdjust 포함</td></tr>
+  <tr><td>Calibration</td><td>OFFSET → TIMEOUT</td><td><code>5000</code></td><td>OFFSET + AN 검증</td></tr>
+  <tr><td>파라미터 저장</td><td>APPCFG_SAVE → TIMEOUT</td><td><code>5000</code></td><td>SAVE 응답 대기</td></tr>
+  <tr><td>기울기 측정</td><td>MOTION_TILT → TIMEOUT</td><td><code>60000</code></td><td>4각도 이동 + 측정</td></tr>
+  <tr><td>진동 측정</td><td>MOTION_VIBE → TIMEOUT</td><td><code>10000</code></td><td>GAC 측정</td></tr>
+</table>
+
+<h2>7. 모션 내부 타이밍 (MotionJig.cs 기본값)</h2>
+<p>JSON에 명시하지 않으면 코드 기본값 사용. 필요 시 각 proc의 param에 추가.</p>
+<table>
+  <tr><th>파라미터</th><th>JSON 키</th><th>기본값</th><th>설명</th></tr>
+  <tr><td>스텝 분해능</td><td>step_resolution</td><td><code>0.1125</code></td><td>도/step</td></tr>
+  <tr><td>원점→0도 step</td><td>steps_to_zero</td><td><code>1250</code></td><td>홈→0도 이동 step 수</td></tr>
+  <tr><td>센서 차이 에러</td><td>sensor_diff_error</td><td><code>10</code></td><td>자이로-VL 차이 한계 (도)</td></tr>
+  <tr><td>반전 임계</td><td>reverse_threshold</td><td><code>0.02</code></td><td>FineAdjust 방향 반전 기준</td></tr>
+  <tr><td>이동 타임아웃 최소</td><td>move_timeout_min</td><td><code>3000</code></td><td>step 이동 최소 대기 (ms)</td></tr>
+  <tr><td>이동 타임아웃 최대</td><td>move_timeout_max</td><td><code>5000</code></td><td>step 이동 최대 대기</td></tr>
+  <tr><td>홈 타임아웃</td><td>home_timeout</td><td><code>15000</code></td><td>PMO011 완료 대기</td></tr>
+  <tr><td>홈 대기</td><td>home_pre_wait</td><td><code>500</code></td><td>홈 명령 전 대기</td></tr>
+  <tr><td>홈 폴링 간격</td><td>home_poll_interval</td><td><code>500</code></td><td>홈 상태 확인 간격</td></tr>
+  <tr><td>영점 안정화</td><td>zero_settle_wait</td><td><code>1500</code></td><td>영점 도달 후 안정화 대기</td></tr>
+  <tr><td>기울기 이동 대기</td><td>tilt_move_wait</td><td><code>500</code></td><td>각도 이동 후 대기</td></tr>
+  <tr><td>기울기 복귀 대기</td><td>tilt_return_wait</td><td><code>500</code></td><td>0도 복귀 후 대기</td></tr>
+  <tr><td>진동 프리무브 대기</td><td>vibe_premove_wait</td><td><code>500</code></td><td>진동 이동 전 대기</td></tr>
+  <tr><td>진동 이동 대기</td><td>vibe_move_wait</td><td><code>500</code></td><td>진동 이동 후 대기</td></tr>
+  <tr><td>FineAdjust 확인</td><td>fine_confirm_wait</td><td><code>500</code></td><td>미세조정 확인 대기</td></tr>
+  <tr><td>FineAdjust step</td><td>fine_step_wait</td><td><code>500</code></td><td>미세조정 step 간 대기</td></tr>
+  <tr><td>FineAdjust 재시도</td><td>fine_retry_wait</td><td><code>2000</code></td><td>미세조정 재시도 대기</td></tr>
+  <tr><td>수평 복귀 대기</td><td>level_return_wait</td><td><code>1500</code></td><td>수평 복귀 후 대기</td></tr>
+  <tr><td>테스트 시작 대기</td><td>test_start_wait</td><td><code>2000</code></td><td>테스트 시작 이동 후 대기</td></tr>
+  <tr><td>스트리밍 안정화</td><td>vl_stream_settle</td><td><code>300</code></td><td>VL 스트리밍 시작 후 대기</td></tr>
+</table>
+
+<h2>8. FineAdjust 파라미터</h2>
+<p>검색 키워드: <span class="search">"fine_adjust"</span></p>
+<table>
+  <tr><th>파라미터</th><th>JSON 키</th><th>현재 값</th><th>설명</th></tr>
+  <tr><td>엄격 허용 오차</td><td>fine_adjust_strict_tolerance</td><td><code>0.05</code></td><td>1차 수렴 목표 (도)</td></tr>
+  <tr><td>완화 허용 오차</td><td>fine_adjust_relaxed_tolerance</td><td><code>0.1</code></td><td>2차 수렴 목표 (실패 시)</td></tr>
+  <tr><td>최대 step</td><td>fine_adjust_max_steps</td><td><code>250</code></td><td>미세조정 최대 시도 횟수</td></tr>
+</table>
+
+<h2>9. 진동 측정 상세 (VibeTilt.cs)</h2>
+<table>
+  <tr><th>파라미터</th><th>JSON 키</th><th>기본값</th><th>설명</th></tr>
+  <tr><td>PASS 최소 경과</td><td>pass_min_elapsed_ms</td><td><code>1000</code></td><td>모션 시작 후 최소 대기</td></tr>
+  <tr><td>PASS 연속 횟수</td><td>pass_consecutive_count</td><td><code>5</code></td><td>연속 PASS 필요 샘플 수</td></tr>
+  <tr><td>모션 감지 필요</td><td>require_motion</td><td><code>true</code></td><td>흔들림 감지 후 측정</td></tr>
+  <tr><td>모션 감지 마진</td><td>motion_detect_margin</td><td><code>0.03</code></td><td>흔들림 감지 임계값 (도)</td></tr>
+</table>
+
+<h2>10. 영점 초기화 파라미터</h2>
+<table>
+  <tr><th>파라미터</th><th>JSON 키</th><th>현재 값</th><th>설명</th></tr>
+  <tr><td>홈 센서</td><td>home_sensor</td><td><code>in1</code></td><td>in1: IN1만 / in2: IN2만 / auto: 교대</td></tr>
+  <tr><td>IN2→0도 step</td><td>steps_to_zero_in2</td><td><code>200</code></td><td>IN2 홈에서 0도까지 (미사용)</td></tr>
+  <tr><td>소프트 리밋+</td><td>soft_limit_plus</td><td><code>1600</code></td><td>180도 제한</td></tr>
+  <tr><td>소프트 리밋-</td><td>soft_limit_minus</td><td><code>-1600</code></td><td>-180도 제한</td></tr>
+  <tr><td>자이로 방향</td><td>gyro_dir</td><td><code>setdir6/setdir5</code></td><td>X축:setdir6, Y축:setdir5</td></tr>
+</table>
+
+<h2>11. 에러 코드 (error_table.json)</h2>
+
+<h3>11.1 통신 에러 (common)</h3>
+<table>
+  <tr><th>에러 코드</th><th>타입</th><th>메시지</th><th>확인</th></tr>
+  <tr><td><code>COMM_TCP</code></td><td>Communication Fail</td><td>TCP 연결 실패 (tcp_emio)</td><td>LAN 케이블, EMIO 전원, IP(100.100.100.70:2233)</td></tr>
+  <tr><td><code>COMM_UART</code></td><td>Communication Fail</td><td>COM 포트 연결 실패</td><td>USB 케이블, COM 번호(X:COM13, Y:COM14), 장치관리자</td></tr>
+  <tr><td><code>COMM_GYRO</code></td><td>Communication Fail</td><td>자이로 센서 연결 실패</td><td>COM15 연결, 자이로 전원, 케이블</td></tr>
+</table>
+
+<h3>11.2 모터/이동 에러 (common + project)</h3>
+<table>
+  <tr><th>에러 코드</th><th>타입</th><th>메시지</th><th>확인</th></tr>
+  <tr><td><code>MOVE_TIMEOUT</code></td><td>Move Fail</td><td>모터 이동 2회 연속 실패</td><td>모터 케이블, EMIO 에러(PPC00), 소프트 리밋(레지스터 28/29)</td></tr>
+  <tr><td><code>MOVE_HOME_TIMEOUT</code></td><td>Move Fail</td><td>홈 센서 감지 실패 (PMO011 timeout)</td><td>홈 센서 LED, 원판 홈 이물질/테이프, 센서 배선, 감도 조절</td></tr>
+  <tr><td><code>ZERO_HOME_FAIL</code></td><td>Move Fail</td><td>영점 초기화 — 홈 복귀 timeout</td><td>홈 센서, 원판 테이프, EMIO IN1 배선, 모터 구동</td></tr>
+  <tr><td><code>ZERO_MOVE_FAIL</code></td><td>Move Fail</td><td>영점 초기화 — 0도 이동 실패</td><td>모터 케이블, 소프트 리밋, EMIO 에러 클리어(PPC00)</td></tr>
+  <tr><td><code>ZERO_FINE_FAIL</code></td><td>Measurement Fail</td><td>영점 초기화 — 0도 미세조정 실패</td><td>자이로 응답, 모터 step 정밀도, 기계적 간섭</td></tr>
+  <tr><td><code>OVERROTATION</code></td><td>Safety</td><td>과회전 감지 (IN2)</td><td>케이블 꼬임, 원판 홈 상태, 소프트 리밋 설정</td></tr>
+</table>
+
+<h3>11.3 측정 에러 (project)</h3>
+<table>
+  <tr><th>에러 코드</th><th>타입</th><th>메시지</th><th>확인</th><th>대상 proc</th></tr>
+  <tr><td><code>TILT_MOVE_FAIL</code></td><td>Move Fail</td><td>기울기 — 각도 이동 실패</td><td>모터 케이블, 소프트 리밋, 기계적 간섭</td><td>MOTION_TILT_X/Y</td></tr>
+  <tr><td><code>TILT_FINE_FAIL</code></td><td>Measurement Fail</td><td>기울기 — 미세조정 실패</td><td>자이로 센서, 모터 정밀도</td><td>MOTION_TILT_X/Y</td></tr>
+  <tr><td><code>TILT_AN_PARSE_FAIL</code></td><td>Measurement Fail</td><td>기울기 — AN 데이터 파싱 실패</td><td>제품 장착, VL 센서 COM, MODE 06</td><td>MOTION_TILT_X/Y</td></tr>
+  <tr><td><code>TILT_SENSOR_DIFF</code></td><td>Measurement Fail</td><td>기울기 — 센서 차이 &gt; 10도</td><td>COM 포트 불일치, 장착 방향, <strong>제품 불량</strong></td><td>MOTION_TILT_X/Y</td></tr>
+  <tr><td><code>TILT_SPEC_OUT</code></td><td>Measurement Fail</td><td>기울기 — Spec 초과</td><td><strong>제품 불량</strong> (±20도: ±0.2 / ±45도: ±0.5)</td><td>MOTION_TILT_X/Y</td></tr>
+  <tr><td><code>VIBE_MOVE_FAIL</code></td><td>Move Fail</td><td>진동 — 각도 이동 실패</td><td>모터 케이블, 소프트 리밋, EMIO 에러</td><td>MOTION_VIBE_X/Y/Z</td></tr>
+  <tr><td><code>VIBE_GAC_FAIL</code></td><td>Measurement Fail</td><td>진동 — GAC Spec 초과</td><td><strong>제품 불량</strong> (Spec: 0.99~1.01)</td><td>MOTION_VIBE_X/Y/Z</td></tr>
+  <tr><td><code>VIBE_GAC_PARSE_FAIL</code></td><td>Measurement Fail</td><td>진동 — GAC 응답 파싱 실패</td><td>제품 장착, MODE 02, VL 센서 통신</td><td>MOTION_VIBE_X/Y/Z</td></tr>
+</table>
+
+<h3>11.4 EMIO 에러 코드</h3>
+<table>
+  <tr><th>코드</th><th>의미</th><th>조치</th></tr>
+  <tr><td><code>pmd0011</code></td><td>정상 완료</td><td>없음</td></tr>
+  <tr><td><code>pmd4011</code></td><td>명령 수행 불가 (동작 중)</td><td>재시도</td></tr>
+  <tr><td><code>pmd5011</code></td><td>소프트 리밋 충돌</td><td>무시, pmd0011 대기 (EMIO 자동 복구)</td></tr>
+  <tr><td><code>ppc006</code></td><td>에러 클리어 응답 (에러 있었음)</td><td>PPC00으로 클리어 후 계속</td></tr>
+  <tr><td><code>x15</code></td><td>원점 복귀 중 이동거리 초과</td><td>홈 센서 점검</td></tr>
+  <tr><td><code>x17</code></td><td>원점 복귀 파라미터 설정 에러</td><td>PMS 파라미터 확인</td></tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>485 롱런 퇴근테스트 결과 (2026-04-15~16)</title>
+<style>
+  body { font-family: 'Malgun Gothic', 'Segoe UI', sans-serif; margin: 30px; background: #f8f9fa; color: #222; line-height: 1.6; }
+  h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 8px; font-size: 1.5em; }
+  h2 { color: #2c3e50; margin-top: 30px; font-size: 1.2em; border-left: 4px solid #3498db; padding-left: 10px; }
+  h3 { color: #34495e; font-size: 1.05em; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.92em; }
+  th, td { border: 1px solid #bbb; padding: 7px 10px; text-align: left; }
+  th { background: #2c3e50; color: #fff; font-weight: 600; }
+  tr:nth-child(even) { background: #eef2f7; }
+  .pass { color: #27ae60; font-weight: bold; }
+  .fail { color: #e74c3c; font-weight: bold; }
+  .warn { color: #e67e22; font-weight: bold; }
+  .info-box { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 16px 20px; margin: 14px 0; }
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  .summary-card { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 14px 18px; }
+  .summary-card h3 { margin-top: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.85em; font-weight: 600; }
+  .tag-pass { background: #d5f5e3; color: #1e8449; }
+  .tag-fail { background: #fadbd8; color: #c0392b; }
+  .tag-stop { background: #fdebd0; color: #d35400; }
+  .phase-bar { display: flex; height: 28px; border-radius: 4px; overflow: hidden; margin: 10px 0; font-size: 0.8em; }
+  .phase-bar div { display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; }
+  .phase-ok { background: #27ae60; }
+  .phase-w1 { background: #f39c12; }
+  .phase-w2 { background: #e67e22; }
+  .phase-dead { background: #e74c3c; }
+  code { background: #ecf0f1; padding: 1px 5px; border-radius: 3px; font-size: 0.93em; }
+  .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 0.85em; color: #888; }
+  ul { margin: 6px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+</style>
+</head>
+<body>
+
+<h1>RS-485 모션지그 롱런 퇴근테스트 결과</h1>
+
+<div class="info-box">
+  <strong>버전:</strong> v0.6.2.60415 &nbsp;|&nbsp;
+  <strong>JSON:</strong> workspace_motion_485_TEST.json &nbsp;|&nbsp;
+  <strong>모드:</strong> dual, repeat=300 &nbsp;|&nbsp;
+  <strong>검사항목:</strong> 17개/회
+  <br>
+  <strong>시작:</strong> 2026-04-15 19:39 &nbsp;|&nbsp;
+  <strong>종료:</strong> 2026-04-16 08:39 (사용자 수동 중단) &nbsp;|&nbsp;
+  <strong>총 소요:</strong> ~13시간
+  <br>
+  <strong>완료 반복:</strong> 226/300회 &nbsp;|&nbsp;
+  <strong>1회 소요시간:</strong> ~2분 53초
+</div>
+
+<h2>구간별 진행 요약</h2>
+
+<div class="phase-bar">
+  <div class="phase-ok" style="flex:81;" title="1~81회 ALL PASS">1~81 PASS</div>
+  <div class="phase-w1" style="flex:48;" title="82~129회 FAIL=1">82~129 F=1</div>
+  <div class="phase-dead" style="flex:97;" title="130~226회 FAIL=6~9">130~226 F=6~9</div>
+</div>
+
+<table>
+  <tr>
+    <th>구간</th><th>반복</th><th>결과</th><th>비고</th>
+  </tr>
+  <tr>
+    <td><span class="tag tag-pass">정상</span></td>
+    <td>1 ~ 81회</td>
+    <td class="pass">ALL PASS (OK=17)</td>
+    <td>약 4시간 완전 안정 동작</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-fail">Y축 열화 시작</span></td>
+    <td>82 ~ 129회</td>
+    <td class="warn">FAIL=1</td>
+    <td><code>#8 시리얼번호 설정 (Y축)</code> 반복 실패<br>간헐적: <code>#1-Y FW버전</code>, <code>#5 X축 파라미터 저장</code></td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-fail">Y축 통신 두절</span></td>
+    <td>130 ~ 226회</td>
+    <td class="fail">FAIL=6~9</td>
+    <td>Y축 응답 완전 소실 → Y축 관련 전 항목 연쇄 FAIL</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-stop">수동 중단</span></td>
+    <td>226회 도중</td>
+    <td>-</td>
+    <td>사용자가 수동으로 테스트 중단</td>
+  </tr>
+</table>
+
+<h2>FAIL 항목 상세</h2>
+
+<h3>Phase 1: 82~129회 (FAIL=1)</h3>
+<table>
+  <tr><th>#</th><th>항목</th><th>빈도</th><th>원인</th></tr>
+  <tr>
+    <td>#8</td><td>시리얼번호 설정 (Y축)</td><td>매 회차</td><td>Y축 시리얼 쓰기 응답 실패</td>
+  </tr>
+  <tr>
+    <td>#1-Y</td><td>FW 버전 확인 (Y축)</td><td>간헐적</td><td>Y축 VER 명령 응답 지연/실패</td>
+  </tr>
+  <tr>
+    <td>#5</td><td>X축 파라미터 저장 (0도)</td><td>1회 (88회차)</td><td>단발성 — X축 이슈 아닌 타이밍 문제 추정</td>
+  </tr>
+</table>
+
+<h3>Phase 2: 130~226회 (FAIL=6~9, Y축 완전 사망)</h3>
+<table>
+  <tr><th>#</th><th>항목</th><th>원인</th></tr>
+  <tr><td>#0</td><td>통신검사 RS-485</td><td class="fail">Y축 VL 응답 없음 (<code>[COMM] Y축: NG (응답 없음)</code>)</td></tr>
+  <tr><td>#1-Y</td><td>FW 버전 확인 (Y축)</td><td class="fail">Y축 통신 불가</td></tr>
+  <tr><td>#8</td><td>시리얼번호 설정 (Y축)</td><td class="fail">Y축 통신 불가</td></tr>
+  <tr><td>#10</td><td>Y축 Calibration (0도)</td><td class="fail">Y축 통신 불가</td></tr>
+  <tr><td>#11</td><td>Y축 파라미터 저장 (0도)</td><td class="fail">Y축 통신 불가</td></tr>
+  <tr><td>#12</td><td>Z축 진동값 측정 (0도)</td><td class="fail">CAL/저장 후 배치 — Y축 연쇄 실패</td></tr>
+  <tr><td>#13</td><td>Y축 기울기 측정 (TILT)</td><td class="fail">간헐적 추가 — TILT AN 파싱 실패</td></tr>
+</table>
+
+<h2>X축 상태</h2>
+<div class="info-box">
+  <span class="pass">X축은 226회 전체 구간에서 정상 동작</span><br>
+  COMM, FW, TILT, VIBE, CAL, 파라미터 저장, APPCFG 등 X축 관련 항목 모두 PASS.<br>
+  동일 로직, 동일 프로그램이므로 <strong>SW 문제가 아닌 HW/물리 연결 문제</strong>로 판단.
+</div>
+
+<h2>진단 및 추정 원인</h2>
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <h3>가능성 높음</h3>
+    <ul>
+      <li><strong>Y축 COM12 USB-시리얼 컨버터 열화</strong> — 장시간 구동 시 USB 허브/컨버터 과열 또는 드라이버 불안정</li>
+      <li><strong>케이블/커넥터 접촉 불량</strong> — 진동 지그 동작 중 물리적 접촉 느슨해짐</li>
+      <li><strong>Y축 보드 hang</strong> — 반복 명령 처리 중 FW 레벨에서 hang (전원 리셋으로 확인 가능)</li>
+    </ul>
+  </div>
+  <div class="summary-card">
+    <h3>가능성 낮음</h3>
+    <ul>
+      <li><strong>SW 문제</strong> — X축 동일 코드가 226회 정상이므로 배제</li>
+      <li><strong>SerialPort 리소스 누수</strong> — X축도 동일 패턴이나 정상이므로 가능성 낮음</li>
+    </ul>
+  </div>
+</div>
+
+<h2>확인/조치 사항</h2>
+<table>
+  <tr><th>순서</th><th>항목</th><th>방법</th></tr>
+  <tr><td>1</td><td>Y축 보드 전원 리셋</td><td>리셋 후 즉시 통신 복구되는지 확인 → 복구되면 보드 hang 확정</td></tr>
+  <tr><td>2</td><td>USB-시리얼 케이블 물리 점검</td><td>COM12 케이블 교체 또는 다른 포트에 연결 후 재테스트</td></tr>
+  <tr><td>3</td><td>커넥터 체결 상태</td><td>지그 진동으로 커넥터 느슨해졌는지 확인</td></tr>
+  <tr><td>4</td><td>재 롱런</td><td>위 조치 후 300회 완주 재시도</td></tr>
+</table>
+
+<h2>결론</h2>
+<div class="info-box">
+  <ul>
+    <li><strong>1~81회(4시간):</strong> <span class="pass">완전 안정</span> — 프로그램/검사 로직 정상 검증됨</li>
+    <li><strong>82회차 이후:</strong> <span class="fail">Y축 통신 열화 → 두절</span> — X축 정상으로 보아 <strong>Y축 HW/물리 연결 문제</strong></li>
+    <li><strong>SW 수정 필요사항:</strong> 현재 없음 (X축 226회 올 패스 기준)</li>
+    <li>Y축 물리 점검 후 300회 완주 재테스트 필요</li>
+  </ul>
+</div>
+
+<div class="footer">
+  생성일: 2026-04-16 | 버전: v0.6.2.60415 | 로그: 모션지그검사(RS-485)_test / 2026-04-15.log, 2026-04-16.log
+</div>
+
+</body>
+</html>

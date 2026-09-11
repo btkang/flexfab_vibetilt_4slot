@@ -1,0 +1,115 @@
+{
+  "project": {
+    "id": "prj-motion-232",
+    "name": "모션지그 검사 (RS-232)"
+  },
+  "libraries": [
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Tcp",
+      "id": "tcp_emio",
+      "config": {
+        "ip": "100.100.100.70",
+        "port": 2233
+      }
+    },
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_232",
+      "config": {
+        "port": "COM3",
+        "baudrate": 115200,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_232_y",
+      "config": {
+        "port": "COM4",
+        "baudrate": 115200,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_232_z",
+      "config": {
+        "port": "COM5",
+        "baudrate": 115200,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_gyro",
+      "config": {
+        "port": "COM6",
+        "baudrate": 38400,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Ctsp",
+      "id": "ctsp",
+      "config": {
+        "commlib": "uart_232"
+      }
+    },
+    {
+      "filename": "ff_vibetilt.dll",
+      "classname": "Cantops.FlexFab.VibeTilt",
+      "id": "vibetilt",
+      "config": {
+        "uart_232": "uart_232"
+      }
+    },
+    {
+      "filename": "ff_vibetilt.dll",
+      "classname": "Cantops.FlexFab.MotionJig",
+      "id": "motionjig",
+      "config": {}
+    }
+  ],
+  "library_depencency": [
+    "tcp_emio",
+    "uart_232",
+    "uart_232_y",
+    "uart_232_z",
+    "uart_gyro",
+    "ctsp",
+    "vibetilt",
+    "motionjig"
+  ],
+  "procs": [
+    {
+      "libid": "motionjig",
+      "id": "MOTION_VIBE_232",
+      "name": "모션지그 진동검사 (VL10)",
+      "param": {
+        "longrun": false
+      }
+    },
+    {
+      "libid": "motionjig",
+      "id": "MOTION_TILT_232",
+      "name": "모션지그 기울기검사 (VL10)",
+      "param": {
+        "longrun": false
+      }
+    }
+  ]
+}

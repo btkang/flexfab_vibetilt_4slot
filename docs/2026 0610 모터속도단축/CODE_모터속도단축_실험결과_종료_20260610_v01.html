@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>CODE_모터속도단축_실험결과_종료_20260610_v01</title>
+<style>
+body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+       max-width: 1000px; margin: 30px auto; padding: 0 25px;
+       line-height: 1.65; color: #333; background: #fafafa; }
+h1 { border-bottom: 3px solid #00695c; padding-bottom: 10px; color: #00695c; }
+h2 { border-left: 5px solid #00897b; padding-left: 12px; color: #00695c; margin-top: 35px; }
+h3 { color: #424242; margin-top: 22px; }
+h4 { color: #555; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background-color: #e0f2f1; font-weight: 600; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px;
+       font-family: 'Consolas', monospace; font-size: 0.92em; }
+pre { background: #263238; color: #aed581; padding: 15px; border-radius: 5px;
+      overflow-x: auto; font-size: 0.85em; line-height: 1.4; }
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote { border-left: 4px solid #00897b; padding: 6px 14px; color: #555;
+             background: #e0f2f1; margin: 12px 0; }
+a { color: #00695c; }
+ul, ol { margin: 6px 0 6px 22px; }
+li { margin: 3px 0; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1 id="code_">CODE_모터속도단축 실험 결과 및 종료</h1>
+<ul>
+<li>작성일: 2026-06-10 / 작성: Claude</li>
+<li>대상: ff_vibetilt MotionJig.cs (모션검사 모터 제어, EMIO)</li>
+<li>관련 PLAN: <code>PLAN_모션검사_모터속도단축_20260610_v01.md</code></li>
+<li>결론: <strong>❌ 모터 속도/wait 단축 불가 (물리 한계). 시간 단축은 2m46 동결.</strong></li>
+</ul>
+<hr />
+<h2 id="1">1. 배경 / 목표</h2>
+<ul>
+<li>모션검사 풀런 ≈ 3m20s → 어제(2026-06-09) SW/JSON 단축으로 <strong>2m46</strong> 달성(settle/stream 반감 + X영점 최초1회).</li>
+<li>시간의 68%가 모터 물리이동(기울기 8각 ~102s + 영점 ~35s).</li>
+<li>오늘 목표: <strong>모터(EMIO) 속도/가속 또는 wait를 줄여 추가 단축.</strong></li>
+</ul>
+<h2 id="2-3-emio">2. 조사 (참고소스 3종 + EMIO 프로토콜)</h2>
+<h3 id="2-1">2-1. 모터 속도 설정 현황</h3>
+<ul>
+<li>VibeTilt <code>MotionJig.cs</code>는 모터 속도/가속을 <strong>명시 설정하지 않음</strong> → EMIO 컨트롤러 저장값으로 동작.</li>
+<li>참고소스 대조:</li>
+<li><strong>BG-01</strong> (<code>30.SMCS/.../BoardLevelMo_BG01.cpp</code>): 검사 시작 시 PMS로 속도/가속 명시 설정(고속2000/가속256).</li>
+<li><strong>pCOM</strong> (<code>50.pCOM_SRC</code>): 속도 설정 없음.</li>
+<li><strong>VibeTilt</strong>: 속도 설정 없음.</li>
+</ul>
+<h3 id="2-2-emio-5">2-2. EMIO 명령 포맷 (프로토콜 문서 §5 확정)</h3>
+<ul>
+<li><strong>PMS(설정)</strong>: <code>PMS0{len}{축}{param#}{값}</code> / 응답 <code>pms0...</code></li>
+<li><strong>PMR(읽기)</strong>: <code>PMR0{len}{축}{param#}</code> / 응답 <code>pmr0 07 {축}{param#}{값}</code> (예 <code>PMR03130</code>→<code>pmr0071301234</code>)</li>
+<li><strong>PMD(이동) 2글자 = 속도/가속 프로파일</strong>: <code>PMD091HM-12345</code> = High속도+Middle가속. (단 VibeTilt <code>PMD0{len}1ML</code>의 <code>04/05/06</code>은 프로파일이 아니라 <strong>데이터 길이(len=3+자릿수)</strong>, <code>1ML</code>=축1+중속(M)+저가속(L))</li>
+<li>속도 param: 21고속 22중속 23저속 / 가속 24고/25중/26저.</li>
+</ul>
+<h3 id="2-3-pmr-1">2-3. PMR 진단 결과 (실기, 1축)</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>param</th>
+<th>현재값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>고속</td>
+<td>21</td>
+<td>2000</td>
+</tr>
+<tr>
+<td><strong>중속 ★</strong></td>
+<td>22</td>
+<td><strong>1000</strong></td>
+</tr>
+<tr>
+<td>저속</td>
+<td>23</td>
+<td>500</td>
+</tr>
+<tr>
+<td>고가속/중가속/저가속</td>
+<td>24/25/26</td>
+<td><strong>1023 (10bit max)</strong></td>
+</tr>
+</tbody>
+</table>
+<p>→ VibeTilt 이동(<code>ML</code>)은 <strong>중속(1000) + 저가속(1023)</strong> 사용. 가속은 이미 최대.</p>
+<h2 id="3">3. 실험 및 결과</h2>
+<h3 id="a-1000-2000">실험 A — 속도 ↑ (중속 1000 → 2000)</h3>
+<ul>
+<li>코드에 <code>PMS071222000</code> 추가 후 232 풀런.</li>
+<li>결과: test time 2m46 → <strong>2m52</strong> (편차 내, 무변화처럼 보임). <strong>하지만 위험</strong>:</li>
+<li>이후 <code>PMD061ML222</code>(coarse) 탈조 확인 — 222 step인데 14°만 이동(정상 23°).</li>
+<li><strong>중속 2000 = 토크 부족으로 step loss(탈조)</strong> → FINE이 큰 오차로 시작 → 오버슈트 → soft limit 초과 → EMIO 에러(<code>pmd5011</code>/<code>ppc6</code>) → 연쇄 FAIL, 회복에 <strong>EMIO 재부팅 필요</strong>.</li>
+<li>중속 2000이 EMIO 비휘발성에 저장돼 잔류(workspace로 격리 안 됨) → 중속1000 명시 복원 코드로 처리.</li>
+</ul>
+<h3 id="b-wait-test-json">실험 B — wait ↓ (TEST JSON)</h3>
+<ul>
+<li><code>zero_settle_wait</code> 1500→1000, <code>fine_step_wait</code> 500→350, <code>fine_confirm_wait</code>/<code>tilt_move_wait</code> 축소.</li>
+<li>결과: <strong>-45° 탈조 FAIL 반복</strong> (재부팅·중속복원 후에도).</li>
+<li>원인: <strong><code>zero_settle_wait 1000ms</code> &lt; 영점 coarse 이동시간 1250ms</strong> (1250 step @ 중속1000 = 1250ms).</li>
+<li>모터가 아직 이동 중인데 자이로를 읽음 → 영점이 42°로 발산 → setzcur 기준 틀어짐 → 이후 전 각도 어긋나 탈조/오버슈트/에러.</li>
+<li>아이러니: 중속 2000→1000 복원으로 이동시간이 2배(625→1250ms)가 되며 1000ms settle이 갑자기 부족해짐.</li>
+</ul>
+<h3 id="_1">격리 검증 (모터 정상 확인)</h3>
+<p>같은 모터로:
+| workspace | wait | 결과 |
+|---|---|---|
+| MP | 기본(zero_settle 1500) | ✅ <strong>PASS</strong> (#6 4각 OK) |
+| TEST | 축소(zero_settle 1000) | ❌ -45° 탈조 FAIL |</p>
+<p>→ <strong>모터는 정상.</strong> wait 축소가 FAIL 원인.</p>
+<h2 id="4-3">4. 결론 — 3방향 모두 물리 한계</h2>
+<pre><code>속도 ↑  → 탈조 (모터 토크 한계)
+속도 ↓  → 이동시간 ↑ → settle 더 필요 (역효과)
+wait  ↓ → 모터 이동 중 측정 → 영점/각도 발산
+</code></pre>
+<ul>
+<li>속도와 wait는 <strong>한 묶음</strong>: <code>settle_wait ≥ 모터 이동시간(step수 × 속도)</code> 이어야 정지 후 자이로를 읽을 수 있음. 독립적으로 못 줄임.</li>
+<li><strong>시간 단축은 어제 2m46(SW/JSON)이 실질 최선.</strong> 모터가 더 빠른 물리이동을 못 받아줌.</li>
+</ul>
+<h2 id="5">5. 교훈</h2>
+<ol>
+<li><strong>EMIO 속도/가속은 <code>PMS</code>로 장비 비휘발성 메모리에 저장</strong> → workspace(JSON)로 격리 안 됨. 실험값이 양산본까지 오염시킬 수 있음. → 검사 시작 시 정상값 명시 설정이 안전(BG-01 방식). 단 이번엔 속도 자체를 안 건드리기로 해 미적용.</li>
+<li><strong>settle wait는 임의 상수가 아니라 모터 이동시간 종속.</strong> 무작정 축소 시 "이동 중 측정" → 발산.</li>
+<li><strong>중속 2000 절대 금지</strong> (탈조 → EMIO 에러 → 재부팅).</li>
+</ol>
+<h2 id="6">6. 원복 / 정리 내역</h2>
+<ul>
+<li><code>MotionJig.cs</code>: 진단 코드(<code>DiagnoseMotorParams</code>/<code>EmioRecvResp</code>) + 중속복원 코드 + <code>_motorDiagDone</code> 제거, <code>MODULE_VERSION</code> → <code>0.7.4.60609</code> 원복. 빌드 오류 0.</li>
+<li><code>TEST_workspace_motion_232_VL10.json</code>(Release): MP 재복사로 실험 wait 제거, name <code>_TEST</code> / log_level <code>TEST_LOG</code> 유지.</li>
+<li>EMIO 중속: 1000(정상값) 복원 상태.</li>
+<li>⚠️ 남은 일: 정리된 코드를 VS2022 Release 빌드(진단/실험 코드 없는 깨끗한 dll).</li>
+</ul>
+<h2 id="7">7. 향후 (미검토 옵션)</h2>
+<ul>
+<li><strong>이동거리/순서 최적화</strong> (속도 무관, 탈조 리스크 없음): 기울기 측정 각도 순서를 총 이동거리 최소가 되게 재배열. 단 효과 추정 필요.</li>
+<li>그 외 시간 단축은 2m46에서 동결 권장.</li>
+</ul>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>CODE: 검사 순서 변경 + OFFSET 후 GAC 검증 (2026-04-03)</title>
+<style>
+body { font-family: 'Malgun Gothic', sans-serif; max-width: 1200px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.7; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; color: #2c3e50; font-size: 22px; }
+h2 { border-bottom: 1px solid #bdc3c7; padding-bottom: 6px; margin-top: 40px; color: #34495e; }
+h3 { color: #2c3e50; margin-top: 30px; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+th, td { border: 1px solid #bdc3c7; padding: 8px 12px; text-align: center; }
+th { background: #2c3e50; color: #fff; }
+tr:nth-child(even) { background: #f8f9fa; }
+td.left { text-align: left; }
+.ok { background: #e0ffe0; color: #27ae60; font-weight: bold; }
+.ng { background: #ffe0e0; color: #e74c3c; font-weight: bold; }
+.fix { background: #fff3cd; color: #856404; font-weight: bold; }
+.success-box { background: #eafaf1; border-left: 4px solid #27ae60; padding: 12px 16px; margin: 16px 0; }
+.warn-box { background: #fef9e7; border-left: 4px solid #f39c12; padding: 12px 16px; margin: 16px 0; }
+.info-box { background: #eaf2f8; border-left: 4px solid #3498db; padding: 12px 16px; margin: 16px 0; }
+.meta { color: #95a5a6; font-size: 13px; }
+pre { background: #2c3e50; color: #ecf0f1; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+code { background: #ecf0f1; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1>CODE: 검사 순서 변경 + OFFSET 후 GAC 검증</h1>
+<p class="meta">작성일: 2026-04-03 | 브랜치: step6-motion-jig-test | 프로젝트: prj-motion-232 | 제품: VL10(RS-232)</p>
+
+<div class="success-box">
+<strong>결과:</strong> 12/12 ALL PASS<br>
+S/N: 00623 | 소요시간: 4분 19초 (13:14:49 ~ 13:19:08)<br>
+엑셀 사양서 순서 (영점 &rarr; 캘 &rarr; 저장 &rarr; 기울기 &rarr; 진동)로 변경 후 GAC 정상 확인.
+</div>
+
+<h2>1. 변경 목적</h2>
+
+<div class="info-box">
+<strong>검증 목표:</strong> OFFSET(캘리브레이션)이 GAC(진동 가속도) 값에 영향을 주는지 확인.<br>
+<strong>기존 가정:</strong> "OFFSET이 GAC를 리셋하므로 진동을 먼저 측정" &mdash; JSON 주석에 기재되어 있었음.<br>
+<strong>결론:</strong> <span style="color:#27ae60; font-weight:bold;">OFFSET은 GAC에 영향 없음.</span> 엑셀 사양서 순서대로 진행 가능.
+</div>
+
+<h2>2. 순서 변경 내용</h2>
+
+<table>
+<tr><th>순서</th><th>기존 (진동 먼저)</th><th></th><th>변경 (엑셀 사양서 순서)</th><th>비고</th></tr>
+<tr><td colspan="5" style="background:#34495e; color:#fff; text-align:left; font-weight:bold;">X축 결합지그</td></tr>
+<tr><td>1</td><td class="left">#1 영점 초기화</td><td>&rarr;</td><td class="left">#1 영점 초기화</td><td>동일</td></tr>
+<tr><td>2</td><td class="left ng">#5 Y축 진동 (GAC)</td><td>&rarr;</td><td class="left fix">#2 캘리브레이션 (OFFSET)</td><td class="fix">순서 변경</td></tr>
+<tr><td>3</td><td class="left ng">#6 Z축 진동 (GAC)</td><td>&rarr;</td><td class="left fix">#3 파라미터 저장</td><td class="fix">순서 변경</td></tr>
+<tr><td>4</td><td class="left">#2 캘리브레이션</td><td>&rarr;</td><td class="left fix">#4 기울기 측정</td><td class="fix">순서 변경</td></tr>
+<tr><td>5</td><td class="left">#3 파라미터 저장</td><td>&rarr;</td><td class="left fix">#5 Y축 진동 (GAC)</td><td class="fix">OFFSET 후 GAC</td></tr>
+<tr><td>6</td><td class="left">#4 기울기 측정</td><td>&rarr;</td><td class="left fix">#6 Z축 진동 (GAC)</td><td class="fix">OFFSET 후 GAC</td></tr>
+<tr><td colspan="5" style="background:#34495e; color:#fff; text-align:left; font-weight:bold;">Y축 결합지그</td></tr>
+<tr><td>7</td><td class="left">#7 영점 초기화</td><td>&rarr;</td><td class="left">#7 영점 초기화</td><td>동일</td></tr>
+<tr><td>8</td><td class="left ng">#11 X축 진동 (GAC)</td><td>&rarr;</td><td class="left fix">#8 캘리브레이션 (OFFSET)</td><td class="fix">순서 변경</td></tr>
+<tr><td>9</td><td class="left ng">#12 Z축 진동 (GAC)</td><td>&rarr;</td><td class="left fix">#9 파라미터 저장</td><td class="fix">순서 변경</td></tr>
+<tr><td>10</td><td class="left">#8 캘리브레이션</td><td>&rarr;</td><td class="left fix">#10 기울기 측정</td><td class="fix">순서 변경</td></tr>
+<tr><td>11</td><td class="left">#9 파라미터 저장</td><td>&rarr;</td><td class="left fix">#11 X축 진동 (GAC)</td><td class="fix">OFFSET 후 GAC</td></tr>
+<tr><td>12</td><td class="left">#10 기울기 측정</td><td>&rarr;</td><td class="left fix">#12 Z축 진동 (GAC)</td><td class="fix">OFFSET 후 GAC</td></tr>
+</table>
+
+<h2>3. 전체 검사 결과 (S/N: 00623)</h2>
+
+<table>
+<tr><th>#</th><th>항목</th><th>결과</th><th>측정값</th><th>SPEC</th><th>비고</th></tr>
+<tr><td colspan="6" style="background:#34495e; color:#fff; text-align:left; font-weight:bold;">X축결합지그 (setdir6)</td></tr>
+<tr><td>1</td><td class="left">X축 영점 초기화 (0도)</td><td class="ok">OK</td><td>오차 0.004&deg;</td><td>-</td><td>FineAdjust 6 step</td></tr>
+<tr><td>2</td><td class="left">X축 Calibration (0도)</td><td class="ok">OK</td><td>AN X=0.005</td><td>&plusmn;0.05</td><td>OFFSET + AN 검증 398샘플</td></tr>
+<tr><td>3</td><td class="left">X축 파라미터 저장 (0도)</td><td class="ok">OK</td><td>-</td><td>-</td><td>APPCFG,SAVE</td></tr>
+<tr><td>4</td><td class="left">X축 기울기값 측정 (-20,-45,+20,+45도)</td><td class="ok">OK</td><td>오차 +0.005~+0.048</td><td>&plusmn;0.2/&plusmn;0.5</td><td></td></tr>
+<tr><td>5</td><td class="left">Y축 진동값 측정 (+90도)</td><td class="ok">OK</td><td>GAC Y=<strong>1.00</strong></td><td>0.99~1.01</td><td class="fix">OFFSET 후 측정 &mdash; 정상!</td></tr>
+<tr><td>6</td><td class="left">Z축 진동값 측정 (0도)</td><td class="ok">OK</td><td>GAC Z=<strong>1.00</strong></td><td>0.99~1.01</td><td class="fix">OFFSET 후 측정 &mdash; 정상!</td></tr>
+<tr><td colspan="6" style="background:#95a5a6; color:#fff;">팝업 대기 (제품 이동) 13초</td></tr>
+<tr><td colspan="6" style="background:#34495e; color:#fff; text-align:left; font-weight:bold;">Y축결합지그 (setdir5)</td></tr>
+<tr><td>7</td><td class="left">Y축 영점 초기화 (0도)</td><td class="ok">OK</td><td>오차 0.013&deg;</td><td>-</td><td>FineAdjust 7 step</td></tr>
+<tr><td>8</td><td class="left">Y축 Calibration (0도)</td><td class="ok">OK</td><td>AN Y=-0.009</td><td>&plusmn;0.05</td><td>OFFSET + AN 검증 396샘플</td></tr>
+<tr><td>9</td><td class="left">Y축 파라미터 저장 (0도)</td><td class="ok">OK</td><td>-</td><td>-</td><td>APPCFG,SAVE</td></tr>
+<tr><td>10</td><td class="left">Y축 기울기값 측정 (+20,+45,-20,-45도)</td><td class="ok">OK</td><td>오차 -0.080~-0.002</td><td>&plusmn;0.2/&plusmn;0.5</td><td></td></tr>
+<tr><td>11</td><td class="left">X축 진동값 측정 (-90도)</td><td class="ok">OK</td><td>GAC X=<strong>1.00</strong></td><td>0.99~1.01</td><td class="fix">OFFSET 후 측정 &mdash; 정상!</td></tr>
+<tr><td>12</td><td class="left">Z축 진동값 측정 (0도)</td><td class="ok">OK</td><td>GAC Z=<strong>1.00</strong></td><td>0.99~1.01</td><td class="fix">OFFSET 후 측정 &mdash; 정상!</td></tr>
+</table>
+
+<h2>4. GAC 검증 &mdash; OFFSET 전 vs OFFSET 후</h2>
+
+<table>
+<tr><th>#</th><th>항목</th><th>OFFSET 전 GAC<br>(이전 순서)</th><th>OFFSET 후 GAC<br>(이번 순서)</th><th>SPEC</th><th>영향</th></tr>
+<tr>
+<td>5</td><td class="left">Y축 진동 (X축결합)</td>
+<td>Y=1.00</td><td class="ok">Y=1.00</td><td>0.99~1.01</td><td class="ok">영향 없음</td>
+</tr>
+<tr>
+<td>6</td><td class="left">Z축 진동 (X축결합)</td>
+<td>Z=1.00</td><td class="ok">Z=1.00</td><td>0.99~1.01</td><td class="ok">영향 없음</td>
+</tr>
+<tr>
+<td>11</td><td class="left">X축 진동 (Y축결합)</td>
+<td>X=1.00</td><td class="ok">X=1.00</td><td>0.99~1.01</td><td class="ok">영향 없음</td>
+</tr>
+<tr>
+<td>12</td><td class="left">Z축 진동 (Y축결합)</td>
+<td>Z=1.00</td><td class="ok">Z=1.00</td><td>0.99~1.01</td><td class="ok">영향 없음</td>
+</tr>
+</table>
+
+<div class="success-box">
+<strong>결론:</strong> OFFSET(캘리브레이션)은 AN(각도 출력) 영점만 설정하며, GAC(가속도 원시값)에는 영향을 주지 않음.<br>
+&bull; <strong>OFFSET</strong> = AN 각도 출력의 0도 기준점 설정 (소프트웨어 보정)<br>
+&bull; <strong>GAC</strong> = 가속도 원시값 (하드웨어 측정, 중력 1G)<br>
+따라서 엑셀 사양서 순서(영점 &rarr; 캘 &rarr; 저장 &rarr; 기울기 &rarr; 진동)로 확정.
+</div>
+
+<h2>5. 기울기(AN) 상세 결과</h2>
+
+<table>
+<tr><th>축</th><th>각도</th><th>자이로</th><th>VL10</th><th>오차 (VL-자이로)</th><th>SPEC</th><th>판정</th></tr>
+<tr><td rowspan="4">X축</td>
+<td>-20&deg;</td><td>-19.975</td><td>-19.950</td><td>+0.005</td><td>&plusmn;0.2</td><td class="ok">OK</td></tr>
+<tr><td>-45&deg;</td><td>-45.041</td><td>-45.000</td><td>+0.048</td><td>&plusmn;0.5</td><td class="ok">OK</td></tr>
+<tr><td>+20&deg;</td><td>19.938</td><td>19.940</td><td>+0.002</td><td>&plusmn;0.2</td><td class="ok">OK</td></tr>
+<tr><td>+45&deg;</td><td>44.999</td><td>45.020</td><td>+0.021</td><td>&plusmn;0.5</td><td class="ok">OK</td></tr>
+<tr><td rowspan="4">Y축</td>
+<td>+20&deg;</td><td>19.970</td><td>19.890</td><td>-0.080</td><td>&plusmn;0.2</td><td class="ok">OK</td></tr>
+<tr><td>+45&deg;</td><td>45.026</td><td>44.980</td><td>-0.046</td><td>&plusmn;0.5</td><td class="ok">OK</td></tr>
+<tr><td>-20&deg;</td><td>-19.948</td><td>-19.950</td><td>-0.002</td><td>&plusmn;0.2</td><td class="ok">OK</td></tr>
+<tr><td>-45&deg;</td><td>-45.006</td><td>-45.020</td><td>-0.014</td><td>&plusmn;0.5</td><td class="ok">OK</td></tr>
+</table>
+
+<h2>6. 추가 수정 사항 (같은 커밋)</h2>
+
+<table>
+<tr><th>항목</th><th>수정 내용</th><th>파일</th></tr>
+<tr><td class="left">TCP 연결 타임아웃</td><td class="left">21초(OS 기본) &rarr; 5초 (ConnectAsync + Wait)</td><td><code>ff_common/tcp.cs</code></td></tr>
+<tr><td class="left">연결 실패 팝업</td><td class="left">TCP: "LAN 케이블 확인", Uart: "RS-232/485 USB 포트 확인"</td><td><code>flexfab_mini/FlexfabForm.cs</code></td></tr>
+<tr><td class="left">작업자 팝업 취소</td><td class="left">Action &rarr; Func, OK &rarr; OKCancel, 취소 시 FAIL 처리</td><td><code>MotionJig.cs, FlexfabForm.cs</code></td></tr>
+<tr><td class="left">fail_continue 기본값</td><td class="left">true &rarr; false (FAIL 시 즉시 중단)</td><td><code>workspace_motion_232.json</code></td></tr>
+</table>
+
+<h2>7. 검사 시간</h2>
+
+<table>
+<tr><th>#</th><th>항목</th><th>시간</th><th>비고</th></tr>
+<tr><td colspan="4" style="background:#34495e; color:#fff; text-align:left; font-weight:bold;">X축결합지그</td></tr>
+<tr><td>1</td><td class="left">X축 영점 초기화</td><td>26초</td><td>PMO011 + FineAdjust 6 step</td></tr>
+<tr><td>2</td><td class="left">X축 Calibration</td><td>7초</td><td>OFFSET + AN 스트리밍 검증</td></tr>
+<tr><td>3</td><td class="left">X축 파라미터 저장</td><td>1초</td><td></td></tr>
+<tr><td>4</td><td class="left">X축 기울기 (4각도)</td><td>70초</td><td>FineAdjust &times;4 + AN 스트리밍 &times;4</td></tr>
+<tr><td>5</td><td class="left">Y축 진동값 측정</td><td>3초</td><td>GAC 연속 3회</td></tr>
+<tr><td>6</td><td class="left">Z축 진동값 측정</td><td>17초</td><td>FineAdjust + GAC 3회</td></tr>
+<tr><td></td><td class="left" style="font-weight:bold;">X축 소계</td><td style="font-weight:bold;">124초 (2분 4초)</td><td></td></tr>
+<tr><td></td><td class="left" style="color:#95a5a6;">팝업 대기 (제품 이동)</td><td>13초</td><td>작업자 속도 의존</td></tr>
+<tr><td colspan="4" style="background:#34495e; color:#fff; text-align:left; font-weight:bold;">Y축결합지그</td></tr>
+<tr><td>7</td><td class="left">Y축 영점 초기화</td><td>26초</td><td>PMO011 + FineAdjust 7 step</td></tr>
+<tr><td>8</td><td class="left">Y축 Calibration</td><td>7초</td><td></td></tr>
+<tr><td>9</td><td class="left">Y축 파라미터 저장</td><td>1초</td><td></td></tr>
+<tr><td>10</td><td class="left">Y축 기울기 (4각도)</td><td>67초</td><td>FineAdjust &times;4 + AN 스트리밍 &times;4</td></tr>
+<tr><td>11</td><td class="left">X축 진동값 측정</td><td>3초</td><td></td></tr>
+<tr><td>12</td><td class="left">Z축 진동값 측정</td><td>15초</td><td>FineAdjust + GAC 3회</td></tr>
+<tr><td></td><td class="left" style="font-weight:bold;">Y축 소계</td><td style="font-weight:bold;">119초 (1분 59초)</td><td></td></tr>
+<tr><td colspan="4" style="background:#2c3e50; color:#fff;"></td></tr>
+<tr><td></td><td class="left" style="font-weight:bold; font-size:15px;">전체 소요 시간</td><td style="font-weight:bold; font-size:15px;">4분 19초</td><td>팝업 대기 포함</td></tr>
+</table>
+
+<h2>8. 수정 파일 요약</h2>
+
+<table>
+<tr><th>파일</th><th>변경 내용</th></tr>
+<tr><td class="left"><code>workspace_motion_232.json</code></td><td class="left">procs 배열 순서 변경: 영점 &rarr; 캘 &rarr; 저장 &rarr; 기울기 &rarr; 진동</td></tr>
+<tr><td class="left"><code>ff_common/tcp.cs</code></td><td class="left">TCP 연결 타임아웃 5초</td></tr>
+<tr><td class="left"><code>ff_vibetilt/MotionJig.cs</code></td><td class="left">작업자 팝업 취소 시 FAIL 처리</td></tr>
+<tr><td class="left"><code>flexfab_mini/FlexfabForm.cs</code></td><td class="left">연결 실패 팝업, 팝업 OKCancel 변경</td></tr>
+</table>
+
+</body>
+</html>

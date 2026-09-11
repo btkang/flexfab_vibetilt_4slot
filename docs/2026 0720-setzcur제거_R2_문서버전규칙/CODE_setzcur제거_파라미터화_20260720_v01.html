@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>CODE_setzcur제거_파라미터화_20260720_v01</title>
+<style>
+body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+       max-width: 1000px; margin: 30px auto; padding: 0 25px;
+       line-height: 1.65; color: #333; background: #fafafa; }
+h1 { border-bottom: 3px solid #00695c; padding-bottom: 10px; color: #00695c; }
+h2 { border-left: 5px solid #00897b; padding-left: 12px; color: #00695c; margin-top: 35px; }
+h3 { color: #424242; margin-top: 22px; }
+h4 { color: #555; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background-color: #e0f2f1; font-weight: 600; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px;
+       font-family: 'Consolas', monospace; font-size: 0.92em; }
+pre { background: #263238; color: #aed581; padding: 15px; border-radius: 5px;
+      overflow-x: auto; font-size: 0.85em; line-height: 1.4; }
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote { border-left: 4px solid #00897b; padding: 6px 14px; color: #555;
+             background: #e0f2f1; margin: 12px 0; }
+a { color: #00695c; }
+ul, ol { margin: 6px 0 6px 22px; }
+li { margin: 3px 0; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1 id="code_setzcur-false-r2">CODE_setzcur 제거 (파라미터화, 기본 false) — R2</h1>
+<ul>
+<li>작성: Claude (2026-07-20)</li>
+<li>근거 PLAN: <code>docs/2026 0715-모션센서(imu) 검사방법 지그 전반 검토/PLAN_setzcur제거_20260715_v01.md</code></li>
+<li>결정 사항 (사용자 확정, 2026-07-20):</li>
+<li><strong>파라미터화 + 기본 false</strong> (빌드하면 즉시 제거 동작, JSON으로만 복원)</li>
+<li><strong>메인폼 UI 없음</strong> — 옵션은 workspace JSON에만. 추후 "살리자" 결정 시 그때 UI 검토</li>
+<li>버전 체계 <strong>R 전환</strong>: R1 = 260701_0.7.10 배포본(구표기 1.0.0), 본 변경 = <strong>R2</strong></li>
+<li>배경: 계보 실증(BG01 이식 잔재) + τ=+0.090° 실측(7/16) + 담당자 확인(7/20, 요청서에 setzcur 없음)</li>
+</ul>
+<hr />
+<h2 id="1">1. 변경 내용</h2>
+<h3 id="11-ff_vibetiltmotionjigcs-310-1">1.1 코드 — <code>ff_vibetilt/MotionJig.cs</code> (영점 초기화 #3/#10 공용 경로, 1곳)</h3>
+<p>기존 871-877의 무조건 setzcur 블록을 조건부로 변경:</p>
+<pre><code class="language-csharp">// 6. 자이로 기준점 설정 (setzcur) — 기본 미실행
+// 지그요청서에 없는 명령(BG01 이식 잔재, 2026-02-24). FineAdjust가 공장영점 기준으로
+// 수평을 만들므로 setzcur는 잔차만 비휘발 영점에 누적시킴 (τ=+0.090° 실측, 2026-07-16).
+// 제거 적용 전 센서에 setzfac(공장영점 복원) 1회 선행 필수.
+// 되돌리기: JSON #3/#10 param에 &quot;gyro_setzcur&quot;: true
+if (GetParamBool(param, &quot;gyro_setzcur&quot;, false))
+{
+    if (!GyroSetZero(gyro, log)) { ...기존 FAIL 처리... }
+}
+</code></pre>
+<ul>
+<li><code>GyroSetZero()</code> 메서드(1993행~)는 <strong>삭제하지 않고 유지</strong> — 복원 옵션 + 향후 setzfac 자동화 재사용</li>
+<li>FAIL 재영점 경로(#4/#6 내 재영점)는 measure 항목 param을 쓰므로 기본 false 동일 적용</li>
+</ul>
+<h3 id="12-r-r2">1.2 버전 — R 체계 전환 (R2)</h3>
+<table>
+<thead>
+<tr>
+<th>파일</th>
+<th>변경</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ff_vibetilt/VibeTilt.cs:13</code></td>
+<td><code>MODULE_VERSION = "1.0.0"</code> → <code>"R2"</code></td>
+</tr>
+<tr>
+<td><code>ff_vibetilt/MotionJig.cs:14</code></td>
+<td>동일</td>
+</tr>
+<tr>
+<td><code>ff_vibetilt/ff_vibetilt.csproj</code></td>
+<td><code>&lt;Version&gt;2.0.0&lt;/Version&gt;</code> (R번호=Major 매핑) / <code>&lt;InformationalVersion&gt;R2&lt;/InformationalVersion&gt;</code></td>
+</tr>
+<tr>
+<td><code>RELEASE_NOTE_ff_vl.txt</code></td>
+<td>규정 R 전환 명시, 1.0.0 → <strong>R1</strong> 개칭, <strong>R2(작업중)</strong> 항목 추가</td>
+</tr>
+<tr>
+<td><code>버전변경이력_ff_vl_README.txt</code></td>
+<td>규정 R 전환, 1.0.0 → R1 개칭</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13-json-9-310-2-18">1.3 JSON — 모션 워크스페이스 9파일 × #3/#10 (2곳씩, 총 18곳)</h3>
+<p>Debug 4 + Release 5 (<code>TEST_..._지그없음</code> 포함), MOTION_ZERO param에 삽입:</p>
+<pre><code class="language-json">&quot;gyro_setzcur&quot;: false,
+&quot;_gyro_setzcur_comment&quot;: &quot;레퍼런스(자이로) 영점 tare 실행 여부. 지그요청서에 없는 BG01 이식 잔재라 기본 제거(false)=공장영점 유지 | true=기존동작(매 사이클 tare) 복원 | 적용 전 센서 setzfac 1회 선행 필수 (R2, 2026-07-20)&quot;
+</code></pre>
+<ul>
+<li>기본값이 false라 키가 없어도 동작은 동일 — <strong>상태 문서화 목적의 명시</strong></li>
+<li>CRLF/BOM 보존 확인, 9파일 전부 json parse OK</li>
+</ul>
+<h2 id="2">2. 검증</h2>
+<ul>
+<li><code>dotnet build ff_vibetilt.csproj -c Debug</code> — <strong>오류 0</strong> (경고 4는 기존)</li>
+<li>JSON 9파일 파싱 전부 OK</li>
+<li>실기 검증은 미실시 (아래 남은 작업)</li>
+</ul>
+<h2 id="3">3. 운용 절차 (배포 전 필수)</h2>
+<pre><code>1. 빌드·배포 (R2)
+2. 센서에 setzfac 1회  ← 필수. 안 하면 마지막 tare(τ≈0.09)가 영구 동결됨
+   - 이때 X결합 τ 측정 겸행 권장: #3 완주 → r1 판독(5~6회) → setzfac → r2 판독 → τx = r2 − r1
+3. 검사 시작 — 이후 FineAdjust가 공장영점 기준으로 매 사이클 수평 확립
+</code></pre>
+<h2 id="4">4. 남은 작업</h2>
+<ul>
+<li>[ ] 실기 회귀: TEST 워크스페이스로 ±20/±45 실측 (목표 |error| ≤ 0.05, spec ±0.2 여유 확인)</li>
+<li>[ ] X결합 τ 측정 (위 3-2 겸행) → 13p 회의자료 실측 근거 업데이트</li>
+<li>[ ] 회의(레퍼런스 영점 유지/제거 재논의) 결과 반영 — 유지 결정 시 JSON true 한 줄로 복원</li>
+<li>[ ] R2 릴리즈: 배포폴더(<code>YYMMDD_R2_ff_vl</code>) + 제조팀 문서</li>
+<li>[ ] 커밋 (사용자)</li>
+</ul>
+</body>
+</html>

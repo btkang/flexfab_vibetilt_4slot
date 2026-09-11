@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>232/485 모션지그 검사 판정 파라미터 · 판정조건 · 안전장치 · 리밋</title>
+<style>
+body{font-family:'Malgun Gothic',sans-serif;max-width:1000px;margin:20px auto;padding:20px;background:#f5f5f5}
+h1{color:#1a237e;border-bottom:3px solid #1a237e;padding-bottom:10px}
+h2{color:#283593;margin-top:30px}
+h3{color:#3949ab}
+table{border-collapse:collapse;width:100%;margin:10px 0}
+th,td{border:1px solid #ccc;padding:8px 12px;text-align:center}
+th{background:#e8eaf6;font-weight:bold}
+.section{background:#fff;padding:20px;border-radius:8px;margin:15px 0;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+code{background:#eceff1;padding:2px 6px;border-radius:3px;font-size:0.9em}
+pre{background:#263238;color:#eee;padding:15px;border-radius:5px;overflow-x:auto;font-size:0.85em}
+.pass{background:#c8e6c9;color:#2e7d32;font-weight:bold}
+.warn{background:#fff9c4;color:#f57f17}
+.info{background:#e3f2fd;color:#1565c0}
+.danger{background:#ffcdd2;color:#c62828}
+.same{background:#f5f5f5;color:#666}
+</style>
+</head>
+<body>
+
+<h1>232/485 모션지그 — 검사 판정 파라미터 종합</h1>
+<p><strong>날짜:</strong> 2026-04-14 | <strong>브랜치:</strong> step6-motion-jig-test | <strong>버전:</strong> v0.5.0.60413+</p>
+
+<!-- ============================== -->
+<div class="section">
+<h2>1. 기울기(TILT) 판정 파라미터</h2>
+<p>MODE 06 스트리밍 → AN 데이터 수집 → tail N개 판정</p>
+
+<table>
+<tr><th>파라미터</th><th>JSON 키</th><th>232 MP</th><th>485 MP</th><th>설명</th></tr>
+<tr><td>스트리밍 시간</td><td><code>tilt_stream_duration</code></td><td>1000ms</td><td>1000ms</td><td>SAM=10ms 기준 ~100샘플</td></tr>
+<tr><td>판정 샘플 수</td><td><code>tilt_judge_tail_count</code></td><td>10</td><td>10</td><td>마지막 N개로 판정</td></tr>
+<tr><td>리트라이</td><td><code>tilt_retry_count</code></td><td>3</td><td>3</td><td>FAIL 시 최대 3회 재측정 (총 4회)</td></tr>
+<tr><td>판정 모드</td><td><code>tilt_judge_mode</code></td><td>all_in_spec</td><td>all_in_spec</td><td>엄격 — N개 전부 SPEC 이내</td></tr>
+<tr><td>노이즈 P2P</td><td><code>tilt_noise_check</code></td><td>false</td><td>false</td><td>기본 OFF (옵션)</td></tr>
+<tr><td>P2P 임계치</td><td><code>tilt_noise_p2p_limit</code></td><td>0.2</td><td>0.2</td><td>Max-Min > 0.2 → FAIL</td></tr>
+<tr><td>세틀 대기</td><td><code>tilt_settle_wait</code></td><td>500ms</td><td>500ms</td><td>스트리밍 시작 전 안정 대기</td></tr>
+</table>
+
+<h3>TILT SPEC (허용 오차)</h3>
+<table>
+<tr><th>각도</th><th>SPEC</th><th>JSON 키</th><th>비고</th></tr>
+<tr><td>±20도</td><td class="pass">±0.2도</td><td><code>tilt_tolerance_20</code></td><td>사양서 기준</td></tr>
+<tr><td>±45도</td><td class="pass">±0.5도</td><td><code>tilt_tolerance_45</code></td><td>사양서 기준</td></tr>
+</table>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>2. 진동(VIBE) 판정 파라미터</h2>
+<p>MODE 02 스트리밍 → GAC 데이터 수집 → tail N개 판정</p>
+
+<table>
+<tr><th>파라미터</th><th>JSON 키</th><th>232 MP</th><th>485 MP</th><th>설명</th></tr>
+<tr><td>스트리밍 시간</td><td><code>vibe_stream_duration</code></td><td>1000ms</td><td>1000ms</td><td>SAM=10ms 기준 ~100샘플</td></tr>
+<tr><td>판정 샘플 수</td><td><code>vibe_judge_tail_count</code></td><td>5</td><td>5</td><td>마지막 N개로 판정</td></tr>
+<tr><td>리트라이</td><td><code>vibe_retry_count</code></td><td>3</td><td>3</td><td>FAIL 시 최대 3회 재측정</td></tr>
+<tr><td>판정 모드</td><td><code>vibe_judge_mode</code></td><td>all_in_spec</td><td>all_in_spec</td><td>엄격 — N개 전부 SPEC 이내</td></tr>
+<tr><td>노이즈 P2P</td><td><code>vibe_noise_check</code></td><td>false</td><td>false</td><td>기본 OFF (옵션)</td></tr>
+<tr><td>P2P 임계치</td><td><code>vibe_noise_p2p_limit</code></td><td>0.02</td><td>0.02</td><td>Max-Min > 0.02 → FAIL</td></tr>
+<tr><td>세틀 대기</td><td><code>gac_settle_wait</code></td><td>500ms</td><td>500ms</td><td>스트리밍 시작 전 안정 대기</td></tr>
+</table>
+
+<h3>VIBE SPEC (GAC 값)</h3>
+<table>
+<tr><th>축</th><th>측정 각도</th><th>SPEC</th><th>비고</th></tr>
+<tr><td>Y축</td><td>-90도 (또는 +90도)</td><td class="warn">0.98 ~ 1.02</td><td>시료2 GAC=0.98 경계값 → 완화</td></tr>
+<tr><td>Z축</td><td>0도</td><td class="pass">0.99 ~ 1.01</td><td>사양서 기준</td></tr>
+<tr><td>X축</td><td>-90도 (또는 +90도)</td><td class="pass">0.99 ~ 1.01</td><td>사양서 기준</td></tr>
+</table>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>3. OFFSET (Calibration) 파라미터</h2>
+
+<table>
+<tr><th>항목</th><th>232</th><th>485</th><th>설명</th></tr>
+<tr><td>명령</td><td><code>&lt;OFFSET,1&gt;</code></td><td><code>&lt;OFFSET,1,1&gt;</code></td><td>485는 ID 필드 포함</td></tr>
+<tr><td>검증</td><td colspan="2">verify_an: true</td><td>OFFSET 후 AN 값 검증</td></tr>
+<tr><td>AN SPEC</td><td colspan="2">±0.05도</td><td>0도에서 AN 오차 허용</td></tr>
+<tr><td>스트리밍 검증</td><td colspan="2">MODE 06 → ~400샘플 수집</td><td>평균 AN으로 검증</td></tr>
+</table>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>4. 판정 모드 5종</h2>
+<p>JSON <code>tilt_judge_mode</code> / <code>vibe_judge_mode</code>에 설정</p>
+
+<table>
+<tr><th>모드</th><th>설명</th><th>강도</th><th>용도</th></tr>
+<tr><td><code>last</code></td><td>마지막 1개 값</td><td>느슨</td><td>빠른 판정, 노이즈 취약</td></tr>
+<tr><td><code>average</code></td><td>tail N개 평균</td><td>중간</td><td>노이즈 평탄화</td></tr>
+<tr><td><code>median</code></td><td>tail N개 중앙값</td><td>중간</td><td>이상치 무시</td></tr>
+<tr><td><code>trimmed_mean</code></td><td>상하 10% 제거 평균</td><td>중상</td><td>양쪽 극단 제거</td></tr>
+<tr><td><code>all_in_spec</code></td><td class="pass">N개 전부 SPEC 이내</td><td><strong>엄격</strong></td><td>양산 기본값 (현재 적용)</td></tr>
+</table>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>5. 모터 제어 파라미터</h2>
+
+<table>
+<tr><th>항목</th><th>값</th><th>JSON 키</th><th>설명</th></tr>
+<tr><td>스텝 분해능</td><td>0.1125도/step</td><td><code>step_resolution</code></td><td>1 step = 0.1125도</td></tr>
+<tr><td>홈→0도 스텝 (IN1)</td><td>1250 step</td><td><code>steps_to_zero</code></td><td>PMO011 홈 센서 → 0도</td></tr>
+<tr><td>홈→0도 스텝 (IN2)</td><td>200 step</td><td><code>steps_to_zero_in2</code></td><td>PMO012 홈 센서 → 0도</td></tr>
+<tr><td>VIBE 이동</td><td>800 step (=90도)</td><td>코드 계산</td><td>AngleToSteps(90)</td></tr>
+<tr><td>TILT ±20도</td><td>178 step</td><td>코드 계산</td><td>AngleToSteps(20)</td></tr>
+<tr><td>TILT ±45도</td><td>400 step</td><td>코드 계산</td><td>AngleToSteps(45)</td></tr>
+</table>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>6. 소프트 리밋 (안전장치)</h2>
+
+<table>
+<tr><th>상태</th><th>리밋+</th><th>리밋-</th><th>EMIO 명령</th><th>설명</th></tr>
+<tr><td>영점 초기화 중</td><td class="warn">8000</td><td class="warn">-8000</td><td>PMS071288000 / PMS08129-8000</td><td>홈 센서 탐색 (넓은 범위)</td></tr>
+<tr><td>검사 중 (영점 후)</td><td class="pass">1600</td><td class="pass">-1600</td><td>PMS071281600 / PMS08129-1600</td><td>±180도 범위 제한</td></tr>
+<tr><td>검사 완료/복귀</td><td class="warn">8000</td><td class="warn">-8000</td><td>PMS071288000 / PMS08129-8000</td><td>복귀 이동용 (넓은 범위)</td></tr>
+</table>
+
+<h3>과회전 감지 (PII00)</h3>
+<table>
+<tr><th>명령</th><th>응답</th><th>동작</th></tr>
+<tr><td><code>PII00</code></td><td>IO=0x00</td><td class="pass">정상 — 리밋 센서 미접촉</td></tr>
+<tr><td><code>PII00</code></td><td>IO≠0x00</td><td class="danger">FAIL — 과회전 감지, 검사 중단</td></tr>
+</table>
+<p>모든 모터 이동 전 PII00 체크 수행. 리밋 센서가 닿으면 즉시 FAIL 처리.</p>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>7. FineAdjust (정밀 각도 수렴)</h2>
+
+<table>
+<tr><th>파라미터</th><th>값</th><th>설명</th></tr>
+<tr><td>strict_tolerance</td><td>0.05도</td><td>첫 60초 동안 적용</td></tr>
+<tr><td>relaxed_tolerance</td><td>0.1도</td><td>60초 초과 시 적용</td></tr>
+<tr><td>max_steps</td><td>250</td><td>최대 스텝 수 (초과 시 FAIL)</td></tr>
+<tr><td>fine_confirm_wait</td><td>500ms</td><td>수렴 확인 대기</td></tr>
+<tr><td>fine_step_wait</td><td>500ms</td><td>이동 후 안정 대기</td></tr>
+<tr><td>방향 반전 임계</td><td>0.02도</td><td>오차 증가 시 방향 반전</td></tr>
+</table>
+
+<h3>수렴 알고리즘</h3>
+<ol>
+<li>자이로 현재 각도 읽기</li>
+<li>오차 = |목표 - 현재|</li>
+<li>오차 > tolerance → step 이동 (오차 비례)</li>
+<li>오차 증가 감지 → 방향 반전</li>
+<li>오차 ≤ tolerance → 500ms 대기 후 재확인 → 수렴 완료</li>
+</ol>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>8. 232 vs 485 차이점</h2>
+
+<table>
+<tr><th>항목</th><th>RS-232 (VL10)</th><th>RS-485 (VL20)</th></tr>
+<tr><td>시리얼 접두사</td><td>VL1-</td><td>VL2-</td></tr>
+<tr><td>baudrate</td><td>115200</td><td>115200</td></tr>
+<tr><td>OFFSET 명령</td><td><code>&lt;OFFSET,1&gt;</code></td><td><code>&lt;OFFSET,1,1&gt;</code></td></tr>
+<tr><td>APPCFG 응답</td><td><code>00/10/1/115200</code></td><td><code>00/10/1/115200</code></td></tr>
+<tr><td>자이로 방향</td><td>X축: setdir6 / Y축: setdir5</td><td>X축: setdir6 / Y축: setdir5</td></tr>
+<tr><td>판정 파라미터</td><td colspan="2" class="same">전부 동일 (tilt/vibe 동일 설정)</td></tr>
+<tr><td>모터 설정</td><td colspan="2" class="same">전부 동일 (step, 리밋, FineAdjust)</td></tr>
+<tr><td>SPEC</td><td colspan="2" class="same">전부 동일 (TILT ±0.2/0.5, VIBE 0.98~1.02/0.99~1.01)</td></tr>
+</table>
+</div>
+
+<!-- ============================== -->
+<div class="section">
+<h2>9. 검사 플로우 (dual 모드)</h2>
+<pre>
+#0  통신검사 (X축 VER + Y축 VER + 자이로)
+#1  X축 FW 버전 확인
+#2  X축 시리얼번호 설정 (UID)
+#3  X축 영점 초기화 (홈 센서 → FineAdjust → setzcur)
+#4  X축 Calibration (OFFSET → AN 검증)
+#5  X축 파라미터 저장 (APPCFG,SAVE)
+#6  X축 기울기 측정 (-20, -45, +20, +45도)
+#7  Y축 진동 측정 (-90도 → GAC 스트리밍)
+#1Y Y축 FW 버전 확인
+#8  Y축 시리얼번호 설정 (UID)
+#9  Y축 영점 초기화 (홈 센서 → FineAdjust → setzcur)
+#10 Y축 Calibration (OFFSET → AN 검증)
+#11 Y축 파라미터 저장 (APPCFG,SAVE)
+#12 Z축 진동 측정 (0도 → GAC 스트리밍)
+#13 Y축 기울기 측정 (+20, +45, -20, -45도)
+#14 X축 진동 측정 (-90도 → GAC 스트리밍)
+#15 Config 확인 (APPCFG)
+─── 총 17항목 ───
+</pre>
+</div>
+
+<hr>
+<p style="color:#999;font-size:0.85em">
+작성: Claude | 날짜: 2026-04-14 | 브랜치: step6-motion-jig-test | 커밋: bb59c1c
+</p>
+
+</body>
+</html>

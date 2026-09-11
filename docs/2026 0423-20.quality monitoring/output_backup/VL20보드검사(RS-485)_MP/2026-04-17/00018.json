@@ -1,0 +1,25 @@
+{
+  "time": "2026-04-17T06:04:57.0053465Z",
+  "Ins": "홍길동",
+  "Proj": "VL20 보드검사 (RS-485)_MP",
+  "project_type": "board",
+  "comm_type": "RS-485",
+  "lib": [
+    "{ff_common.dll},{1.0}",
+    "{ff_vibetilt.dll},{0.3.0.60409}",
+    "{ff_dpm.dll},{1.0}"
+  ],
+  "sn": "00018",
+  "mac": null,
+  "result": [
+    {
+      "Name": "3.3V 검사",
+      "id": "DPM_3V3",
+      "Range": "2.000-3.500",
+      "Measure": "3.317",
+      "Unit": "V",
+      "error_rate": "3%",
+      "result": "OK"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <!-- 공통 빌드 출력 디렉토리 설정 -->
+    <BaseOutputPath>$(SolutionDir)output\</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
+  </PropertyGroup>
+
+  <!-- 공통 버전 메타 (파일 등록정보용) — ff_vl 배포 단위 -->
+  <!-- 대외 배포명 ff_vl_R1b3 = 내부 정식버전 1.0.0.0(260721). 사내 캔탑스 버전규칙상
+       S/W 정식 버전은 a.b.c.d(e), R{n}b{m}은 문서 전용 표기 — 다음 배포부터 파일명_Ra.b_날짜 적용 -->
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>R1b3 (1.0.0.0)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Product>ff_vl 진동기울기센서 검사프로그램</Product>
+    <Company>CanTops</Company>
+  </PropertyGroup>
+</Project>

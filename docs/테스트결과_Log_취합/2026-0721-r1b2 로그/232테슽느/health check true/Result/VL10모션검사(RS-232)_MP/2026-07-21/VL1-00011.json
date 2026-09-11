@@ -1,0 +1,21 @@
+{
+  "time": "2026-07-21T02:13:57.8744677Z",
+  "Ins": "홍길동",
+  "Proj": "VL10 모션검사 (RS-232)_MP",
+  "project_type": "motion",
+  "comm_type": "RS-232",
+  "lib": [
+    "{ff_common.dll},{1.0}",
+    "{ff_vibetilt.dll},{R1b2}"
+  ],
+  "sn": "VL1-00011",
+  "mac": "Not Use",
+  "result": [
+    {
+      "Name": "영점 초기화 RS-232",
+      "id": "MOTION_ZERO_232",
+      "data": null,
+      "result": "PASS"
+    }
+  ]
+}

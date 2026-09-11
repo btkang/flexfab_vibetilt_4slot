@@ -1,0 +1,319 @@
+{
+  "time": "2026-07-20T10:43:22.4520623Z",
+  "Ins": "홍길동",
+  "Proj": "VL20 모션검사 (RS-485)_MP",
+  "project_type": "motion",
+  "comm_type": "RS-485",
+  "lib": [
+    "{ff_common.dll},{1.0}",
+    "{ff_vibetilt.dll},{R1b1}"
+  ],
+  "sn": "VL2-00001",
+  "mac": "Not Use",
+  "result": [
+    {
+      "Name": "#1-X [X결합] FW 버전 확인",
+      "id": "FWVER_485",
+      "data": [
+        {
+          "command": "<VER,1>",
+          "value": "[VER,0,1,F/W_ver.2.0.3]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "영점 초기화 RS-485",
+      "id": "MOTION_ZERO_485",
+      "data": null,
+      "result": "PASS"
+    },
+    {
+      "Name": "#4 [X결합] X축 Calibration (0도)",
+      "id": "OFFSET_485",
+      "data": [
+        {
+          "command": "<OFFSET,1,1>",
+          "value": "[OFFSET,0,1,1]",
+          "result": "OK"
+        },
+        {
+          "command": "verify_an",
+          "verify_an_value": 0.013,
+          "_verify_an_desc": "VL센서 AN스트리밍 약1초 200샘플 평균 (0도 기준)",
+          "gyro_spec_min": -0.05,
+          "gyro_spec_max": 0.05,
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "#5-1 [X결합] X축 정지 검사(0도)",
+      "id": "VIBE_STILL_485",
+      "data": [
+        {
+          "item": "정지 RMS(최대)",
+          "value": 0.58,
+          "max": null,
+          "result": "OK"
+        },
+        {
+          "item": "정지 변동폭(p2p최대)",
+          "value": 0,
+          "max": 0.05,
+          "result": "OK"
+        },
+        {
+          "item": "RMS(평균)",
+          "value": 0.58,
+          "result": "INFO"
+        },
+        {
+          "item": "변동폭 X/Y/Z",
+          "value": "0.0000/0.0000/0.0000",
+          "result": "INFO"
+        },
+        {
+          "item": "샘플수",
+          "value": 109,
+          "result": "INFO"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "#4 X축 기울기 RS-485",
+      "id": "MOTION_TILT_X_485",
+      "data": [
+        {
+          "item": "판정설정",
+          "judge_mode": "all_in_spec(엄격)",
+          "stream_duration_ms": 500,
+          "tail_count": 10,
+          "retry_count": 3,
+          "noise_check": false,
+          "noise_p2p_limit": null,
+          "result": "INFO"
+        },
+        {
+          "item": "X축 기울기 -20도",
+          "deviation": -0.012,
+          "_deviation_desc": "편차 = 마지막10개 VL센서 평균 - 자이로 기준값",
+          "gyro_ref": -20,
+          "gyro_spec": 0.05,
+          "_gyro_spec_desc": "자이로 수렴 허용치 (목표각도 ±0.05도)",
+          "vl_avg": -20.012,
+          "spec_min": -0.2,
+          "spec_max": 0.2,
+          "judge_mode": "all_in_spec(엄격)",
+          "_judge_mode_desc": "last=마지막1개 | average=N개평균 | median=중앙값 | trimmed_mean=상하10%제거평균 | all_in_spec=N개전부(현재)",
+          "result": "OK",
+          "summary": {
+            "median": -0.01,
+            "_median_desc": "중앙값 (tail 정렬 후 가운데)",
+            "standard_deviation": 0.004,
+            "_std_desc": "표준편차 (흩어짐 정도, 작을수록 안정)",
+            "p2p": 0.01,
+            "_p2p_desc": "최대-최소 차이 (센서 안정성)",
+            "sample_count": 63,
+            "tail_count": 10,
+            "_tail_desc": "마지막 10개 전부 spec 이내여야 PASS",
+            "retry_used": 0,
+            "_retry_desc": "리트라이 사용 횟수 (0=첫 시도 PASS)"
+          },
+          "_noise_comment": "noise_check=true시 tail샘플의 최대-최소(P2P)가 한계값 초과하면 FAIL (센서 불안정 검출용)",
+          "_comment": "마지막10개 전부 spec이내=PASS, AN스트리밍 0초(~50샘플), FAIL시 3회 재시도"
+        },
+        {
+          "item": "X축 기울기 -45도",
+          "deviation": 0.058,
+          "_deviation_desc": "편차 = 마지막10개 VL센서 평균 - 자이로 기준값",
+          "gyro_ref": -44.974,
+          "gyro_spec": 0.05,
+          "_gyro_spec_desc": "자이로 수렴 허용치 (목표각도 ±0.05도)",
+          "vl_avg": -44.916,
+          "spec_min": -0.5,
+          "spec_max": 0.5,
+          "judge_mode": "all_in_spec(엄격)",
+          "_judge_mode_desc": "last=마지막1개 | average=N개평균 | median=중앙값 | trimmed_mean=상하10%제거평균 | all_in_spec=N개전부(현재)",
+          "result": "OK",
+          "summary": {
+            "median": 0.054,
+            "_median_desc": "중앙값 (tail 정렬 후 가운데)",
+            "standard_deviation": 0.0102,
+            "_std_desc": "표준편차 (흩어짐 정도, 작을수록 안정)",
+            "p2p": 0.03,
+            "_p2p_desc": "최대-최소 차이 (센서 안정성)",
+            "sample_count": 62,
+            "tail_count": 10,
+            "_tail_desc": "마지막 10개 전부 spec 이내여야 PASS",
+            "retry_used": 0,
+            "_retry_desc": "리트라이 사용 횟수 (0=첫 시도 PASS)"
+          },
+          "_noise_comment": "noise_check=true시 tail샘플의 최대-최소(P2P)가 한계값 초과하면 FAIL (센서 불안정 검출용)",
+          "_comment": "마지막10개 전부 spec이내=PASS, AN스트리밍 0초(~50샘플), FAIL시 3회 재시도"
+        },
+        {
+          "item": "X축 기울기 +20도",
+          "deviation": -0.046,
+          "_deviation_desc": "편차 = 마지막10개 VL센서 평균 - 자이로 기준값",
+          "gyro_ref": 20.018,
+          "gyro_spec": 0.05,
+          "_gyro_spec_desc": "자이로 수렴 허용치 (목표각도 ±0.05도)",
+          "vl_avg": 19.972,
+          "spec_min": -0.2,
+          "spec_max": 0.2,
+          "judge_mode": "all_in_spec(엄격)",
+          "_judge_mode_desc": "last=마지막1개 | average=N개평균 | median=중앙값 | trimmed_mean=상하10%제거평균 | all_in_spec=N개전부(현재)",
+          "result": "OK",
+          "summary": {
+            "median": -0.048,
+            "_median_desc": "중앙값 (tail 정렬 후 가운데)",
+            "standard_deviation": 0.004,
+            "_std_desc": "표준편차 (흩어짐 정도, 작을수록 안정)",
+            "p2p": 0.01,
+            "_p2p_desc": "최대-최소 차이 (센서 안정성)",
+            "sample_count": 61,
+            "tail_count": 10,
+            "_tail_desc": "마지막 10개 전부 spec 이내여야 PASS",
+            "retry_used": 0,
+            "_retry_desc": "리트라이 사용 횟수 (0=첫 시도 PASS)"
+          },
+          "_noise_comment": "noise_check=true시 tail샘플의 최대-최소(P2P)가 한계값 초과하면 FAIL (센서 불안정 검출용)",
+          "_comment": "마지막10개 전부 spec이내=PASS, AN스트리밍 0초(~50샘플), FAIL시 3회 재시도"
+        },
+        {
+          "item": "X축 기울기 +45도",
+          "deviation": -0.122,
+          "_deviation_desc": "편차 = 마지막10개 VL센서 평균 - 자이로 기준값",
+          "gyro_ref": 44.969,
+          "gyro_spec": 0.05,
+          "_gyro_spec_desc": "자이로 수렴 허용치 (목표각도 ±0.05도)",
+          "vl_avg": 44.847,
+          "spec_min": -0.5,
+          "spec_max": 0.5,
+          "judge_mode": "all_in_spec(엄격)",
+          "_judge_mode_desc": "last=마지막1개 | average=N개평균 | median=중앙값 | trimmed_mean=상하10%제거평균 | all_in_spec=N개전부(현재)",
+          "result": "OK",
+          "summary": {
+            "median": -0.119,
+            "_median_desc": "중앙값 (tail 정렬 후 가운데)",
+            "standard_deviation": 0.0046,
+            "_std_desc": "표준편차 (흩어짐 정도, 작을수록 안정)",
+            "p2p": 0.01,
+            "_p2p_desc": "최대-최소 차이 (센서 안정성)",
+            "sample_count": 60,
+            "tail_count": 10,
+            "_tail_desc": "마지막 10개 전부 spec 이내여야 PASS",
+            "retry_used": 0,
+            "_retry_desc": "리트라이 사용 횟수 (0=첫 시도 PASS)"
+          },
+          "_noise_comment": "noise_check=true시 tail샘플의 최대-최소(P2P)가 한계값 초과하면 FAIL (센서 불안정 검출용)",
+          "_comment": "마지막10개 전부 spec이내=PASS, AN스트리밍 0초(~50샘플), FAIL시 3회 재시도"
+        }
+      ],
+      "result": "PASS"
+    },
+    {
+      "Name": "#5 Y축 진동 RS-485",
+      "id": "MOTION_VIBE_Y_485",
+      "data": [
+        {
+          "item": "Y축 진동 (-90도)",
+          "gyro_spec": 0.05,
+          "_gyro_spec_desc": "자이로 수렴 허용치 (목표각도 ±0.05도)",
+          "value": 1,
+          "_value_desc": "GAC 해당축 가속도 마지막5개 평균 (1G기준)",
+          "spec_min": 0.98,
+          "spec_max": 1.02,
+          "judge_mode": "all_in_spec(엄격)",
+          "_judge_mode_desc": "last=마지막1개 | average=N개평균 | median=중앙값 | trimmed_mean=상하10%제거평균 | all_in_spec=N개전부(현재)",
+          "result": "OK",
+          "summary": {
+            "median": 1,
+            "_median_desc": "중앙값 (tail 정렬 후 가운데)",
+            "standard_deviation": 0,
+            "_std_desc": "표준편차 (흩어짐 정도, 작을수록 안정)",
+            "p2p": 0,
+            "_p2p_desc": "최대-최소 차이 (센서 안정성)",
+            "norm": 1.0002,
+            "_norm_desc": "3축 벡터크기 √(x²+y²+z²), 참고용",
+            "non_target_max": 0.02,
+            "_non_target_desc": "비대상축 최대값 (0에 가까울수록 정상)",
+            "sample_count": 61,
+            "tail_count": 5,
+            "_tail_desc": "마지막 5개 전부 spec 이내여야 PASS",
+            "retry_used": 0,
+            "_retry_desc": "리트라이 사용 횟수 (0=첫 시도 PASS)"
+          },
+          "_comment": "GAC 해당축 값이 spec이내=PASS, norm/non_target은 참고용(판정무관)"
+        }
+      ],
+      "result": "PASS"
+    },
+    {
+      "Name": "#8 [Y결합] FW 버전 확인 (Y축)",
+      "id": "FWVER_485",
+      "data": [
+        {
+          "command": "<VER,1>",
+          "value": "[VER,0,1,F/W_ver.2.0.3]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "#9 [Y결합] 시리얼번호 설정 (Y축)",
+      "id": "UID_485",
+      "data": [
+        {
+          "command": "<UID,1,VL2-00001>",
+          "value": "[UID,0,1,VL2-00001]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "영점 초기화 RS-485",
+      "id": "MOTION_ZERO_485",
+      "data": null,
+      "result": "PASS"
+    },
+    {
+      "Name": "#11 [Y결합] Y축 Calibration (0도)",
+      "id": "OFFSET_485",
+      "data": [
+        {
+          "command": "<OFFSET,1,1>",
+          "value": "[OFFSET,0,1,1]",
+          "result": "OK"
+        },
+        {
+          "command": "verify_an",
+          "verify_an_value": 0.002,
+          "_verify_an_desc": "VL센서 AN스트리밍 약1초 203샘플 평균 (0도 기준)",
+          "gyro_spec_min": -0.05,
+          "gyro_spec_max": 0.05,
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "#12 [Y결합] Y축 파라미터 저장 (0도)",
+      "id": "APPCFG_SAVE_485",
+      "data": [
+        {
+          "command": "<APPCFG,1,SAVE>",
+          "value": "[APPCFG,0,1,SAVE]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    }
+  ]
+}

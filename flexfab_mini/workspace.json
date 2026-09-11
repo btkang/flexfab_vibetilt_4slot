@@ -1,0 +1,132 @@
+{
+  "libraries": [
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_1",
+      "config": {
+        "port": "COM27",
+        "baudrate": 9600,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Tcp",
+      "id": "tcp_1",
+      "config": {
+        "ip": "100.100.100.73",
+        "port": 2233
+      }
+    },
+    {
+      "filename": "ff_dpm.dll",
+      "classname": "Cantops.FlexFab.Dpm",
+      "id": "dpm",
+      "config": {
+        "uart": "uart_1"
+      }
+    },
+    {
+      "filename": "ff_portremote.dll",
+      "classname": "Cantops.FlexFab.Portremote",
+      "id": "portremote",
+      "config": {
+        "tcp": "tcp_1"
+      }
+    },
+    {
+      "filename": "ff_pim.dll",
+      "classname": "Cantops.FlexFab.Pim",
+      "id": "pim",
+      "config": {
+        "dpm": "dpm",
+        "portremote": "portremote"
+      }
+    }
+  ],
+  "projects": [
+    {
+      "id": "prj-001",
+      "name": "테스트 프로젝트",
+      "library_depencency": [
+        "uart_1",
+        "uart_2",
+        "tcp_1",
+        "dpm",
+        "portremote",
+        "pim",
+        "ctsp"
+      ],
+      "procs": [
+        {
+          "libid": "dpm",
+          "id": "proc_01",
+          "name": "24V 전원 검사",
+          "param": {
+            "id": 41,
+            "min": 23.28,
+            "max": 24.72
+          }
+        },
+        {
+          "libid": "dpm",
+          "id": "proc_01",
+          "name": "5V 전원 검사",
+          "param": {
+            "id": 6,
+            "min": 4.6,
+            "max": 5.4
+          }
+        },
+        {
+          "libid": "dpm",
+          "id": "proc_01",
+          "name": "3.3V 전원 검사",
+          "param": {
+            "id": 43,
+            "min": 2.0,
+            "max": 3.5
+          }
+        },
+        {
+          "libid": "portremote",
+          "id": "proutput",
+          "name": "5V 전원 검사용 릴레이 출력",
+          "param": {
+            "body": "PIO16000000000000000F" // 릴레이 명령
+          }
+        },
+        {
+          "libid": "portremote",
+          "id": "prinput",
+          "name": "입력 포트 검사",
+          "param": {
+            "compare": "pii0320000000000000000000000000000000F"
+          }
+        },
+        {
+          "libid": "portremote",
+          "id": "prinput",
+          "name": "입력 포트 검사",
+          "param": {
+            "compare": "pii032000000000000000F000000000000000F"
+          }
+        },
+        {
+          "libid": "portremote",
+          "id": "proc_03",
+          "name": "TCP와 UART를 순차적으로 사용하는 테스트",
+          "param": {
+            "tcpMessage": "TEST_A",
+            "uartMessage": "TEST_B",
+            "delay": 200
+          }
+        }
+      ]
+    }
+  ],
+  "active_project": "prj-001"
+}

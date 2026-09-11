@@ -1,0 +1,25 @@
+{
+  "time": "2026-04-14T05:07:51.7985288Z",
+  "Ins": "INSPECTOR",
+  "Proj": "모션지그 검사 (RS-232)_TEST",
+  "lib": [
+    "{ff_common.dll},{1.0}",
+    "{ff_vibetilt.dll},{0.3.0.60409}"
+  ],
+  "sn": "VL1-00010",
+  "mac": "Not Use",
+  "result": [
+    {
+      "Name": "#2 시리얼번호 설정 (X축)",
+      "id": "UID_232",
+      "data": [
+        {
+          "command": "<UID,VL1-00010>",
+          "value": "[UID,0,VL1-00010]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    }
+  ]
+}

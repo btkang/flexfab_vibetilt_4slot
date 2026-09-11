@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>작업자 매뉴얼 - 모션지그 232 (PPT용)</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; margin: 20px; background: #fff; color: #333; max-width: 800px; }
+  .slide { border: 2px solid #3498db; border-radius: 12px; padding: 25px; margin: 25px 0; page-break-inside: avoid; }
+  .slide-title { font-size: 22px; font-weight: bold; color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #3498db; padding-bottom: 8px; }
+  .slide-num { color: #3498db; font-size: 14px; }
+  table { border-collapse: collapse; margin: 10px 0; width: 100%; }
+  th, td { border: 1px solid #bdc3c7; padding: 6px 10px; text-align: left; font-size: 14px; }
+  th { background: #2c3e50; color: white; }
+  td { background: #f9f9f9; }
+  ul, ol { margin: 8px 0; padding-left: 20px; }
+  li { margin-bottom: 6px; font-size: 14px; }
+  .photo { background: #ecf0f1; border: 2px dashed #95a5a6; border-radius: 8px; padding: 20px; text-align: center; color: #7f8c8d; font-size: 14px; margin: 10px 0; }
+  .note { background: #fef9e7; border-left: 4px solid #f39c12; padding: 10px 15px; margin: 10px 0; font-size: 13px; }
+  .danger { background: #fdedec; border-left: 4px solid #e74c3c; padding: 10px 15px; margin: 10px 0; font-size: 13px; }
+  .pass { color: #27ae60; font-weight: bold; }
+  .fail { color: #e74c3c; font-weight: bold; }
+  code { background: #ecf0f1; padding: 2px 5px; border-radius: 3px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- ===== 슬라이드 1: 표지 ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 1 — 표지</div>
+  <div class="slide-title" style="font-size:28px; text-align:center; border:none;">모션지그 검사 프로그램<br>작업자 매뉴얼 (RS-232)</div>
+  <p style="text-align:center; font-size:16px;">
+    대상 제품: VL10 (진동기울기센서)<br>
+    SW 버전: v0.4.0<br>
+    작성일: 2026-04-09
+  </p>
+  <div class="photo">[사진] 모션지그 전체 외관</div>
+</div>
+
+<!-- ===== 슬라이드 2: 장비 구성 ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 2</div>
+  <div class="slide-title">장비 구성</div>
+  <table>
+    <tr><th>장비</th><th>역할</th></tr>
+    <tr><td>미니PC</td><td>검사 프로그램 실행</td></tr>
+    <tr><td>EMIO 보드</td><td>스텝모터 제어 (원판 회전)</td></tr>
+    <tr><td>파워서플라이</td><td>EMIO + 모터 전원 (DC 24V)</td></tr>
+    <tr><td>VL10 제품</td><td>검사 대상 센서</td></tr>
+    <tr><td>자이로 (SOLAR-360-420)</td><td>레퍼런스 각도 센서</td></tr>
+    <tr><td>홈 센서</td><td>원판 영점 위치 감지</td></tr>
+  </table>
+  <div class="photo">[사진] 장비 구성 전체 + 각 장비에 번호 표시</div>
+</div>
+
+<!-- ===== 슬라이드 3: 케이블 연결 ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 3</div>
+  <div class="slide-title">케이블 연결</div>
+  <table>
+    <tr><th>연결</th><th>포트</th><th>대상</th></tr>
+    <tr><td>LAN 케이블</td><td>이더넷</td><td>EMIO 보드 (IP: 100.100.100.70)</td></tr>
+    <tr><td>USB-시리얼 ①</td><td>COM13</td><td>X축 안착지그 (VL10)</td></tr>
+    <tr><td>USB-시리얼 ②</td><td>COM14</td><td>Y축 안착지그 (VL10, 듀얼 시)</td></tr>
+    <tr><td>USB-시리얼 ③</td><td>COM15</td><td>자이로 센서</td></tr>
+    <tr><td>DC 전원</td><td>24V</td><td>파워서플라이 → EMIO + 모터</td></tr>
+  </table>
+  <div class="photo">[사진] 미니PC 뒷면 케이블 연결 상태</div>
+  <div class="note">COM 포트 번호는 USB 포트 위치에 따라 다를 수 있음 → 장치관리자에서 확인</div>
+</div>
+
+<!-- ===== 슬라이드 4: 전원 ON 순서 ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 4</div>
+  <div class="slide-title">전원 ON 순서</div>
+  <ol>
+    <li><strong>파워서플라이 ON</strong> — EMIO + 모터 전원 먼저!</li>
+    <li><strong>미니PC ON</strong></li>
+    <li>자이로 센서 LED 점등 확인</li>
+    <li>홈 센서 LED 점등 확인 (원판 홈 위치)</li>
+  </ol>
+  <div class="danger">파워서플라이를 먼저 켜야 EMIO 연결됨. 순서 틀리면 TCP 연결 실패!</div>
+  <div class="photo">[사진] 파워서플라이 스위치 위치</div>
+  <div class="photo">[사진] 홈 센서 LED 점등 상태</div>
+</div>
+
+<!-- ===== 슬라이드 5: 프로그램 실행 ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 5</div>
+  <div class="slide-title">프로그램 실행</div>
+  <ol>
+    <li><code>flexfab.exe</code> 실행</li>
+    <li>워크스페이스 선택</li>
+    <li>시리얼 번호 입력</li>
+    <li><strong>START</strong> 클릭</li>
+  </ol>
+  <table>
+    <tr><th>용도</th><th>워크스페이스 파일</th></tr>
+    <tr><td>양산 검사</td><td><code>workspace_motion_232.json</code></td></tr>
+    <tr><td>롱런 듀얼</td><td><code>longrun_motion_232_dual.json</code></td></tr>
+    <tr><td>롱런 X축만</td><td><code>longrun_motion_232_x.json</code></td></tr>
+    <tr><td>롱런 Y축만</td><td><code>longrun_motion_232_y.json</code></td></tr>
+  </table>
+  <div class="photo">[사진] 프로그램 메인 화면 — 워크스페이스 선택 부분</div>
+  <div class="photo">[사진] 시리얼 번호 입력 화면</div>
+</div>
+
+<!-- ===== 슬라이드 6: 제품 장착 ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 6</div>
+  <div class="slide-title">제품 장착 방법</div>
+  <ul>
+    <li>X축 안착지그에 VL10 제품 장착</li>
+    <li>듀얼 모드 시: Y축 안착지그에도 제품 장착</li>
+    <li>제품 방향, 커넥터 위치 확인</li>
+  </ul>
+  <div class="photo">[사진] X축 안착지그에 제품 장착 모습</div>
+  <div class="photo">[사진] Y축 안착지그에 제품 장착 모습</div>
+  <div class="photo">[사진] 제품 장착 방향 (올바른 / 잘못된 예시)</div>
+</div>
+
+<!-- ===== 슬라이드 7: 검사 흐름 — 싱글 모드 ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 7</div>
+  <div class="slide-title">검사 흐름 — 싱글 모드</div>
+  <ol>
+    <li>X축에 제품 장착 → START</li>
+    <li>작업자 확인 팝업 → <strong>확인</strong> 클릭</li>
+    <li>X축 검사 자동 진행 (약 1분 30초)</li>
+    <li><strong>"Y축에 제품을 장착해주세요"</strong> 팝업</li>
+    <li>제품을 Y축으로 이동 → <strong>확인</strong> 클릭</li>
+    <li>Y축 검사 자동 진행 (약 1분 20초)</li>
+    <li>결과 표시: PASS / FAIL</li>
+  </ol>
+  <div class="photo">[사진] 작업자 확인 팝업 화면</div>
+</div>
+
+<!-- ===== 슬라이드 8: 검사 흐름 — 듀얼 모드 ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 8</div>
+  <div class="slide-title">검사 흐름 — 듀얼 모드</div>
+  <ol>
+    <li>X축: 새 제품 / Y축: 이전 제품 장착</li>
+    <li>START → 확인 팝업 → <strong>확인</strong></li>
+    <li>X축(#0~#5) → Y축(#0-Y~#11) 연속 자동 진행</li>
+    <li>전체 완료 → 결과 표시</li>
+    <li>다음 반복 시 제품 교체 팝업</li>
+  </ol>
+  <p><strong>소요 시간:</strong> 회당 약 2분 50초 (13개 항목)</p>
+  <div class="note">듀얼 모드: X축(COM13), Y축(COM14)에 각각 다른 제품이 동시 장착됨</div>
+</div>
+
+<!-- ===== 슬라이드 9: 검사 항목 — X축 ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 9</div>
+  <div class="slide-title">검사 항목 — X축 (6개)</div>
+  <table>
+    <tr><th>#</th><th>검사명</th><th>판정 기준</th></tr>
+    <tr><td>0</td><td>FW 버전 확인</td><td>VER 응답 수신</td></tr>
+    <tr><td>1</td><td>X축 영점 초기화 (0도)</td><td>자이로 0.00도 수렴</td></tr>
+    <tr><td>2</td><td>X축 Calibration</td><td>AN X: ±0.05 이내</td></tr>
+    <tr><td>3</td><td>X축 파라미터 저장</td><td>응답 확인</td></tr>
+    <tr><td>4</td><td>X축 기울기 측정 (±20, ±45도)</td><td>±20도: ±0.2 / ±45도: ±0.5</td></tr>
+    <tr><td>5</td><td>Y축 진동 측정 (+90도)</td><td>GAC: 0.99~1.01</td></tr>
+  </table>
+</div>
+
+<!-- ===== 슬라이드 10: 검사 항목 — Y축 ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 10</div>
+  <div class="slide-title">검사 항목 — Y축 (7개)</div>
+  <table>
+    <tr><th>#</th><th>검사명</th><th>판정 기준</th></tr>
+    <tr><td>0-Y</td><td>FW 버전 확인 (Y축)</td><td>VER 응답 수신</td></tr>
+    <tr><td>7</td><td>Y축 영점 초기화 (0도)</td><td>자이로 0.00도 수렴</td></tr>
+    <tr><td>8</td><td>Y축 Calibration</td><td>AN Y: ±0.05 이내</td></tr>
+    <tr><td>9</td><td>Y축 파라미터 저장</td><td>응답 확인</td></tr>
+    <tr><td>12</td><td>Z축 진동 측정 (0도)</td><td>GAC: 0.99~1.01</td></tr>
+    <tr><td>10</td><td>Y축 기울기 측정 (±20, ±45도)</td><td>±20도: ±0.2 / ±45도: ±0.5</td></tr>
+    <tr><td>11</td><td>X축 진동 측정 (-90도)</td><td>GAC: 0.99~1.01</td></tr>
+  </table>
+</div>
+
+<!-- ===== 슬라이드 11: 결과 확인 ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 11</div>
+  <div class="slide-title">결과 확인</div>
+  <table>
+    <tr><th>결과</th><th>의미</th><th>조치</th></tr>
+    <tr><td class="pass">PASS (OK)</td><td>모든 항목 합격</td><td>다음 제품 진행</td></tr>
+    <tr><td class="fail">FAIL</td><td>1개 이상 불합격</td><td>로그 확인 → 원인 파악</td></tr>
+  </table>
+  <p><strong>결과 파일 위치:</strong></p>
+  <ul>
+    <li>로그: <code>Log\모션지그검사(RS-232)\YYYY-MM-DD.log</code></li>
+    <li>결과: <code>Result\모션지그검사(RS-232)\YYYY-MM-DD\시리얼번호.json</code></li>
+  </ul>
+  <div class="photo">[사진] PASS 결과 화면</div>
+  <div class="photo">[사진] FAIL 결과 화면</div>
+</div>
+
+<!-- ===== 슬라이드 12: 문제 해결 ① ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 12</div>
+  <div class="slide-title">문제 해결 ①</div>
+  <table>
+    <tr><th>증상</th><th>원인</th><th>조치</th></tr>
+    <tr><td>TCP 연결 실패</td><td>EMIO 전원 OFF / LAN 미연결</td><td>파워서플라이 ON, LAN 확인</td></tr>
+    <tr><td>영점 초기화 FAIL</td><td>홈 센서 미감지</td><td>홈 센서 LED, 원판 테이프, IN1 배선 확인</td></tr>
+    <tr><td>FW 버전 FAIL</td><td>제품 미장착 / COM 오류</td><td>제품 장착, 장치관리자 확인</td></tr>
+    <tr><td>과회전 감지 (IN2)</td><td>원판 과회전</td><td>프로그램 재시작, 원판 수동 조정</td></tr>
+  </table>
+</div>
+
+<!-- ===== 슬라이드 13: 문제 해결 ② ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 13</div>
+  <div class="slide-title">문제 해결 ②</div>
+  <table>
+    <tr><th>증상</th><th>원인</th><th>조치</th></tr>
+    <tr><td>기울기 FAIL</td><td>제품 불량 / 자이로 이상</td><td>오차값 확인, Spec 경계면 재시도</td></tr>
+    <tr><td>진동 FAIL (GAC)</td><td>제품 불량 / 미정위</td><td>제품 장착 상태 확인, 재시도</td></tr>
+    <tr><td>절전 후 FAIL</td><td>미니PC 절전 → TCP 끊김</td><td>전원 설정 → 절전: 안 함</td></tr>
+  </table>
+  <div class="photo">[사진] 장치관리자 COM 포트 확인 화면</div>
+</div>
+
+<!-- ===== 슬라이드 14: 종료 순서 ===== -->
+<div class="slide">
+  <div class="slide-num">슬라이드 14</div>
+  <div class="slide-title">종료 순서</div>
+  <ol>
+    <li>프로그램 <strong>STOP</strong> (검사 중이면)</li>
+    <li>프로그램 종료</li>
+    <li>미니PC 종료</li>
+    <li><strong>파워서플라이 OFF</strong> (마지막에)</li>
+  </ol>
+  <div class="danger">
+    <strong>퇴근 시 롱런 돌릴 때:</strong><br>
+    - 절전: <strong>안 함</strong> (필수!)<br>
+    - 화면 끄기: 10분 (OK)<br>
+    - 파워서플라이 ON 유지
+  </div>
+</div>
+
+</body>
+</html>

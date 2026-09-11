@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>빌드 방법 및 Windows 지원 범위 (net8.0-windows)</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; font-size: 14px; margin: 40px; color: #222; }
+  h1 { font-size: 20px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+  h2 { font-size: 16px; margin-top: 32px; border-left: 4px solid #0078d4; padding-left: 10px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+  th { background: #0078d4; color: #fff; padding: 8px 12px; text-align: center; }
+  td { border: 1px solid #ccc; padding: 8px 12px; text-align: center; }
+  tr:nth-child(even) { background: #f5f5f5; }
+  .ok { color: #107c10; font-weight: bold; }
+  .ng { color: #d83b01; font-weight: bold; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 14px 18px; border-radius: 6px; font-size: 13px; overflow-x: auto; }
+  .note { background: #fff4ce; border-left: 4px solid #f0ad00; padding: 10px 14px; margin-top: 12px; font-size: 13px; }
+  .section { margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<h1>빌드 방법 및 Windows 지원 범위</h1>
+<p>프로젝트: <strong>flexfab_mini (net8.0-windows)</strong> &nbsp;|&nbsp; 작성일: 2026-04-22</p>
+
+<!-- ===== 빌드 방법 ===== -->
+<div class="section">
+<h2>1. 빌드 방법</h2>
+<table>
+  <thead>
+    <tr>
+      <th>구분</th>
+      <th>방법</th>
+      <th>결과물 경로</th>
+      <th>특징</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>런타임 미포함</strong><br>(Framework-dependent)</td>
+      <td>VS2022 → 빌드 구성 Release → 솔루션 다시 빌드</td>
+      <td>output/Release/net8.0-windows/</td>
+      <td>파일 작음. 대상 PC에 .NET 8 런타임 설치 필요</td>
+    </tr>
+    <tr>
+      <td><strong>런타임 포함</strong><br>(Self-contained)</td>
+      <td>cmd 명령어 (아래 참조)</td>
+      <td>flexfab_mini/output/Release/<br>net8.0-windows/win-x64/publish/</td>
+      <td>파일 큼(수십 MB). 런타임 설치 불필요. 깡통 PC 배포용</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>2. 런타임 포함 빌드 명령어</h2>
+
+<p><strong>64비트 PC용 (win-x64)</strong></p>
+<pre>dotnet publish flexfab_mini/flexfab.csproj -c Release -r win-x64 --self-contained true</pre>
+
+<p><strong>32비트 PC용 (win-x86)</strong></p>
+<pre>dotnet publish flexfab_mini/flexfab.csproj -c Release -r win-x86 --self-contained true</pre>
+
+<div class="note">
+  ※ AnyCPU(미명시) 빌드는 Self-contained 불가. 런타임 포함 배포 시 반드시 RID(win-x64 또는 win-x86)를 명시해야 함.<br>
+  ※ 32/64비트 혼용 배포 시 각각 따로 publish → 폴더 분리 배포.
+</div>
+</div>
+
+<!-- ===== 배포 폴더 구조 ===== -->
+<div class="section">
+<h2>3. 배포 폴더 구조</h2>
+<pre>D:\...\10.실행파일배포\26MMDD_X.Y.Z_motion_232_485\
+├── X.Y.Z_6MMDD-RELEASE-미포함\          ← output/Release/net8.0-windows/ 복사
+└── X.Y.Z_6MMDD-RELEASE-닷넷런타임포함\  ← flexfab_mini/.../publish/ 복사</pre>
+<div class="note">
+  ※ workspace JSON(workspace_*.json)은 빌드 시 자동 복사되지 않음.<br>
+  ※ Debug / Release / publish 3곳 수동 적용 필요.
+</div>
+</div>
+
+<!-- ===== Windows 지원 범위 ===== -->
+<div class="section">
+<h2>4. Windows 버전별 .NET 8 지원 범위</h2>
+<table>
+  <thead>
+    <tr>
+      <th>OS</th>
+      <th>아키텍처</th>
+      <th>.NET 8 지원</th>
+      <th>Self-contained 실행</th>
+      <th>비고</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Windows 11</td>
+      <td>x64</td>
+      <td class="ok">✅</td>
+      <td class="ok">✅ win-x64</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Windows 11</td>
+      <td>x86 (32bit)</td>
+      <td class="ok">✅</td>
+      <td class="ok">✅ win-x86</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Windows 10</td>
+      <td>x64</td>
+      <td class="ok">✅</td>
+      <td class="ok">✅ win-x64</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Windows 10</td>
+      <td>x86 (32bit)</td>
+      <td class="ok">✅</td>
+      <td class="ok">✅ win-x86</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Windows 7</td>
+      <td>x64 / x86</td>
+      <td class="ng">❌</td>
+      <td class="ng">❌ 불가</td>
+      <td>.NET 8 자체 미지원. Self-contained로도 해결 불가</td>
+    </tr>
+    <tr>
+      <td>Windows XP</td>
+      <td>x86</td>
+      <td class="ng">❌</td>
+      <td class="ng">❌ 불가</td>
+      <td>.NET 8 자체 미지원. .NET Framework 4.0 이하만 가능</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="note">
+  ※ .NET 8 최소 요구사항: <strong>Windows 10 이상</strong><br>
+  ※ Windows 7 지원 필요 시 → .NET Framework 4.x 또는 .NET Core 3.1로 다운그레이드 필요<br>
+  ※ 이 프로젝트(net8.0-windows)는 <strong>Windows 10 / 11 전용</strong>
+</div>
+</div>
+
+</body>
+</html>

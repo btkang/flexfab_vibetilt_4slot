@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>README</title>
+<style>
+body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+       max-width: 1000px; margin: 30px auto; padding: 0 25px;
+       line-height: 1.65; color: #333; background: #fafafa; }
+h1 { border-bottom: 3px solid #00695c; padding-bottom: 10px; color: #00695c; }
+h2 { border-left: 5px solid #00897b; padding-left: 12px; color: #00695c; margin-top: 35px; }
+h3 { color: #424242; margin-top: 22px; }
+h4 { color: #555; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background-color: #e0f2f1; font-weight: 600; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px;
+       font-family: 'Consolas', monospace; font-size: 0.92em; }
+pre { background: #263238; color: #aed581; padding: 15px; border-radius: 5px;
+      overflow-x: auto; font-size: 0.85em; line-height: 1.4; }
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote { border-left: 4px solid #00897b; padding: 6px 14px; color: #555;
+             background: #e0f2f1; margin: 12px 0; }
+a { color: #00695c; }
+ul, ol { margin: 6px 0 6px 22px; }
+li { margin: 3px 0; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1 id="md2html-html">md2html — 마크다운 → HTML 변환 도구</h1>
+<p>PLAN/리포트 등 .md 문서를 같은 폴더의 .html로 변환. 검토 시 .html을 더블클릭하면 브라우저에서 바로 열림.</p>
+<h2 id="1">셋업 (1회)</h2>
+<ol>
+<li>
+<p><strong>Python markdown 패키지 설치</strong> (이미 됨)
+   <code>powershell
+   python -m pip install markdown</code></p>
+</li>
+<li>
+<p><strong>우클릭 메뉴 등록</strong> (선택)
+   - <code>add_md2html_context.reg</code> 더블클릭 → "예" 클릭
+   - 이후 탐색기에서 .md 우클릭 → <strong>"HTML 만들기"</strong> 메뉴 표시</p>
+</li>
+</ol>
+<h2 id="_1">사용 방법</h2>
+<h3 id="a">A. 우클릭 메뉴 (셋업 후)</h3>
+<p>탐색기에서 .md 파일 우클릭 → "HTML 만들기" 클릭 → 같은 폴더에 .html 생성</p>
+<h3 id="b">B. 드래그앤드롭</h3>
+<p>.md 파일을 <code>md2html.cmd</code> 위로 드래그 → 같은 폴더에 .html 생성</p>
+<h3 id="c">C. 명령행</h3>
+<pre><code class="language-powershell">python tools/md2html/md2html.py &quot;docs/.../file.md&quot;
+</code></pre>
+<h3 id="d-claude">D. Claude가 자동 생성</h3>
+<p>Claude가 PLAN/리포트 .md 만들 때 자동으로 .html도 같이 생성됨.</p>
+<h2 id="_2">제거</h2>
+<p>우클릭 메뉴를 빼고 싶으면 <code>remove_md2html_context.reg</code> 더블클릭.</p>
+<h2 id="_3">트러블슈팅</h2>
+<table>
+<thead>
+<tr>
+<th>증상</th>
+<th>해결</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ModuleNotFoundError: markdown</code></td>
+<td><code>python -m pip install markdown</code></td>
+</tr>
+<tr>
+<td><code>python is not recognized</code></td>
+<td>Python을 PATH에 추가 또는 재설치</td>
+</tr>
+<tr>
+<td>우클릭 메뉴 안 보임</td>
+<td><code>add_md2html_context.reg</code> 더블클릭 누락. 또는 다른 PC면 .reg 안의 경로 수정 필요</td>
+</tr>
+<tr>
+<td>한글 깨짐</td>
+<td>콘솔에 <code>chcp 65001</code> 후 다시 시도</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

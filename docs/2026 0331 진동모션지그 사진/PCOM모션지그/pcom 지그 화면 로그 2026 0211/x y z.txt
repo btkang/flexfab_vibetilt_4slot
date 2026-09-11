@@ -1,0 +1,177 @@
+
+[E.RCV] > pmo0011
+[E.RCV] > pmp0011
+[Snd Target]><MCLOSEC3>
+[Snd Ref.]><MCLOSEC3>
+[Snd U.M]><MCLOSEC3>
+[Snd Target]><MOPEN7F>
+[Snd Ref.]><MOPEN7F>
+[Snd U.M]><MOPEN7F>
+[Rcv Target]>[MCLOSE=OK9A][MOPEN=OK56]
+[Rcv Master]>[MCLOSE=OK9A][MOPEN=OK56]
+[Rcv U.M]>[MCLOSE=OK9A][MOPEN=OK56]
+[Snd U.T]>setzcur
+[Rcv U.T]>OK
+[Snd U.T]>get---x
+[Rcv U.T]>-000.009
+
+[E.RCV] > pmd5011
+[E.RCV] > ppc606138000
+[E.RCV] > pmd0011
+[Snd Target]><MTEST8D>
+[Snd Ref.]><MTEST8D>
+[Snd U.M]><MTEST8D>
+[Rcv Target]>A=10.46,-0.09,0.00,ACC=0.001,0.181,0.978,T=31.28,GA=10.54,0.00,0.00
+[Rcv Master]>A=-0.08,-10.50,0.00,ACC=0.182,-0.001,0.979,T=31.85,GA=0.00,-10.48,0.00
+[Rcv U.M]>A=0.02,-10.45,0.00,ACC=0.180,0.000,0.979,T=34.22,GA=0.00,-10.66,0.00
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.319
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.121
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.098
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.090
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.087
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.087
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.075
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.068
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.061
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.051
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.051
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.042
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.037
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.028
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.022
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.024
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>+000.008
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.004
+
+[Snd Target]><MCLOSEC3>
+[Snd Ref.]><MCLOSEC3>
+[Snd U.M]><MCLOSEC3>
+[Snd Target]><MOPEN7F>
+[Snd Ref.]><MOPEN7F>
+[Snd U.M]><MOPEN7F>
+[Rcv Target]>[MCLOSE=OK9A][MOPEN=OK56]
+[Rcv Master]>[MCLOSE=OK9A][MOPEN=OK56]
+[Rcv U.M]>[MCLOSE=OK9A][MOPEN=OK56]
+[E.RCV] > pmd0011
+[Snd Target]><MTEST8D>
+[Snd Ref.]><MTEST8D>
+[Snd U.M]><MTEST8D>
+[Rcv Target]>A=-10.50,0.05,0.00,ACC=0.000,-0.182,0.987,T=31.68,GA=-10.52,0.00,0.00
+[Rcv Master]>A=0.03,10.45,0.00,ACC=-0.181,0.000,0.988,T=32.27,GA=0.00,10.45,0.00
+[Rcv U.M]>A=-0.11,10.47,0.00,ACC=-0.182,-0.001,0.987,T=34.29,GA=0.00,10.53,0.00
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.409
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.131
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.089
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.084
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.073
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.067
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.055
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.060
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.057
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.037
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.036
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.037
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.035
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.021
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.020
+
+[E.RCV] > pmd0011
+[Snd U.T]>get---x
+[Rcv U.T]>-000.013

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>CHECK_지그정기점검_결함목록_20260721_v01</title>
+<style>
+body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+       max-width: 1000px; margin: 30px auto; padding: 0 25px;
+       line-height: 1.65; color: #333; background: #fafafa; }
+h1 { border-bottom: 3px solid #00695c; padding-bottom: 10px; color: #00695c; }
+h2 { border-left: 5px solid #00897b; padding-left: 12px; color: #00695c; margin-top: 35px; }
+h3 { color: #424242; margin-top: 22px; }
+h4 { color: #555; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background-color: #e0f2f1; font-weight: 600; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px;
+       font-family: 'Consolas', monospace; font-size: 0.92em; }
+pre { background: #263238; color: #aed581; padding: 15px; border-radius: 5px;
+      overflow-x: auto; font-size: 0.85em; line-height: 1.4; }
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote { border-left: 4px solid #00897b; padding: 6px 14px; color: #555;
+             background: #e0f2f1; margin: 12px 0; }
+a { color: #00695c; }
+ul, ol { margin: 6px 0 6px 22px; }
+li { margin: 3px 0; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1 id="check___20260721_v01">CHECK_지그정기점검_결함목록_20260721_v01</h1>
+<ul>
+<li>작성: Claude (적대적 검증 담당, 2026-07-21, 집)</li>
+<li>대상: <code>PLAN_지그정기점검_수평감시알림_20260720_v01.md</code>, <code>PLAN_setzcur판별로그_MP노출_20260720_v01.md</code></li>
+<li>용도: 수정 담당 AI가 PLAN v02 작성 시 반영할 결함·확정사항. 코드 실물 대조 완료 (라인 번호는 2026-07-21 기준 <code>ff_vibetilt/MotionJig.cs</code>)</li>
+</ul>
+<hr />
+<h2 id="0-v02">0. 사용자 확정 설계 결정 (v02에 반영할 전제)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>결정</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D1</td>
+<td><strong>판정은 X 영점, 홈 수행 사이클만</strong> (10사이클 중 1회, <code>home_every_n: 10</code> 현행 유지)</td>
+<td>홈 생략 사이클의 r_pre는 복귀 잔차라 감시 무의미. 지그 틀어짐은 느린 현상이라 1/10 주기로 충분</td>
+</tr>
+<tr>
+<td>D2</td>
+<td><strong>Y축 감시 삭제</strong></td>
+<td>하드웨어 확정: 레퍼런스 경사계는 1축(피치)이고 피치=경사 방향. X/Y 검사가 같은 지그·같은 센서·같은 측정축 → 감시 필요한 모든 변화는 피치 판독에 나타나고 X r_pre가 커버. Y r_pre는 새 정보 없음</td>
+</tr>
+<tr>
+<td>D3</td>
+<td><strong>알림은 팝업 유지</strong> (라벨 기각)</td>
+<td>라벨은 모듈에서 쓸 UI 훅이 없음 — <code>libraries</code>에는 <code>confirmCallback</code>/<code>confirmCallbackYesNo</code>(팝업)뿐. 라벨 추가 = <code>flexfab_mini</code>(공통 라이브러리) 수정 필요라 기각</td>
+</tr>
+<tr>
+<td>D4</td>
+<td>PASS 경로 추가 시간 0 확인</td>
+<td>r_pre는 기존 판독(<code>MotionJig.cs:1509</code>) 재활용. 추가는 계산+로그 1줄. 통신·모터·대기 추가 없음. 시간이 드는 건 팝업(이상 시)뿐</td>
+</tr>
+</tbody>
+</table>
+<p>기록 경로 확인 결과: 로그는 <code>Log/{프로젝트명}/YYYY-MM-DD.log</code> 자동 저장(<code>FlexfabForm.cs:1213-1220</code>). 결과 details는 시리얼별 JSON. DB는 직접 기록 없음 — 품질모니터링이 결과 JSON 수집(간접).</p>
+<hr />
+<h2 id="1-plan___v01">1. PLAN_지그정기점검_수평감시알림_v01 결함</h2>
+<h3 id="f1-v01">🔴 F1. 홈 생략 사이클 게이트 누락 (치명 — v01 그대로 배포 시 오탐 폭주)</h3>
+<ul>
+<li>MP 실설정: X 영점(#3) <code>home_every_n: 10</code> → 10중 9회 홈 생략. 홈 생략 시 r_pre = 이전 위치 잔차(기구 오차 아님).</li>
+<li><code>skip_home</code> 경로는 7도 가드도 안 탐 — 가드는 <code>if (autoSkip)</code> 전용(<code>MotionJig.cs:737</code>), <code>skipHome</code>은 바로 goto(<code>:748-753</code>). 절대 가드 1.0도가 정상 상태에서 오발 가능.</li>
+<li><strong>요구</strong>: <code>[JIG]</code> 판정·팝업·streak 카운트는 <code>!(skipHome || autoSkip)</code> 사이클에서만. 홈 생략 사이클은 판정 없음(details에 <code>homed=false</code> 기록은 선택).</li>
+</ul>
+<h3 id="f2-y-d2">🔴 F2. Y축 관련 조항 전면 삭제 (D2 반영)</h3>
+<ul>
+<li>§5 팝업 예시가 Y축으로 작성됨 → X축 예시로 교체.</li>
+<li>§6 "#3/#10 각자 param → 축별 baseline" 문구, #10 param 추가분, §8-4 "485 동시 적용" 중 Y 관련 부분 정리.</li>
+<li>Y <code>skip_home: true</code>는 현행 유지 (변경 불필요 — 감시 대상 아님).</li>
+</ul>
+<h3 id="f3-baselinestreak">🟠 F3. baseline·streak 재정의 (유효 표본 = 홈 수행 사이클만)</h3>
+<ul>
+<li>"첫 10사이클 중앙값" → 홈 수행 사이클 기준으로 재정의. 예: "홈 수행 10회(≈100사이클) 중앙값" 또는 배포 직후 임시 <code>home_every_n: 1</code>로 하루에 10점 수집 후 원복(JSON만 수정, 빌드 불필요).</li>
+<li>streak 3 = 홈 사이클 3회 = <strong>≈30사이클 감지 지연</strong>. 유효 표본이 홈 사이클뿐이라 튐 확률도 낮으므로 streak 2 검토.</li>
+</ul>
+<h3 id="f4-initmotionzero-2-533">🟠 F4. <code>InitMotionZero</code> 호출부는 2곳 — <code>:533</code> 처리 방침 누락</h3>
+<ul>
+<li>PLAN은 <code>:677</code>(MotionZeroInternal)만 언급. <code>:533</code>(측정 항목 내장 영점, 최초 1회)도 호출부.</li>
+<li><code>out double</code> 추가 시 <code>:533</code>도 시그니처 수정 필수. 판정을 넣을지 <code>out _</code> 폐기할지 명시 필요 (confirmCallback은 <code>:519</code>에도 있음).</li>
+</ul>
+<h3 id="f5-ok-2026-07-21">🟠 F5. 팝업 확인(OK) 이력 미기록 (신규 — 2026-07-21 발견)</h3>
+<ul>
+<li>기존 팝업 패턴(<code>MotionJig.cs:665-673</code>)은 취소만 기록되고 <strong>OK는 명시 로그 없음</strong>.</li>
+<li>지그 점검 팝업의 목적이 "점검 이력"이므로 OK 시에도 <code>[JIG] 작업자 점검 확인</code> 류의 로그 1줄 + details(<code>jig_check_prompted</code> 등) 필수. 안 남기면 "NG 후 점검했는지"를 로그로 증명 불가 — setzcur 건과 같은 "로그가 자기 조건을 증명하지 못하는" 문제.</li>
+</ul>
+<h3 id="f6-json">🟡 F6. 대상 JSON 목록 확인</h3>
+<ul>
+<li>§6은 8개({MP,TEST}×{232,485}×{Debug,Release})인데 <code>TCP_</code>/<code>SER_workspace_motion_485_VL20.json</code>(Debug/Release)에도 MOTION_ZERO 항목 존재. 실운영 파일이면 누락 — 폐기 파일인지 회사에서 확인.</li>
+</ul>
+<h3 id="f7-warn">🟡 F7. warn 근거 표기 불일치</h3>
+<ul>
+<li>§4 본문 "노이즈 0.002·단기요동 0.004의 25배" vs JSON <code>_comment</code> "노이즈 0.002의 50배". 둘 다 산술은 맞으나 분모가 달라 혼선 — 하나로 통일.</li>
+</ul>
+<hr />
+<h2 id="2-plan_setzcur_mp_v01-v01">2. PLAN_setzcur판별로그_MP노출_v01 결함 (v01 미반영 상태)</h2>
+<h3 id="f8-4">🟠 F8. §4 "둘 다 없음 → 구버전" 판별 전제조건 누락</h3>
+<ul>
+<li>내장 영점은 <code>if (!_zeroInitialized)</code>로 최초 1사이클만 실행(<code>MotionJig.cs:530</code>) — 영점 항목 없는 워크스페이스에선 신버전도 2사이클째부터 "둘 다 없음".</li>
+<li><strong>요구</strong>: 판별은 <code>[ZERO] 영점 초기화 시작</code>(또는 <code>완료</code>)이 존재하는 로그 구간에서만 유효함을 §4에 명시.</li>
+</ul>
+<h3 id="f9-1">🟡 F9. "사이클당 1줄" 부정확</h3>
+<ul>
+<li>MP 워크스페이스는 X·Y 영점 항목 2개(#3, #10) → 실제 사이클당 2줄. 실기 확인(작업순서 2) 때 혼선 방지 위해 수정.</li>
+</ul>
+<h3 id="f10-5-details">🟡 F10. §5 details가 "로그만 추가" 범위 초과</h3>
+<ul>
+<li><code>MotionZeroInternal</code>은 <code>MakeResult(..., null, status)</code>로 details를 null로 넘김(<code>MotionJig.cs:690</code>). details 기록 채택 시 플럼빙 추가 필요 — 범위 선언과의 모순을 §5에 명시.</li>
+</ul>
+<hr />
+<h2 id="25-2026-07-21-v02">2.5 사이드 이펙트 점검 (2026-07-21, v02 반영 필요)</h2>
+<p>전제 확인: <code>Contains("OK")</code>류 판정은 장비 RX 전용(<code>MotionJig.cs:1994</code>, <code>:2027</code>) — UI 로그를 스캔하는 판정 없음. 새 로그가 제품 판정을 오염시키는 경로는 배제됨.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>심각도</th>
+<th>내용</th>
+<th>요구</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>🟠</td>
+<td>팝업 취소 → 영점 항목 FAIL → 제품 시리얼에 FAIL 기록, 수율 통계 오염</td>
+<td>FAIL 사유를 "지그점검 취소" 등 구분 가능한 문자열로</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>🟠</td>
+<td>팝업은 작업자 응답까지 검사 스레드 블록 — 무인(야간) 운영 시 라인 정지</td>
+<td>무인 운영 여부 확인, 있으면 로그-only 모드 검토</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>🟠</td>
+<td>코드 기본값 <code>jig_health_check: true</code>면 구 JSON 환경에서 baseline 0.0으로 감시 켜짐 → 상시 WARN 노이즈</td>
+<td>코드 기본값은 <strong>false</strong> 권장 (JSON 명시 시에만 켜짐). "코드 기본값=JSON 동일값" 원칙과 충돌하므로 명시 결정</td>
+</tr>
+<tr>
+<td>S4</td>
+<td>🟡</td>
+<td><code>FineAdjust</code> 판독 실패 경로(<code>:1509-1513</code>)에서 out에 0.0이 나가면 가짜 dev(≈0.09)로 판정</td>
+<td>실패 시 NaN + NaN이면 판정 스킵 명시</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>🟡</td>
+<td>streak 카운터 static이면 재시작 시 리셋(무해)·워크스페이스 전환 시 이력 오염</td>
+<td>워크스페이스 로드 시 카운터 리셋</td>
+</tr>
+<tr>
+<td>S6</td>
+<td>🟡</td>
+<td>로그 파일을 NG/FAIL로 grep하는 외부 스크립트·품질모니터링에 <code>[JIG] NG</code> 줄이 섞임</td>
+<td><code>[JIG]</code> 태그로 필터 가능하게 문구 확정, 기존 스크립트 확인 (F8 §6-1과 동일 계열)</td>
+</tr>
+</tbody>
+</table>
+<p>무해 확인: 검사 시간 추가 0 / private 시그니처라 외부 영향 없음 / JSON 호환(구 EXE+신 JSON 무해, 신 EXE+구 JSON은 S3에 따름) / 팝업은 호출부(영점 완료 후)라 통신 대기 중 블록 없음 / details 키 추가 무해.</p>
+<hr />
+<h2 id="3-v02">3. 검증 통과 항목 (v02에서 그대로 유지 가능)</h2>
+<ul>
+<li><code>MotionJig.cs:876</code> 분기 구조·삽입 위치, <code>goto SkipToFineAdjust</code>(<code>:753</code>)도 876 통과 (침묵 성공 경로 없음)</li>
+<li><code>[GYRO] TX/RX</code> IsTest 게이트(<code>:2005</code>, <code>:2026</code>), <code>MODULE_VERSION</code> 노출 경로(<code>:14</code>, <code>:73</code>)</li>
+<li>판별 문자열 <code>실행함</code>/<code>실행안함</code> — 상호 부분문자열 아님, 기존 코드베이스와 충돌 없음</li>
+<li><code>FineAdjust</code> 호출부 4곳 = <code>:864</code>, <code>:986</code>, <code>:1248</code>, <code>:1276</code> / r_pre 판독 <code>:1509</code> / <code>[FINE] 시작</code> 게이트 <code>:1515</code></li>
+<li><code>confirmCallback</code> 실존(<code>MotionJig.cs:666</code>, <code>VibeTilt.cs:3238</code>, 등록부 <code>FlexfabForm.cs:2677</code>)</li>
+<li>warn 0.10 &lt; 1스텝 0.1125° 산술, #3(setdir6)/#10(setdir5) MP JSON 실물 일치</li>
+</ul>
+</body>
+</html>

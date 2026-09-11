@@ -1,0 +1,66 @@
+# Visual Studio 관련
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# 빌드 결과물
+bin/
+obj/
+out/
+
+# 프로젝트 구성 파일
+*.ide*
+*.VC.db
+*.VC.opendb
+*.dbmdl
+*.opendb
+*.pidb
+*.rsuser
+*.sdf
+
+# 패키지 및 의존성
+*.nupkg
+*.snupkg
+*.symbols.nupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+
+# NuGet 패키지 캐시
+*.nuget
+
+# Rider 관련 파일 (JetBrains IDE)
+.idea/
+*.idea.*
+
+# DotNet 사용자 파일
+*.swp
+*.d.ts
+*.log
+*.patch
+*.diff
+
+# 단위 테스트 결과
+TestResults/
+
+# ASP.NET 관련 파일
+**/appsettings*.json
+**/App_Data/
+**/wwwroot/
+
+# Docker 및 컨테이너 관련
+*.containerproj
+.env
+docker-compose.override.yml
+
+# 운영체제별 불필요한 파일
+*.DS_Store
+Thumbs.db
+desktop.ini
+
+# 기타
+*.log
+*.bak
+*.tmp

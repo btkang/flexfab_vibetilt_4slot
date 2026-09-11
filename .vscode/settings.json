@@ -1,0 +1,12 @@
+{
+    "files.watcherExclude": {
+        "**/output/**": true,
+        "**/bin/**": true,
+        "**/obj/**": true,
+        "**/Result/**": true
+    },
+    "files.exclude": {
+        "**/obj": true,
+        "**/bin": true
+    }
+}

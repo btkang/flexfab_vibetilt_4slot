@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>모션지그_검사이식_Plan_2026_0224_01</title>
+<style>
+body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+       max-width: 1000px; margin: 30px auto; padding: 0 25px;
+       line-height: 1.65; color: #333; background: #fafafa; }
+h1 { border-bottom: 3px solid #00695c; padding-bottom: 10px; color: #00695c; }
+h2 { border-left: 5px solid #00897b; padding-left: 12px; color: #00695c; margin-top: 35px; }
+h3 { color: #424242; margin-top: 22px; }
+h4 { color: #555; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background-color: #e0f2f1; font-weight: 600; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px;
+       font-family: 'Consolas', monospace; font-size: 0.92em; }
+pre { background: #263238; color: #aed581; padding: 15px; border-radius: 5px;
+      overflow-x: auto; font-size: 0.85em; line-height: 1.4; }
+pre code { background: transparent; color: inherit; padding: 0; }
+blockquote { border-left: 4px solid #00897b; padding: 6px 14px; color: #555;
+             background: #e0f2f1; margin: 12px 0; }
+a { color: #00695c; }
+ul, ol { margin: 6px 0 6px 22px; }
+li { margin: 3px 0; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1 id="plan">모션지그 검사 이식 Plan</h1>
+<h2 id="step4-motion-jig">브랜치: step4-motion-jig</h2>
+<p>작성일: 2026-02-24</p>
+<hr />
+<h2 id="context">Context</h2>
+<p>ff_vibetilt(C#)에 모션지그 검사 기능을 추가한다.
+- 기존 보드레벨 검사(VIBE_232, TILT_232 등)는 유지
+- BG01 MFC 코드(BoardLevelMo_BG01.cpp)의 12단계 모션 시퀀스를 이식
+- EMIO TCP + VL 센서 UART + 자이로 UART 3개 통신 채널 동시 운용</p>
+<hr />
+<h2 id="_1">지그 구성 (확정)</h2>
+<table>
+<thead>
+<tr>
+<th>채널</th>
+<th>역할</th>
+<th>프로토콜</th>
+<th>Baudrate</th>
+<th>Sampling</th>
+<th>library key</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EMIO 보드</td>
+<td>스텝모터 구동</td>
+<td>TCP 100.100.100.70:2233</td>
+<td>-</td>
+<td>-</td>
+<td><code>tcp_emio</code></td>
+</tr>
+<tr>
+<td>VL10 X축</td>
+<td>Target 센서</td>
+<td>RS-232</td>
+<td><strong>115200</strong></td>
+<td>10ms</td>
+<td><code>uart_232</code></td>
+</tr>
+<tr>
+<td>VL10 Y축</td>
+<td>Master/Ref 센서</td>
+<td>RS-232</td>
+<td><strong>115200</strong></td>
+<td>10ms</td>
+<td><code>uart_232_y</code></td>
+</tr>
+<tr>
+<td>VL10 Z축</td>
+<td>UM 센서</td>
+<td>RS-232</td>
+<td><strong>115200</strong></td>
+<td>10ms</td>
+<td><code>uart_232_z</code></td>
+</tr>
+<tr>
+<td>VL20 X/Y/Z</td>
+<td>RS-485 버스 (주소 구분)</td>
+<td>RS-485</td>
+<td><strong>460800</strong> (115200×4)</td>
+<td>1ms</td>
+<td><code>uart_485</code></td>
+</tr>
+<tr>
+<td>SOLAR-360-420</td>
+<td>자이로 기준 센서</td>
+<td>RS-232</td>
+<td><strong>38400</strong> 8N1</td>
+<td>-</td>
+<td><code>uart_gyro</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_2">신규 파일</h2>
+<h3 id="ff_vibetiltmotionjigcs"><code>ff_vibetilt/MotionJig.cs</code></h3>
+<ul>
+<li><code>ModuleBase, IProcess</code> 구현 (VibeTilt.cs와 동일 패턴)</li>
+<li>프로세스 2개 등록:</li>
+<li><code>MOTION_232</code>: VL10(232) 모션지그 검사</li>
+<li><code>MOTION_485</code>: VL20(485) 모션지그 검사</li>
+</ul>
+<hr />
+<h2 id="12-mfc-11">모션 시퀀스 (12단계, MFC 1:1 이식)</h2>
+<table>
+<thead>
+<tr>
+<th>단계</th>
+<th>enum</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>JIG_INIT</td>
+<td>PMS×15 + PMO011 + PML확인(-500) + PMD6000+500</td>
+</tr>
+<tr>
+<td>1</td>
+<td>OPEN</td>
+<td>msclose/msopen 전송 → 응답으로 deviceconnected 감지</td>
+</tr>
+<tr>
+<td>2</td>
+<td>DEGREE_0_CHECK</td>
+<td>자이로 setzcur + get---x → 기준각 저장</td>
+</tr>
+<tr>
+<td>3</td>
+<td>ANGLE_p_10_5_0</td>
+<td>PMD071LL1500 → PML=17500 확인 (REPEAT_MOVE=2)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>MEASURE_ANGLE_p_10_5</td>
+<td>mstest × REPEAT_MEASURE(3) + 판정(-1,-1,0)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>ANGLE_m_10_5_0</td>
+<td>PMD081LL-1500 → PML=16000 확인</td>
+</tr>
+<tr>
+<td>6</td>
+<td>ANGLE_INIT_0</td>
+<td>PMD081LL-1500 → PML=14500 확인 + 자이로 보정</td>
+</tr>
+<tr>
+<td>7</td>
+<td>pCOM_INIT</td>
+<td>msclose/msopen 재오픈</td>
+</tr>
+<tr>
+<td>8</td>
+<td>ANGLE_m_10_5_1</td>
+<td>PMD081LL-1500 → PML=14500 확인</td>
+</tr>
+<tr>
+<td>9</td>
+<td>MEASURE_ANGLE_m_10_5</td>
+<td>mstest × 3 + 판정(0,0,-1)</td>
+</tr>
+<tr>
+<td>10</td>
+<td>ANGLE_p_10_5_1</td>
+<td>PMD071LL1500 → PML=16000 확인</td>
+</tr>
+<tr>
+<td>11</td>
+<td>ANGLE_INIT_1</td>
+<td>PMD071LL1500 → PML=17500 확인</td>
+</tr>
+<tr>
+<td>12</td>
+<td>END</td>
+<td>결과 반환</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="emio-bg01">EMIO 명령 목록 (BG01 실측 로그 확정)</h2>
+<h3 id="jig_init-pms">JIG_INIT PMS 시퀀스</h3>
+<table>
+<thead>
+<tr>
+<th>명령</th>
+<th>응답</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PPC00</code></td>
+<td><code>ppc006000000</code></td>
+<td>에러 클리어</td>
+</tr>
+<tr>
+<td><code>PMS041480</code></td>
+<td><code>pms0041480</code></td>
+<td>마이크로스텝</td>
+</tr>
+<tr>
+<td><code>PMS0510550</code></td>
+<td><code>pms00510550</code></td>
+<td>이동 토크</td>
+</tr>
+<tr>
+<td><code>PMS0510650</code></td>
+<td><code>pms00510650</code></td>
+<td>홀드 토크</td>
+</tr>
+<tr>
+<td><code>PMS071212000</code></td>
+<td><code>pms0071212000</code></td>
+<td>고속</td>
+</tr>
+<tr>
+<td><code>PMS071222000</code></td>
+<td><code>pms0071222000</code></td>
+<td>중속</td>
+</tr>
+<tr>
+<td><code>PMS071231000</code></td>
+<td><code>pms0071231000</code></td>
+<td>저속</td>
+</tr>
+<tr>
+<td><code>PMS06124256</code></td>
+<td><code>pms006124256</code></td>
+<td>고속 가속</td>
+</tr>
+<tr>
+<td><code>PMS06125128</code></td>
+<td><code>pms006125128</code></td>
+<td>중속 가속</td>
+</tr>
+<tr>
+<td><code>PMS0512664</code></td>
+<td><code>pms00512664</code></td>
+<td>저속 가속</td>
+</tr>
+<tr>
+<td><code>PMS071121000</code></td>
+<td><code>pms0071121000</code></td>
+<td>원점 최대속</td>
+</tr>
+<tr>
+<td><code>PMS06113500</code></td>
+<td><code>pms006113500</code></td>
+<td>원점 최소속</td>
+</tr>
+<tr>
+<td><code>PMS06114128</code></td>
+<td><code>pms006114128</code></td>
+<td>원점 가속</td>
+</tr>
+<tr>
+<td><code>PMS071288000</code></td>
+<td><code>pms0071288000</code></td>
+<td>SW 리밋+ (초기)</td>
+</tr>
+<tr>
+<td><code>PMS08129-8000</code></td>
+<td><code>pms008129-8000</code></td>
+<td>SW 리밋- (초기)</td>
+</tr>
+<tr>
+<td><code>PMO011</code></td>
+<td><code>pmo0011</code></td>
+<td>원점복귀 (timeout 6500ms)</td>
+</tr>
+<tr>
+<td><code>PML011</code></td>
+<td><code>pml0051-500</code></td>
+<td>원점 위치 확인</td>
+</tr>
+<tr>
+<td><code>PMS0812812000</code></td>
+<td><code>pms00812812000</code></td>
+<td>SW 리밋+ (확대)</td>
+</tr>
+<tr>
+<td><code>PMS08129-1000</code></td>
+<td><code>pms008129-1000</code></td>
+<td>SW 리밋- (축소)</td>
+</tr>
+<tr>
+<td><code>PMD071LL6000</code></td>
+<td><code>pmd0011</code></td>
+<td>초기 이동 (timeout 9000ms)</td>
+</tr>
+<tr>
+<td><code>PMD071LL500</code></td>
+<td><code>pmd0011</code></td>
+<td>미세 이동</td>
+</tr>
+</tbody>
+</table>
+<h3 id="emio">EMIO 수신 정책</h3>
+<table>
+<thead>
+<tr>
+<th>응답</th>
+<th>처리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pmd5011</code> / <code>pmd4011</code></td>
+<td>FAIL 금지 → <code>pmd0011</code> 대기 계속</td>
+</tr>
+<tr>
+<td><code>pmp0011</code></td>
+<td>무시 (원점복귀 후 자동 통보)</td>
+</tr>
+<tr>
+<td><code>ppc60...</code></td>
+<td>무시 (자동 HW 정보)</td>
+</tr>
+</tbody>
+</table>
+<p>구현: <code>EmioRecvUntil(expected, timeoutMs)</code> 내부 루프</p>
+<h3 id="pml011">위치 확인 (PML011)</h3>
+<table>
+<thead>
+<tr>
+<th>상태</th>
+<th>기대 응답</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>원점</td>
+<td><code>pml0051-500</code></td>
+</tr>
+<tr>
+<td>+10.5도</td>
+<td><code>pml00517500</code></td>
+</tr>
+<tr>
+<td>중간</td>
+<td><code>pml00516000</code></td>
+</tr>
+<tr>
+<td>-10.5도</td>
+<td><code>pml00514500</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_3">측정/판정 로직</h2>
+<h3 id="_4">센서 응답 파싱</h3>
+<pre><code>A=Ax,Ay,Az,ACC=ACCx,ACCy,ACCz,T=temp,GA=GAx,GAy,GAz
+→ atofval(2, Ax)  : ×100 정수화 (Angle)
+→ atofval(3, ACCx): ×1000 정수화 (Accel)
+→ atofval(2, GAx) : ×100 정수화 (Gyro Accel)
+</code></pre>
+<h3 id="angle_measureeach-mfc">angle_measureEach 판정표 (MFC 이식)</h3>
+<p><strong>MEASURE_ANGLE_p_10_5 : signX=-1, signY=-1, signZ=0</strong></p>
+<table>
+<thead>
+<tr>
+<th>축</th>
+<th>항목</th>
+<th>범위</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>X</td>
+<td>Angle_x</td>
+<td>-1080 ~ -1020</td>
+</tr>
+<tr>
+<td>X</td>
+<td>Angle_y</td>
+<td>-30 ~ 30</td>
+</tr>
+<tr>
+<td>X</td>
+<td>Angle_z</td>
+<td>17970 ~ 18030</td>
+</tr>
+<tr>
+<td>X</td>
+<td>ACC_x</td>
+<td>-5 ~ 5</td>
+</tr>
+<tr>
+<td>X</td>
+<td>ACC_y</td>
+<td>-188 ~ -175</td>
+</tr>
+<tr>
+<td>X</td>
+<td>ACC_z</td>
+<td>970 ~ 986</td>
+</tr>
+<tr>
+<td>X</td>
+<td>GA_x</td>
+<td>-1150 ~ -950 (longrun 시 skip)</td>
+</tr>
+<tr>
+<td>Y</td>
+<td>Angle_y</td>
+<td>-1080 ~ -1020</td>
+</tr>
+<tr>
+<td>Y</td>
+<td>ACC_x</td>
+<td>175 ~ 188</td>
+</tr>
+<tr>
+<td>Y</td>
+<td>GA_y</td>
+<td>-1150 ~ -950 (longrun 시 skip)</td>
+</tr>
+<tr>
+<td>Z</td>
+<td>GA_y</td>
+<td>950 ~ 1150 (longrun만 체크)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>MEASURE_ANGLE_m_10_5 : signX=0, signY=0, signZ=-1</strong>
+- Z축 gyro 기반 판정 (longrun 모드 분기 포함)</p>
+<h3 id="solar-360-420">자이로 센서 (SOLAR-360-420)</h3>
+<table>
+<thead>
+<tr>
+<th>명령</th>
+<th>응답 형식</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>setzcur</code></td>
+<td><code>OK</code></td>
+<td>현재 위치를 기준점으로 설정</td>
+</tr>
+<tr>
+<td><code>get---x</code></td>
+<td><code>±xxx.xxx</code> 또는 <code>OK±xxx.xxx</code></td>
+<td>현재 각도 읽기</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>응답 파싱: OK prefix 있으면 제거 후 부호+각도값 파싱 (양쪽 대응)</li>
+<li>사용 단계: DEGREE_0_CHECK, ANGLE_INIT_0, ANGLE_INIT_1</li>
+</ul>
+<h3 id="angle_init">자이로 폴링 루프 (ANGLE_INIT 핵심)</h3>
+<p>PCOM 로그에서 확인된 패턴:
+- 이동 명령 후 <code>pmd0011</code> 수신할 때마다 <code>get---x</code> 1회 전송
+- 각도값이 ±0.005 이내로 수렴하면 루프 종료 (다음 단계 진행)
+- 수렴 예시: +0.425 → +0.125 → +0.097 → ... → -0.001 → 종료
+- 구현: <code>AngleInitLoop(gyro, emio, toleranceDeg=0.005, maxCycles=100)</code></p>
+<h3 id="_5">반복 상수</h3>
+<ul>
+<li><code>REPEAT_MOVE_COUNT = 2</code> (위치 확인 재시도)</li>
+<li><code>REPEAT_MEASURE_COUNT = 3</code> (측정 반복)</li>
+</ul>
+<hr />
+<h2 id="_6">구현 순서</h2>
+<h3 id="step-1">Step 1: 브랜치 생성</h3>
+<pre><code class="language-bash">git checkout -b step4-motion-jig
+</code></pre>
+<h3 id="step-2-motionjigcs">Step 2: MotionJig.cs 골격</h3>
+<ul>
+<li><code>ModuleBase, IProcess</code> 구현</li>
+<li><code>MOTION_232</code> / <code>MOTION_485</code> 프로세스 등록</li>
+<li>library key 해석: <code>tcp_emio</code>, <code>uart_232/y/z</code>, <code>uart_485</code>, <code>uart_gyro</code></li>
+</ul>
+<h3 id="step-3-emio">Step 3: EMIO 헬퍼</h3>
+<ul>
+<li><code>EmioSend(string cmd)</code> — STX/ETX 프레임 + TCP 송신</li>
+<li><code>EmioRecvUntil(string expected, int timeoutMs)</code> — 목표 응답까지 루프</li>
+<li><code>EmioFlushRecv()</code> — 잔여 응답 버리기</li>
+</ul>
+<h3 id="step-4">Step 4: 자이로 헬퍼</h3>
+<ul>
+<li><code>GyroSetZero()</code> — <code>setzcur</code> 송신</li>
+<li><code>GyroGetAngle()</code> — <code>get---x</code> 송신 + <code>OK±xxx.xxx</code> 파싱</li>
+</ul>
+<h3 id="step-5-12">Step 5: 12단계 상태머신</h3>
+<ul>
+<li><code>RunMotionSequence(emio, vl, gyro, isRs485, ...)</code> 단일 함수</li>
+<li>각 단계 순차 실행</li>
+<li>PASS → 다음 단계, FAIL → 즉시 반환</li>
+</ul>
+<h3 id="step-6">Step 6: 측정/판정</h3>
+<ul>
+<li><code>ParseMsTestResponse(string raw)</code> — A/ACC/GA 파싱</li>
+<li><code>EvaluateAngle(...)</code> — 축별 임계값 비교 + bitmask 반환</li>
+</ul>
+<h3 id="step-7-workspace-json">Step 7: Workspace JSON 추가</h3>
+<ul>
+<li><code>MOTION_232</code>, <code>MOTION_485</code> 프로세스 항목 추가</li>
+<li><code>tcp_emio</code> 라이브러리 항목 추가</li>
+</ul>
+<hr />
+<h2 id="vibetiltcs">재사용 가능한 기존 코드 (VibeTilt.cs)</h2>
+<table>
+<thead>
+<tr>
+<th>함수</th>
+<th>재사용 방법</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ResolveUart()</code></td>
+<td>uart 키 해석 동일 패턴</td>
+</tr>
+<tr>
+<td><code>ReadStep()</code></td>
+<td>VL 센서 응답 수신</td>
+</tr>
+<tr>
+<td><code>ClearCommBuffer()</code></td>
+<td>센서 버퍼 클리어</td>
+</tr>
+<tr>
+<td><code>MakeResult()</code></td>
+<td>최종 결과 반환 형식 동일</td>
+</tr>
+<tr>
+<td><code>GetParamInt/Double/String/Bool()</code></td>
+<td>param 파싱</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_7">검증 방법</h2>
+<ol>
+<li>실기기 미연결: JIG_INIT까지 EMIO TCP 연결 확인</li>
+<li>실기기 연결: 전체 12단계 실행 + 로그 출력 확인</li>
+<li>BG01 로그(<code>BG01_Log__2026-02-11_09H_42M_18S.txt</code>)와 송수신 순서 비교</li>
+<li>pmd5011 발생 시 FAIL 없이 계속 진행하는지 확인</li>
+<li>VL10(232) / VL20(485) 각각 PASS 확인</li>
+</ol>
+<hr />
+<h2 id="_8">미확정 항목 (실기기 첫 연결 시 확인)</h2>
+<ul>
+<li>EMIO 실제 IP (예상: 100.100.100.70)</li>
+<li>자이로 SOLAR-360-420 baudrate</li>
+<li>VL10 Y/Z축 COM 포트 번호</li>
+<li>pmd5011 발생 여부 (환경마다 다를 수 있음)</li>
+</ul>
+<hr />
+<h2 id="bg01-vs-pcom">BG01 vs PCOM 비교 (중요 차이)</h2>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>BG01</th>
+<th>PCOM</th>
+<th>채택</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>센서 닫기</td>
+<td><code>&lt;msclose&gt;</code></td>
+<td><code>&lt;MCLOSEC3&gt;</code></td>
+<td>BG01 (기존 VibeTilt와 동일)</td>
+</tr>
+<tr>
+<td>센서 열기</td>
+<td><code>&lt;msopen&gt;</code></td>
+<td><code>&lt;MOPEN7F&gt;</code></td>
+<td>BG01</td>
+</tr>
+<tr>
+<td>센서 측정</td>
+<td><code>&lt;mstest&gt;</code></td>
+<td><code>&lt;MTEST8D&gt;</code></td>
+<td>BG01</td>
+</tr>
+<tr>
+<td>자이로 setzcur 응답</td>
+<td>?</td>
+<td><code>OK</code></td>
+<td>PCOM 기준</td>
+</tr>
+<tr>
+<td>자이로 get---x 응답</td>
+<td><code>OK±xxx.xxx</code></td>
+<td><code>±xxx.xxx</code></td>
+<td>양쪽 파싱 대응</td>
+</tr>
+<tr>
+<td>ANGLE_INIT 방식</td>
+<td>angle_0_init() 루프</td>
+<td>pmd0011마다 폴링</td>
+<td>동일 (PCOM이 실증)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_9">참조 문서</h2>
+<ul>
+<li><code>CTS_BG01_MOS_Tester EMIO 응답 분석_2026_0222_05.md</code></li>
+<li><code>CTS_BG01_모션이식_작업계획_2026_0223_01.md</code></li>
+<li><code>EMIO_V2_Protocol_Summary.md</code></li>
+<li><code>BG01_Log__2026-02-11_09H_42M_18S.txt</code></li>
+<li><code>HAND_V2_BG01/config.ini</code></li>
+</ul>
+</body>
+</html>

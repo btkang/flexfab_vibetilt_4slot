@@ -1,0 +1,333 @@
+{
+  "time": "2026-04-14T07:32:00.5237378Z",
+  "Ins": "INSPECTOR",
+  "Proj": "모션지그 검사 (RS-232)_MP",
+  "lib": [
+    "{ff_common.dll},{1.0}",
+    "{ff_vibetilt.dll},{0.3.0.60409}"
+  ],
+  "sn": "VL1-00023",
+  "mac": "Not Use",
+  "result": [
+    {
+      "Name": "통신검사 RS-232",
+      "id": "COMM_232",
+      "data": [
+        {
+          "item": "X축 VL",
+          "result": "OK"
+        },
+        {
+          "item": "Y축 VL",
+          "result": "OK"
+        },
+        {
+          "item": "자이로",
+          "value": 0.008,
+          "result": "OK"
+        }
+      ],
+      "result": "PASS"
+    },
+    {
+      "Name": "#1-X FW 버전 확인",
+      "id": "FWVER_232",
+      "data": [
+        {
+          "command": "<VER>",
+          "value": "[VER,0,F/W ver.1.0.4.2]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "#2 시리얼번호 설정 (X축)",
+      "id": "UID_232",
+      "data": [
+        {
+          "command": "<UID,VL1-00023>",
+          "value": "[UID,0,VL1-00023]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "영점 초기화 RS-232",
+      "id": "MOTION_ZERO_232",
+      "data": null,
+      "result": "PASS"
+    },
+    {
+      "Name": "#4 X축 Calibration (0도)",
+      "id": "OFFSET_232",
+      "data": [
+        {
+          "command": "<OFFSET,1>",
+          "value": "[OFFSET,0,1]",
+          "result": "OK"
+        },
+        {
+          "command": "verify_an",
+          "value": 0.001,
+          "min": -0.05,
+          "max": 0.05,
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "#5 X축 파라미터 저장 (0도)",
+      "id": "APPCFG_SAVE_232",
+      "data": [
+        {
+          "command": "<APPCFG,SAVE>",
+          "value": "[APPCFG,0,SAVE]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "#4 X축 기울기 RS-232",
+      "id": "MOTION_TILT_X_232",
+      "data": [
+        {
+          "item": "판정설정",
+          "judge_mode": "all_in_spec(엄격)",
+          "stream_duration_ms": 1000,
+          "tail_count": 10,
+          "retry_count": 3,
+          "noise_check": false,
+          "noise_p2p_limit": null,
+          "result": "INFO"
+        },
+        {
+          "item": "X축 기울기 -20도",
+          "value": 0.094,
+          "gyro": -19.984,
+          "vl": -19.89,
+          "min": -0.2,
+          "max": 0.2,
+          "judge_mode": "all_in_spec(엄격)",
+          "result": "OK"
+        },
+        {
+          "item": "X축 기울기 -45도",
+          "value": 0.382,
+          "gyro": -45.022,
+          "vl": -44.64,
+          "min": -0.5,
+          "max": 0.5,
+          "judge_mode": "all_in_spec(엄격)",
+          "result": "OK"
+        },
+        {
+          "item": "X축 기울기 +20도",
+          "value": 0.053,
+          "gyro": 19.977,
+          "vl": 20.03,
+          "min": -0.2,
+          "max": 0.2,
+          "judge_mode": "all_in_spec(엄격)",
+          "result": "OK"
+        },
+        {
+          "item": "X축 기울기 +45도",
+          "value": 0.274,
+          "gyro": 44.976,
+          "vl": 45.25,
+          "min": -0.5,
+          "max": 0.5,
+          "judge_mode": "all_in_spec(엄격)",
+          "result": "OK"
+        }
+      ],
+      "result": "PASS"
+    },
+    {
+      "Name": "#1-Y FW 버전 확인 (Y축)",
+      "id": "FWVER_232",
+      "data": [
+        {
+          "command": "<VER>",
+          "value": "[VER,0,F/W ver.1.0.4.2]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "#6 Y축 기울기 RS-232",
+      "id": "MOTION_TILT_Y_232",
+      "data": [
+        {
+          "item": "판정설정",
+          "judge_mode": "all_in_spec(엄격)",
+          "stream_duration_ms": 1000,
+          "tail_count": 10,
+          "retry_count": 3,
+          "noise_check": false,
+          "noise_p2p_limit": null,
+          "result": "INFO"
+        },
+        {
+          "item": "Y축 기울기 +20도",
+          "value": -0.021,
+          "gyro": 19.981,
+          "vl": 19.96,
+          "min": -0.2,
+          "max": 0.2,
+          "judge_mode": "all_in_spec(엄격)",
+          "result": "OK"
+        },
+        {
+          "item": "Y축 기울기 +45도",
+          "value": -0.07,
+          "gyro": 45.02,
+          "vl": 44.95,
+          "min": -0.5,
+          "max": 0.5,
+          "judge_mode": "all_in_spec(엄격)",
+          "result": "OK"
+        },
+        {
+          "item": "Y축 기울기 -20도",
+          "value": -0.014,
+          "gyro": -20.026,
+          "vl": -20.04,
+          "min": -0.2,
+          "max": 0.2,
+          "judge_mode": "all_in_spec(엄격)",
+          "result": "OK"
+        },
+        {
+          "item": "Y축 기울기 -45도",
+          "value": 0.069,
+          "gyro": -44.979,
+          "vl": -44.91,
+          "min": -0.5,
+          "max": 0.5,
+          "judge_mode": "all_in_spec(엄격)",
+          "result": "OK"
+        }
+      ],
+      "result": "PASS"
+    },
+    {
+      "Name": "#7 X축 진동 RS-232",
+      "id": "MOTION_VIBE_X_232",
+      "data": [
+        {
+          "item": "X축 진동 (-90도)",
+          "value": 1,
+          "min": 0.99,
+          "max": 1.01,
+          "judge_mode": "all_in_spec(엄격)",
+          "result": "OK"
+        }
+      ],
+      "result": "PASS"
+    },
+    {
+      "Name": "#15 Config 확인 (APPCFG)",
+      "id": "APPCFG_232",
+      "data": [
+        {
+          "item": "MODE,0",
+          "value": "[MODE,0,00]",
+          "expected": "[MODE,0,00]",
+          "result": "OK"
+        },
+        {
+          "item": "Config",
+          "value": "[APPCFG,0,00/10/1/115200]",
+          "expected": "[APPCFG,0,00/10/1/115200]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "#5 Y축 진동 RS-232",
+      "id": "MOTION_VIBE_Y_232",
+      "data": [
+        {
+          "item": "Y축 진동 (-90도)",
+          "value": 0.98,
+          "min": 0.98,
+          "max": 1.02,
+          "judge_mode": "all_in_spec(엄격)",
+          "result": "OK"
+        }
+      ],
+      "result": "PASS"
+    },
+    {
+      "Name": "#8 시리얼번호 설정 (Y축)",
+      "id": "UID_232",
+      "data": [
+        {
+          "command": "<UID,VL1-00023>",
+          "value": "[UID,0,VL1-00023]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "영점 초기화 RS-232",
+      "id": "MOTION_ZERO_232",
+      "data": null,
+      "result": "PASS"
+    },
+    {
+      "Name": "#10 Y축 Calibration (0도)",
+      "id": "OFFSET_232",
+      "data": [
+        {
+          "command": "<OFFSET,1>",
+          "value": "[OFFSET,0,1]",
+          "result": "OK"
+        },
+        {
+          "command": "verify_an",
+          "value": -0.001,
+          "min": -0.05,
+          "max": 0.05,
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "#11 Y축 파라미터 저장 (0도)",
+      "id": "APPCFG_SAVE_232",
+      "data": [
+        {
+          "command": "<APPCFG,SAVE>",
+          "value": "[APPCFG,0,SAVE]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "#8 Z축 진동 RS-232",
+      "id": "MOTION_VIBE_Z_232",
+      "data": [
+        {
+          "item": "Z축 진동 (0도)",
+          "value": 1,
+          "min": 0.99,
+          "max": 1.01,
+          "judge_mode": "all_in_spec(엄격)",
+          "result": "OK"
+        }
+      ],
+      "result": "PASS"
+    }
+  ]
+}

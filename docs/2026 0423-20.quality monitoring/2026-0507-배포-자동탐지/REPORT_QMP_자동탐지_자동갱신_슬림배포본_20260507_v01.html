@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>QMP 자동 탐지 + 자동 갱신 + 슬림 배포본 — 2026-05-07</title>
+<style>
+body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; max-width: 1000px; margin: 30px auto; padding: 0 25px; line-height: 1.65; color: #333; background: #fafafa; }
+h1 { border-bottom: 3px solid #00695c; padding-bottom: 10px; color: #00695c; }
+h2 { border-left: 5px solid #00897b; padding-left: 12px; color: #00695c; margin-top: 35px; }
+h3 { color: #424242; margin-top: 20px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+th { background-color: #e0f2f1; font-weight: 600; }
+.ok { color: #2e7d32; font-weight: bold; }
+.fail { color: #c62828; font-weight: bold; }
+.warn { background-color: #fff3e0; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: 'Consolas', monospace; font-size: 0.92em; }
+pre { background: #263238; color: #aed581; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 0.9em; }
+.summary { background: #e0f2f1; border-left: 5px solid #00897b; padding: 12px 18px; margin: 15px 0; }
+.tag { display: inline-block; background: #00897b; color: white; padding: 2px 8px; border-radius: 3px; font-size: 0.85em; margin-right: 5px; }
+.tip { background: #fff8e1; border-left: 4px solid #ffa000; padding: 10px 15px; margin: 12px 0; }
+.metric { display: inline-block; background: white; border: 1px solid #ddd; border-radius: 6px; padding: 10px 18px; margin: 5px; min-width: 110px; text-align: center; }
+.metric .num { display: block; font-size: 1.6em; font-weight: bold; color: #00897b; }
+.metric .label { font-size: 0.85em; color: #757575; }
+</style>
+</head>
+<body>
+
+<h1>QMP 자동 탐지 + 자동 갱신 + 슬림 배포본</h1>
+<p>
+  <span class="tag">2026-05-07</span>
+  <span class="tag">QMP v0.1.0.60506</span>
+  <span class="tag">step8-485-stop-fix</span>
+</p>
+
+<div class="summary">
+  <strong>요약:</strong> QMP를 검사 프로그램 배포 폴더 옆에 두고 더블클릭만으로 양산 운영 가능하도록 4가지 핵심 개선:
+  <ol style="margin: 8px 0;">
+    <li>ResultDir <strong>자동 탐지</strong> (어디 두든 4가지 후보 패턴으로 자동 매치)</li>
+    <li>화면 자동 갱신 신뢰성 확보 (<strong>mtime 기반 cache key</strong>로 새 검사 즉시 반영)</li>
+    <li>워크스페이스별 <strong>scope 자동 설정</strong> (board/motion 폴더명 감지)</li>
+    <li>5MB <strong>슬림 배포본</strong> 신설 (<code>tools/prod_release/qmp_v0.1.0.60506</code>)</li>
+  </ol>
+</div>
+
+<h2>1. 변경 전 / 후 운영 흐름</h2>
+
+<h3>변경 전</h3>
+<ul>
+  <li>QMP의 ResultDir이 상대경로 하드코딩 — 위치 옮기면 깨짐</li>
+  <li>매 배포본마다 ResultDir 수동 수정 필요</li>
+  <li>화면 자동 새로고침 없거나 cache 때문에 데이터 안 갱신</li>
+  <li>사이드바 범위 매번 수동 선택</li>
+  <li>QMP 폴더 1042MB (seminar/ 시연 자료 포함)</li>
+</ul>
+
+<h3>변경 후</h3>
+<ul>
+  <li>QMP 폴더만 배포 폴더 옆에 두면 <strong>자동 매치</strong></li>
+  <li>화면 60초 자동 갱신 + F5 즉시 갱신 둘 다 동작</li>
+  <li>start_board485 → 사이드바 자동 board, start_motion485 → 자동 motion</li>
+  <li>cmd 더블클릭 → 8초 후 브라우저 자동 오픈</li>
+  <li>슬림 배포본 5MB로 다른 PC 이관 부담 제거</li>
+</ul>
+
+<h2>2. 자동 탐지 (ResultDir)</h2>
+
+<h3>2.1 동작 방식</h3>
+<p>prod\start_*.ps1이 4가지 후보 경로를 순서대로 시도하여 처음 발견되는 곳을 ResultDir로 사용:</p>
+
+<pre>$workspace = 'VL20보드검사(RS-485)_MP'
+$candidates = @(
+    Join-Path $qmp "..\net8.0-windows\Result\$workspace"             # 1. 배포본 (qmp 옆 net8.0-windows)
+    Join-Path $qmp "..\..\output\Release\net8.0-windows\Result\..."  # 2. 원본 + Release 빌드
+    Join-Path $qmp "..\..\output\Debug\net8.0-windows\Result\..."    # 3. 원본 + Debug 빌드
+    Join-Path $qmp "..\..\net8.0-windows\Result\$workspace"          # 4. 변형 패턴
+)
+$found = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1</pre>
+
+<h3>2.2 매핑 결과</h3>
+<table>
+  <tr><th>QMP 위치</th><th>매치 후보</th></tr>
+  <tr><td>배포 폴더 옆 (양산 표준)</td><td class="ok">1번 — qmp\..\net8.0-windows\Result\</td></tr>
+  <tr><td>프로젝트 원본 + Release 빌드</td><td class="ok">2번</td></tr>
+  <tr><td>프로젝트 원본 + Debug 빌드 (개발 중)</td><td class="ok">3번</td></tr>
+  <tr><td>양산 PC (qmp 한 단계 더 안쪽)</td><td class="ok">4번</td></tr>
+</table>
+
+<h3>2.3 양산 폴더 구조 표준</h3>
+<pre>&lt;배포폴더&gt;\
+├── net8.0-windows\Result\&lt;workspace&gt;\    ← 검사 결과
+└── qmp_v0.1.0.60506\prod\start_*.cmd     ← QMP launcher</pre>
+
+<p>이 형제 위치만 유지하면 자동 탐지 1번 후보가 매치되어 별도 설정 없이 작동.</p>
+
+<h2>3. 자동 갱신 신뢰성</h2>
+
+<h3>3.1 진단된 원인</h3>
+<p>Streamlit <code>@st.cache_data</code>의 hash 처리 특성 — <strong><code>_</code> prefix 인자는 hash에서 제외</strong>되어 cache key가 절대 변하지 않았음.</p>
+
+<table>
+  <tr><th>증상</th><th>원인</th></tr>
+  <tr><td>F5 눌러도 데이터 안 변함</td><td><code>_token</code> underscore로 cache key에서 제외</td></tr>
+  <tr><td>"캐시 새로고침" 버튼만 동작</td><td>이건 강제 <code>cache.clear()</code> 호출</td></tr>
+  <tr><td>자동 새로고침 60초 후에도 동일</td><td>autorefresh가 페이지 재실행해도 cache hit</td></tr>
+</table>
+
+<h3>3.2 fix 코드</h3>
+
+<pre>def _result_token(path_str: str) -> str:
+    """폴더 변경 감지용 토큰 (mtime + 파일 수)."""
+    p = Path(path_str)
+    if not p.exists(): return "missing"
+    files = list(p.rglob("*.json"))
+    if not files: return "empty"
+    latest = max(f.stat().st_mtime for f in files)
+    return f"{latest:.0f}|{len(files)}"
+
+
+@st.cache_data(show_spinner=False, ttl=60)
+def _load_json(path_str: str, token: str = "") -&gt; pd.DataFrame:
+    # ↑ underscore 제거 — 이게 핵심
+    return load_results(Path(path_str))
+
+
+# 호출처:
+df_all = _load_json(result_dir, _result_token(result_dir))</pre>
+
+<h3>3.3 갱신 트리거 (모두 동작 검증)</h3>
+<table>
+  <tr><th>방법</th><th>동작</th><th>상태</th></tr>
+  <tr><td>F5 (브라우저 새로고침)</td><td>페이지 재실행 + 새 token으로 호출 → cache miss</td><td class="ok">즉시</td></tr>
+  <tr><td>자동 새로고침 (60초)</td><td>autorefresh 페이지 재실행 → token 변경 시 cache miss</td><td class="ok">60초 주기</td></tr>
+  <tr><td>"캐시 새로고침" 버튼</td><td>강제 cache clear</td><td class="ok">즉시</td></tr>
+  <tr><td>재시작 (stop_all → start_*)</td><td>cache 비움</td><td class="ok">즉시</td></tr>
+</table>
+
+<h3>3.4 자동 새로고침 default ON</h3>
+<p>사이드바 체크박스 default를 <code>True</code>로 설정 — 사용자가 켜는 절차 없이 양산 시작 즉시 자동 갱신.</p>
+
+<h2>4. 워크스페이스별 자동 scope</h2>
+
+<h3>4.1 동작</h3>
+<p>ResultDir 폴더명에서 "보드"/"board" 또는 "모션"/"motion"을 감지하여 사이드바 "범위" 기본값 자동 설정.</p>
+
+<pre>def _scope_from_path(result_dir: str) -&gt; str:
+    rd = result_dir or ""
+    if "보드" in rd or "board" in rd.lower():
+        return "board"
+    if "모션" in rd or "motion" in rd.lower():
+        return "motion"
+    return "전체"</pre>
+
+<h3>4.2 매핑</h3>
+<table>
+  <tr><th>실행한 cmd</th><th>ResultDir</th><th>자동 scope</th></tr>
+  <tr><td>start_board485.cmd</td><td>VL20<strong>보드</strong>검사(RS-485)_MP</td><td class="ok">board</td></tr>
+  <tr><td>start_board232.cmd</td><td>VL10<strong>보드</strong>검사(RS-232)_MP</td><td class="ok">board</td></tr>
+  <tr><td>start_motion485.cmd</td><td>VL20<strong>모션</strong>검사(RS-485)_MP</td><td class="ok">motion</td></tr>
+  <tr><td>start_motion232.cmd</td><td>VL10<strong>모션</strong>검사(RS-232)_MP</td><td class="ok">motion</td></tr>
+</table>
+
+<h2>5. 브라우저 자동 오픈</h2>
+<p>ps1 끝에 8초 대기 후 <code>Start-Process "http://localhost:8501"</code> 추가 — Streamlit 부팅 완료 후 자동으로 기본 브라우저 열림.</p>
+
+<h2>6. 슬림 배포본 (qmp_v0.1.0.60506)</h2>
+
+<h3>6.1 위치</h3>
+<p><code>tools/prod_release/qmp_v0.1.0.60506/</code></p>
+
+<h3>6.2 용량</h3>
+<table>
+  <tr><th>항목</th><th>크기</th></tr>
+  <tr><td>원본 tools/quality_monitor/</td><td>1042 MB</td></tr>
+  <tr><td>그 중 seminar/ (시연 자료)</td><td>1041 MB</td></tr>
+  <tr><td><strong>슬림 배포본</strong></td><td class="ok">5 MB</td></tr>
+</table>
+
+<h3>6.3 포함 항목</h3>
+<pre>qmp_v0.1.0.60506/
+├── *.py                  (app, db, etl, make_report, parser, spc, monitor)
+├── _run_*.ps1            (5개 헬퍼)
+├── prod/                 (4 워크스페이스 launcher × cmd+ps1 = 8개 + 통합)
+├── test/                 (test 모드 8개)
+├── data/                 (빈 폴더 — 첫 실행 시 DB 자동 생성)
+├── templates/            (CIS AX 검사성적서 양식.xlsx)
+├── docs/QMP_양산적용가이드.md
+├── requirements.txt
+├── README.md / 실행방법.md
+└── MONITORING_RELEASE_NOTE.txt</pre>
+
+<h3>6.4 제외 항목</h3>
+<ul>
+  <li>seminar/ (시연 자료 1041MB)</li>
+  <li>_archive/ (구버전 아카이브)</li>
+  <li>__pycache__/ (Python 캐시)</li>
+  <li>*.pyc, *.db (빌드/런타임 산출물)</li>
+</ul>
+
+<h2>7. 양산 운영 가이드</h2>
+
+<h3>7.1 폴더 구조</h3>
+<pre>&lt;배포폴더&gt;\
+├── net8.0-windows\          ← 검사 프로그램 (flexfab.exe)
+└── qmp_v0.1.0.60506\        ← QMP (이 폴더만 배포본 옆에 두면 됨)
+    └── prod\
+        ├── start_board485.cmd  ← 더블클릭 시작
+        └── stop_all.cmd        ← 더블클릭 종료</pre>
+
+<h3>7.2 시작 / 종료 (작업자 2개만 알면 됨)</h3>
+<table>
+  <tr><th>작업</th><th>파일</th></tr>
+  <tr><td>시작</td><td>prod\start_board485.cmd 더블클릭</td></tr>
+  <tr><td>종료</td><td>prod\stop_all.cmd 더블클릭</td></tr>
+</table>
+
+<h3>7.3 다른 PC로 이관 시</h3>
+<ol>
+  <li>qmp_v0.1.0.60506 폴더 통째로 복사 (5MB)</li>
+  <li>대상 PC: Python 3.11+ 설치, <code>pip install -r requirements.txt</code></li>
+  <li>검사 프로그램 net8.0-windows 폴더와 형제 위치에 배치</li>
+  <li>cmd 더블클릭 → 자동 매치 + 작동</li>
+</ol>
+
+<h2>8. QMP 화면 구조 (참고)</h2>
+
+<h3>8.1 13개 탭</h3>
+<table>
+  <tr><th>탭</th><th>용도</th></tr>
+  <tr><td>메인</td><td>전체 KPI / PASS·FAIL 추세</td></tr>
+  <tr><td>조회</td><td>SN별 검색 + 행 클릭 상세 (운영자용)</td></tr>
+  <tr><td>데이터</td><td>시리얼별 / 이벤트별 raw 데이터 + CSV export</td></tr>
+  <tr><td>오늘</td><td>오늘 검사 집중 분석</td></tr>
+  <tr><td>TILT 추이</td><td>기울기 시간순 변화</td></tr>
+  <tr><td>TILT 분포</td><td>기울기 히스토그램</td></tr>
+  <tr><td>VIBE</td><td>진동 X/Y/Z/RMS 분석</td></tr>
+  <tr><td>DPM</td><td>24V/3.3V/전류 (DPM 보드 검사 시)</td></tr>
+  <tr><td>SPC</td><td>관리도 (Cp/Cpk, Western Electric)</td></tr>
+  <tr><td>FAIL</td><td>실패 케이스 모음</td></tr>
+  <tr><td>리포트</td><td>PDF/HTML 리포트 다운로드</td></tr>
+</table>
+
+<h3>8.2 데이터 형식 — Long format</h3>
+<p>QMP 이벤트별 CSV는 업계 표준 <strong>Long format (Tidy data)</strong>:</p>
+<ul>
+  <li>1행 = 1 측정 항목 (1 SN당 7행 = 7개 검사 항목)</li>
+  <li>스키마 안정 — 검사 항목 추가/제거 시 컬럼 변경 없음</li>
+  <li>R/Python/PowerBI/Tableau 분석 도구 호환</li>
+  <li>Wide format 필요 시 Excel 피벗테이블로 변환 가능</li>
+</ul>
+
+<h2>9. 변경 파일 / commit</h2>
+
+<table>
+  <tr><th>Hash</th><th>메시지</th></tr>
+  <tr><td><code>9ccf23d</code></td><td>QMP: 자동 갱신 신뢰성 + 자동 scope + 브라우저 자동 오픈</td></tr>
+  <tr><td><code>f1f6117</code></td><td>QMP: ResultDir 자동 탐지 + qmp_v0.1.0.60506 슬림 배포본</td></tr>
+</table>
+
+<h3>변경 파일</h3>
+<ul>
+  <li>tools/quality_monitor/app.py (cache fix, 자동 scope, autorefresh default ON)</li>
+  <li>tools/quality_monitor/prod/start_*.ps1 (자동 탐지 + 브라우저 오픈)</li>
+  <li>tools/prod_release/qmp_v0.1.0.60506/* (슬림 배포본 신설 + 동일 fix)</li>
+</ul>
+
+<h2>10. 결론</h2>
+
+<div class="summary">
+  <ul>
+    <li><strong>양산 운영자 부담 zero</strong>: cmd 더블클릭만 하면 자동 탐지 + 자동 scope + 자동 갱신 + 브라우저 자동 오픈 모두 작동</li>
+    <li>다른 PC 이관 5MB 슬림 배포본으로 즉시 가능</li>
+    <li>업계 표준 Long format CSV로 분석 도구 호환</li>
+    <li>다음 배포 시 검사 프로그램 + QMP 통합 배포 가능</li>
+  </ul>
+</div>
+
+<hr style="margin-top: 40px; border: none; border-top: 1px solid #ccc;">
+<p style="text-align: center; color: #999; font-size: 0.85em;">
+  작성: 2026-05-07 · flexfab_VibeTilt step8-485-stop-fix · QMP v0.1.0.60506
+</p>
+
+</body>
+</html>

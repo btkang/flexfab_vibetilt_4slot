@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>CODE: 검사 시간 최적화 분석 (2026-04-03)</title>
+<style>
+body { font-family: 'Malgun Gothic', sans-serif; max-width: 1200px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.7; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; color: #2c3e50; font-size: 22px; }
+h2 { border-bottom: 1px solid #bdc3c7; padding-bottom: 6px; margin-top: 40px; color: #34495e; }
+h3 { color: #2c3e50; margin-top: 30px; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+th, td { border: 1px solid #bdc3c7; padding: 8px 12px; text-align: center; }
+th { background: #2c3e50; color: #fff; }
+tr:nth-child(even) { background: #f8f9fa; }
+td.left { text-align: left; }
+.ok { background: #e0ffe0; color: #27ae60; font-weight: bold; }
+.ng { background: #ffe0e0; color: #e74c3c; font-weight: bold; }
+.fix { background: #fff3cd; color: #856404; font-weight: bold; }
+.success-box { background: #eafaf1; border-left: 4px solid #27ae60; padding: 12px 16px; margin: 16px 0; }
+.warn-box { background: #fef9e7; border-left: 4px solid #f39c12; padding: 12px 16px; margin: 16px 0; }
+.info-box { background: #eaf2f8; border-left: 4px solid #3498db; padding: 12px 16px; margin: 16px 0; }
+.meta { color: #95a5a6; font-size: 13px; }
+pre { background: #2c3e50; color: #ecf0f1; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+code { background: #ecf0f1; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+.big-save { font-size: 18px; color: #e74c3c; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>CODE: 모션지그 검사 시간 최적화 분석</h1>
+<p class="meta">작성일: 2026-04-03 | 브랜치: step6-motion-jig-test | 대상: X축 + Y축 (MotionJig.cs 공통)</p>
+
+<div class="info-box">
+<strong>배경:</strong> X축/Y축 검사는 동일한 MotionJig.cs 코드를 사용하며, 파라미터(setdir6/setdir5, axis 등)만 다름.<br>
+따라서 최적화 포인트도 X축/Y축 모두 동일하게 적용됨.
+</div>
+
+<h2>1. 현재 검사 시간 (12항목 ALL PASS 기준)</h2>
+
+<table>
+<tr><th>구간</th><th>항목</th><th>소요 시간</th><th>비고</th></tr>
+<tr><td rowspan="6">X축</td><td class="left">#1 영점 초기화</td><td>25~30초</td><td>PMO011 홈복귀 + FineAdjust</td></tr>
+<tr><td class="left">#2 캘리브레이션</td><td>8초</td><td>OFFSET + AN 스트리밍 검증</td></tr>
+<tr><td class="left">#3 파라미터 저장</td><td>1초</td><td>APPCFG,SAVE</td></tr>
+<tr><td class="left">#4 기울기 (4각도)</td><td>60~70초</td><td>FineAdjust &times;4 + AN 스트리밍 &times;4</td></tr>
+<tr><td class="left">#5 진동 Y축</td><td>3~5초</td><td>GAC 연속 3회 OK</td></tr>
+<tr><td class="left">#6 진동 Z축</td><td>15~20초</td><td>FineAdjust + GAC 3회</td></tr>
+<tr><td colspan="2" style="font-weight:bold;">X축 소계</td><td style="font-weight:bold;">~2분 10초</td><td></td></tr>
+<tr><td colspan="4" style="background:#95a5a6; color:#fff;">팝업 대기 (제품 이동) ~15초</td></tr>
+<tr><td rowspan="6">Y축</td><td class="left">#7 영점 초기화</td><td>25~30초</td><td>PMO011 홈복귀 + FineAdjust</td></tr>
+<tr><td class="left">#8 캘리브레이션</td><td>8초</td><td></td></tr>
+<tr><td class="left">#9 파라미터 저장</td><td>1초</td><td></td></tr>
+<tr><td class="left">#10 기울기 (4각도)</td><td>60~70초</td><td></td></tr>
+<tr><td class="left">#11 진동 X축</td><td>3~5초</td><td></td></tr>
+<tr><td class="left">#12 진동 Z축</td><td>15~20초</td><td></td></tr>
+<tr><td colspan="2" style="font-weight:bold;">Y축 소계</td><td style="font-weight:bold;">~2분 15초</td><td></td></tr>
+<tr><td colspan="2" style="font-weight:bold; font-size:15px;">전체</td><td style="font-weight:bold; font-size:15px;">~4분 40초</td><td>팝업 대기 포함</td></tr>
+</table>
+
+<h2>2. 최적화 포인트 (효과 큰 순서)</h2>
+
+<h3>2.1 PMO011 홈복귀 후 대기 &mdash; <span class="big-save">-7~8초 &times;2회</span></h3>
+
+<div class="warn-box">
+<strong>위치:</strong> <code>MotionJig.cs:329</code><br>
+<strong>현재:</strong> <code>Thread.Sleep(10000);</code> &mdash; PMO011 응답 후 10초 추가 대기<br>
+<strong>문제:</strong> 응답(<code>pmo0011</code>)은 모터 도착 완료 의미. 추가 10초는 과도함.
+</div>
+
+<pre>
+// MotionJig.cs:323-329
+EmioSend(emio, "PMO011", log);
+if (!EmioRecvUntil(emio, "pmo0011", 15000, log))
+{
+    log("[ZERO] FAIL: PMO011 timeout");
+    return false;
+}
+Thread.Sleep(10000);  // &larr; 10초 &rarr; 2~3초로 단축 가능
+</pre>
+
+<table>
+<tr><th>항목</th><th>현재</th><th>최적화</th><th>절감</th></tr>
+<tr><td class="left">PMO011 후 대기</td><td>10,000ms</td><td class="fix">2,000~3,000ms</td><td class="ok">-7~8초</td></tr>
+<tr><td class="left">적용 횟수</td><td colspan="2">X축 1회 + Y축 1회 = 2회</td><td class="ok">-14~16초</td></tr>
+</table>
+
+<h3>2.2 FineAdjust step 후 대기 &mdash; <span class="big-save">-50~60% (기울기 전체)</span></h3>
+
+<div class="warn-box">
+<strong>위치:</strong> <code>MotionJig.cs:711-712</code><br>
+<strong>현재:</strong> 10step 초과 시 1000ms, 이하 시 500ms 대기<br>
+<strong>문제:</strong> 자이로 응답은 실제 ~100ms. 모터 안정화도 200~300ms면 충분.
+</div>
+
+<pre>
+// MotionJig.cs:711-712
+int waitMs = Math.Abs(moveSteps) > 10 ? 1000 : 500;
+Thread.Sleep(waitMs);  // &larr; 단축 가능
+</pre>
+
+<table>
+<tr><th>이동 크기</th><th>현재 대기</th><th>최적화</th><th>비고</th></tr>
+<tr><td>&gt;10 step</td><td>1000ms</td><td class="fix">500ms</td><td>큰 이동 후 안정화</td></tr>
+<tr><td>&le;10 step</td><td>500ms</td><td class="fix">200~300ms</td><td>미세 조정</td></tr>
+<tr><td>수렴 확인 (라인 671)</td><td>1000ms</td><td class="fix">500ms</td><td>최종 안정화 확인</td></tr>
+</table>
+
+<div class="info-box">
+기울기 1각도당 FineAdjust 평균 5~7회 반복. 4각도 &times; 2축 = 40~56회 호출.<br>
+300ms 단축 &times; 50회 = <strong>약 15초 절감</strong>
+</div>
+
+<h3>2.3 자이로 읽기 타임아웃 &mdash; <span class="big-save">-1초 &times; 반복 횟수</span></h3>
+
+<div class="warn-box">
+<strong>위치:</strong> <code>MotionJig.cs:1146</code><br>
+<strong>현재:</strong> <code>DateTime.UtcNow.AddMilliseconds(2000);</code> &mdash; 최대 2초<br>
+<strong>문제:</strong> 자이로 실제 응답 시간 ~100ms. 2초 타임아웃은 과도.
+</div>
+
+<pre>
+// MotionJig.cs:1133-1169  GyroGetAngle()
+var deadline = DateTime.UtcNow.AddMilliseconds(2000);  // &larr; 800ms로 단축
+while (DateTime.UtcNow &lt; deadline)
+{
+    int remain = (int)(deadline - DateTime.UtcNow).TotalMilliseconds;
+    var resp = gyro.Recv(new Dictionary&lt;string, object?&gt;
+    {
+        { "timeout", Math.Min(remain, 500) },  // &larr; 300ms로 단축
+        { "recv_mode", "line" }
+    });
+    ...
+}
+</pre>
+
+<table>
+<tr><th>항목</th><th>현재</th><th>최적화</th></tr>
+<tr><td class="left">전체 타임아웃</td><td>2000ms</td><td class="fix">800ms</td></tr>
+<tr><td class="left">Recv 개별 타임아웃</td><td>500ms</td><td class="fix">300ms</td></tr>
+</table>
+
+<h3>2.4 AN 스트리밍 설정 대기</h3>
+
+<div class="warn-box">
+<strong>위치:</strong> <code>MotionJig.cs:433-439</code>
+</div>
+
+<pre>
+StopVlStreaming(vl, isRs485, log);     // 라인 432
+Thread.Sleep(200);                     // 라인 433 &larr; 100ms
+VlClear(vl, log);                     // 라인 434
+StartVlStreaming(vl, isRs485, "06", log); // 라인 435
+Thread.Sleep(500);                     // 라인 436 &larr; 300ms
+VlClear(vl, log);                     // 라인 437
+Thread.Sleep(200);                     // 라인 438 &larr; 100ms
+string raw = VlRecv(vl, 1500, log);   // 라인 439
+</pre>
+
+<table>
+<tr><th>대기 항목</th><th>현재</th><th>최적화</th><th>라인</th></tr>
+<tr><td class="left">Stop 후 대기</td><td>200ms</td><td class="fix">100ms</td><td>433</td></tr>
+<tr><td class="left">스트리밍 안정화</td><td>500ms</td><td class="fix">300ms</td><td>436</td></tr>
+<tr><td class="left">초기 데이터 버림</td><td>200ms</td><td class="fix">100ms</td><td>438</td></tr>
+<tr><td class="left" style="font-weight:bold;">소계 (기울기 1각도)</td><td>900ms</td><td class="fix">500ms</td><td></td></tr>
+<tr><td class="left" style="font-weight:bold;">총 (8각도)</td><td>7.2초</td><td class="fix">4.0초</td><td></td></tr>
+</table>
+
+<h2>3. 최적화 예상 효과 요약</h2>
+
+<table>
+<tr><th>항목</th><th>현재</th><th>최적화 후</th><th>절감</th><th>난이도</th></tr>
+<tr>
+<td class="left">PMO011 후 대기 (&times;2)</td>
+<td>20초</td><td>4~6초</td><td class="ok">-14~16초</td><td class="ok">쉬움</td>
+</tr>
+<tr>
+<td class="left">FineAdjust 대기 (전체)</td>
+<td>~30초</td><td>~15초</td><td class="ok">-15초</td><td class="fix">실측 필요</td>
+</tr>
+<tr>
+<td class="left">자이로 타임아웃 (전체)</td>
+<td>~10초</td><td>~5초</td><td class="ok">-5초</td><td class="fix">실측 필요</td>
+</tr>
+<tr>
+<td class="left">AN 스트리밍 대기 (8각도)</td>
+<td>7.2초</td><td>4.0초</td><td class="ok">-3.2초</td><td class="ok">쉬움</td>
+</tr>
+<tr style="background:#2c3e50; color:#fff; font-weight:bold;">
+<td class="left" style="color:#fff;">총 예상 절감</td>
+<td>~4분 40초</td><td>~3분 10초</td><td style="color:#27ae60;">-약 90초 (32% 단축)</td><td></td>
+</tr>
+</table>
+
+<h2>4. 적용 우선순위 (권장)</h2>
+
+<div class="success-box">
+<strong>1순위 (즉시 적용, 리스크 낮음):</strong><br>
+&bull; PMO011 후 대기: 10초 &rarr; 3초 (<code>MotionJig.cs:329</code>)<br>
+&bull; AN 스트리밍 대기: 500ms &rarr; 300ms (<code>MotionJig.cs:436</code>)<br>
+<br>
+<strong>2순위 (실측 후 적용):</strong><br>
+&bull; FineAdjust 대기: 500ms &rarr; 200~300ms (<code>MotionJig.cs:711-712</code>)<br>
+&bull; 자이로 타임아웃: 2000ms &rarr; 800ms (<code>MotionJig.cs:1146</code>)<br>
+&bull; 수렴 확인 대기: 1000ms &rarr; 500ms (<code>MotionJig.cs:671</code>)
+</div>
+
+<h2>5. X축/Y축 공통 적용 확인</h2>
+
+<table>
+<tr><th>최적화 항목</th><th>코드 위치</th><th>X축</th><th>Y축</th><th>비고</th></tr>
+<tr><td class="left">PMO011 대기</td><td><code>InitMotionZero()</code></td><td class="ok">적용</td><td class="ok">적용</td><td>영점 초기화 공통 함수</td></tr>
+<tr><td class="left">FineAdjust 대기</td><td><code>FineAdjust()</code></td><td class="ok">적용</td><td class="ok">적용</td><td>기울기/진동Z 공통 함수</td></tr>
+<tr><td class="left">자이로 읽기</td><td><code>GyroGetAngle()</code></td><td class="ok">적용</td><td class="ok">적용</td><td>자이로 읽기 공통 함수</td></tr>
+<tr><td class="left">AN 스트리밍</td><td><code>MeasureTilt()</code></td><td class="ok">적용</td><td class="ok">적용</td><td>기울기 측정 공통 함수</td></tr>
+<tr><td class="left">GAC 진동</td><td><code>MeasureVibe()</code></td><td class="ok">적용</td><td class="ok">적용</td><td>진동 측정 공통 함수</td></tr>
+</table>
+
+<div class="info-box">
+<strong>결론:</strong> 모든 최적화는 X축/Y축 공통 함수에 적용되므로, 1회 수정으로 양쪽 모두 효과 발생.
+</div>
+
+</body>
+</html>

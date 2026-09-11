@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>OFFSET 축별 필수 확인 결과 (2026-04-13)</title>
+<style>
+body { font-family: 'Malgun Gothic', sans-serif; margin: 30px; background: #f5f5f5; }
+.container { max-width: 950px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+h1 { color: #1a73e8; border-bottom: 3px solid #1a73e8; padding-bottom: 10px; font-size: 22px; }
+h2 { color: #333; font-size: 16px; margin-top: 25px; border-left: 4px solid #1a73e8; padding-left: 10px; }
+h3 { color: #555; font-size: 14px; margin-top: 15px; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+th { background: #1a73e8; color: white; padding: 8px 10px; text-align: left; }
+td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:hover { background: #f0f7ff; }
+.pass { color: #0d8043; font-weight: bold; }
+.fail { color: #d93025; font-weight: bold; }
+.summary { padding: 15px; border-radius: 6px; margin: 15px 0; }
+.summary-pass { background: #e8f5e9; border-left: 4px solid #4caf50; }
+.summary-fail { background: #fce4ec; border-left: 4px solid #d93025; }
+.summary-info { background: #e3f2fd; border-left: 4px solid #1a73e8; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+.tag-pass { background: #c8e6c9; color: #2e7d32; }
+.tag-fail { background: #ffcdd2; color: #c62828; }
+.tag-ref { background: #e0e0e0; color: #616161; }
+.highlight { background: #fff3e0; }
+.removed { background: #fce4ec; }
+.section-num { display: inline-block; background: #1a73e8; color: white; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold; margin-right: 6px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>OFFSET 축별 필수 확인 결과</h1>
+<p><strong>날짜:</strong> 2026-04-13 | <strong>FW:</strong> 2.0.2.3 | <strong>모드:</strong> single | <strong>COM:</strong> COM11</p>
+<p><strong>목적:</strong> 개발팀 요청 &mdash; "X축 OFFSET 1회로 충분, Y축 OFFSET 제거 가능한지 확인"</p>
+
+<div class="summary summary-fail">
+<strong>최종 결론: OFFSET은 축별로 필수 &mdash; X축 1회로 Y축 커버 불가</strong><br>
+OFFSET 없으면 센서 원시 오프셋(0.25~0.48도)이 측정값에 그대로 반영되어 SPEC 초과
+</div>
+
+<!-- 테스트 1 -->
+<h2><span class="section-num">1</span>포트몬 수동 확인 (0도 수평, X축 결합)</h2>
+<p>COM11에서 OFFSET 상태 변경 후 <code>&lt;AN,1&gt;</code> 쿼리</p>
+<table>
+<tr><th>상태</th><th>AN X (도)</th><th>AN Y (도)</th><th>비고</th></tr>
+<tr><td>OFFSET=1 (보정됨)</td><td class="pass">0.03</td><td class="pass">-0.01</td><td>정상 (≈0도)</td></tr>
+<tr class="highlight"><td>OFFSET=0 (해제)</td><td class="fail">-0.25</td><td class="fail">0.48</td><td>원시 오프셋 노출</td></tr>
+</table>
+<div class="summary summary-info">
+<strong>확인:</strong> OFFSET 해제 시 X축 0.25도, Y축 0.48도의 원시 오프셋 존재.<br>
+이 값은 센서의 물리적 설치 오차이며, OFFSET 명령이 이를 보정함.
+</div>
+
+<!-- 테스트 2 -->
+<h2><span class="section-num">2</span>X축 OFFSET만, Y축 OFFSET 제거 (싱글모드)</h2>
+<p>X축: OFFSET 적용 → X축 기울기 PASS / Y축: OFFSET 없이 → Y축 기울기 측정</p>
+
+<h3>X축 결과 (OFFSET 있음) &mdash; <span class="tag tag-pass">ALL PASS</span></h3>
+<table>
+<tr><th>각도</th><th>자이로</th><th>VL</th><th>오차</th><th>SPEC</th><th>결과</th></tr>
+<tr><td>-20도</td><td>-20.020</td><td>-20.030</td><td>-0.010</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>-45도</td><td>-44.981</td><td>-44.940</td><td>0.041</td><td>±0.5</td><td class="pass">OK</td></tr>
+<tr><td>+20도</td><td>19.995</td><td>20.010</td><td>0.015</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>+45도</td><td>45.008</td><td>45.030</td><td>0.022</td><td>±0.5</td><td class="pass">OK</td></tr>
+</table>
+
+<h3>Y축 결과 (OFFSET 없음) &mdash; <span class="tag tag-fail">ALL NG</span></h3>
+<table>
+<tr><th>각도</th><th>자이로</th><th>VL</th><th>오차</th><th>SPEC</th><th>결과</th></tr>
+<tr class="removed"><td>+20도</td><td>19.970</td><td class="fail">19.220</td><td class="fail">-0.750</td><td>±0.2</td><td class="fail">NG</td></tr>
+<tr class="removed"><td>+45도</td><td>45.019</td><td class="fail">44.420</td><td class="fail">-0.599</td><td>±0.5</td><td class="fail">NG</td></tr>
+<tr class="removed"><td>-20도</td><td>-20.026</td><td class="fail">-20.800</td><td class="fail">-0.774</td><td>±0.2</td><td class="fail">NG</td></tr>
+<tr class="removed"><td>-45도</td><td>-44.953</td><td class="fail">-45.550</td><td class="fail">-0.597</td><td>±0.5</td><td class="fail">NG</td></tr>
+</table>
+<div class="summary summary-fail">
+Y축 4각도 전부 NG. 오차 0.6~0.8도. X축 OFFSET만으로는 Y축 SPEC 충족 불가.
+</div>
+
+<!-- 테스트 3 -->
+<h2><span class="section-num">3</span>X축/Y축 OFFSET 둘 다 제거 (싱글모드)</h2>
+<p>OFFSET 완전 제거 상태에서 X축 기울기 측정 (Y축은 X축 FAIL로 미도달)</p>
+
+<h3>X축 결과 (OFFSET 없음) &mdash; <span class="tag tag-fail">2/4 NG</span></h3>
+<table>
+<tr><th>각도</th><th>자이로</th><th>VL</th><th>오차</th><th>SPEC</th><th>결과</th></tr>
+<tr><td>-20도</td><td>-19.973</td><td>-19.980</td><td>-0.007</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>-45도</td><td>-45.024</td><td>-44.700</td><td>0.324</td><td>±0.5</td><td class="pass">OK</td></tr>
+<tr class="removed"><td>+20도</td><td>19.939</td><td class="fail">19.540</td><td class="fail">-0.399</td><td>±0.2</td><td class="fail">NG</td></tr>
+<tr class="removed"><td>+45도</td><td>44.997</td><td class="fail">44.420</td><td class="fail">-0.577</td><td>±0.5</td><td class="fail">NG</td></tr>
+</table>
+<div class="summary summary-warn">
+X축 +방향에서 0.4~0.6도 오차 → SPEC 초과.<br><br>
+<strong>※ 개발팀 의견 (2026-04-13):</strong> X축은 이전에 OFFSET + APPCFG SAVE 했으면 보정값이 플래시에 저장되므로,
+다시 OFFSET 하지 않아도 스펙 이내여야 함. 이 테스트에서 X축 스펙아웃이 난 것은
+<strong>포트몬 테스트에서 &lt;OFFSET,1,0&gt; (해제) 실행한 잔여 영향</strong>으로 센서 내부 상태가 변했기 때문일 수 있음.<br>
+실제 양산에서는 OFFSET SAVE 후 보정값 유지되므로 X축은 스펙 이내 예상.<br>
+<strong>이 테스트의 핵심 결론(Y축 OFFSET 필수)에는 영향 없음.</strong>
+</div>
+
+<!-- 비교 -->
+<h2><span class="section-num">4</span>OFFSET 유무 비교 (X축 동일 각도)</h2>
+<table>
+<tr><th>각도</th><th>OFFSET 있음 (오차)</th><th>OFFSET 없음 (오차)</th><th>악화량</th></tr>
+<tr><td>-20도</td><td class="pass">-0.010</td><td class="pass">-0.007</td><td>+0.003</td></tr>
+<tr><td>-45도</td><td class="pass">0.041</td><td>0.324</td><td class="fail">+0.283</td></tr>
+<tr><td>+20도</td><td class="pass">0.015</td><td class="fail">-0.399</td><td class="fail">-0.414</td></tr>
+<tr><td>+45도</td><td class="pass">0.022</td><td class="fail">-0.577</td><td class="fail">-0.599</td></tr>
+</table>
+
+<!-- 참고: 정상 -->
+<h2><span class="section-num">5</span>참고: OFFSET 정상 적용 시 (X/Y 둘 다) &mdash; <span class="tag tag-pass">ALL PASS</span></h2>
+<p>커밋: <code>ccb9fa2</code> <span class="tag tag-ref">tag: v485-xy-zero-ok</span></p>
+<table>
+<tr><th>축</th><th>각도</th><th>자이로</th><th>VL</th><th>오차</th><th>SPEC</th><th>결과</th></tr>
+<tr><td>X</td><td>-20도</td><td>-19.975</td><td>-19.980</td><td>0.006</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>X</td><td>-45도</td><td>-45.023</td><td>-45.010</td><td>0.013</td><td>±0.5</td><td class="pass">OK</td></tr>
+<tr><td>X</td><td>+20도</td><td>20.011</td><td>20.060</td><td>0.049</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>X</td><td>+45도</td><td>44.966</td><td>45.010</td><td>0.044</td><td>±0.5</td><td class="pass">OK</td></tr>
+<tr><td>Y</td><td>+20도</td><td>19.970</td><td>19.960</td><td>-0.010</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>Y</td><td>+45도</td><td>44.977</td><td>45.010</td><td>0.033</td><td>±0.5</td><td class="pass">OK</td></tr>
+<tr><td>Y</td><td>-20도</td><td>-19.973</td><td>-19.980</td><td>-0.007</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>Y</td><td>-45도</td><td>-44.993</td><td>-45.040</td><td>-0.047</td><td>±0.5</td><td class="pass">OK</td></tr>
+</table>
+<div class="summary summary-pass">
+X/Y 모두 OFFSET 적용 시: 전체 오차 0.006~0.049도 → ALL PASS
+</div>
+
+<!-- 진동 -->
+<h2><span class="section-num">6</span>진동(GAC) 측정 &mdash; 시료1은 PASS, 시료2는 #14 FAIL</h2>
+<p>Y축 OFFSET 제거 상태(테스트 2)에서 진동 측정 결과</p>
+<h3>시료1 (본 보고서)</h3>
+<table>
+<tr><th>항목</th><th>측정값</th><th>SPEC</th><th>결과</th><th>비고</th></tr>
+<tr><td>#7 GAC Y (90도)</td><td class="pass">1.0000</td><td>0.99~1.01</td><td class="pass">OK</td><td>X축 결합, Y축 OFFSET 없음</td></tr>
+<tr><td>#12 GAC Z (0도)</td><td class="pass">1.0000</td><td>0.99~1.01</td><td class="pass">OK</td><td>Y축 결합, Y축 OFFSET 없음</td></tr>
+<tr><td>#14 GAC X (-90도)</td><td class="pass">1.0100</td><td>0.99~1.01</td><td class="pass">OK</td><td>Y축 결합, SPEC 상한 경계값</td></tr>
+</table>
+<h3>시료2 (별도 보고서 참조)</h3>
+<table>
+<tr><th>항목</th><th>측정값</th><th>SPEC</th><th>결과</th><th>비고</th></tr>
+<tr><td>#7 GAC Y (90도)</td><td class="pass">1.0000</td><td>0.99~1.01</td><td class="pass">OK</td><td></td></tr>
+<tr><td>#12 GAC Z (0도)</td><td class="pass">1.0000</td><td>0.99~1.01</td><td class="pass">OK</td><td></td></tr>
+<tr class="removed"><td>#14 GAC X (-90도)</td><td class="fail">1.0200</td><td>0.99~1.01</td><td class="fail">FAIL</td><td>원시 오프셋 Y=0.78도 → GAC도 영향</td></tr>
+</table>
+<div class="summary summary-warn">
+<strong>시료1은 진동 3항목 PASS였으나, 시료2에서 #14 GAC X FAIL 확인.</strong><br>
+원시 오프셋이 큰 개체(시료2: Y=0.78도)에서는 진동(GAC)도 SPEC 초과.<br>
+<strong>진동도 개체에 따라 OFFSET 없이 FAIL 가능 &mdash; OFFSET은 기울기뿐 아니라 진동에도 필요.</strong>
+</div>
+
+<!-- 결론 -->
+<h2>최종 결론</h2>
+<div class="summary summary-fail">
+<strong>1. Y축 OFFSET 필수 (개발팀 확인)</strong> &mdash; 자이로가 1축 센서이므로 X/Y 방향별 OFFSET 각각 필요<br><br>
+<strong>2. X축은 OFFSET SAVE 후 보정값 유지</strong> &mdash; 테스트 3에서 X축 스펙아웃은 포트몬 테스트 잔여 영향. 실제 양산에서는 SAVE 후 스펙 이내 예상<br><br>
+<strong>3. 개체마다 원시 오프셋이 다름</strong> &mdash; 시료1=0.53도, 시료2=0.78도. OFFSET 없이 양산 시 품질 보장 불가<br><br>
+<strong>4. 공장 지그에서는 축별 OFFSET 필수</strong><br>
+&nbsp;&nbsp;&bull; X결합 → Y결합으로 제품 이동 시 자이로 방향(setdir)이 바뀌므로 각각 OFFSET 필요<br>
+&nbsp;&nbsp;&bull; 고객은 1회 설치 → OFFSET 1회로 충분<br><br>
+<strong>5. 진동(GAC)도 개체에 따라 FAIL</strong> &mdash; 시료1은 OK였지만 시료2에서 #14 GAC X FAIL (1.02)<br>
+&nbsp;&nbsp;&bull; 원시 오프셋이 큰 개체에서는 기울기뿐 아니라 진동까지 영향<br><br>
+<strong>6. 권장사항:</strong> 현행 유지 (X축 OFFSET + Y축 OFFSET + 각각 APPCFG SAVE)
+</div>
+
+<p style="color: #666; font-size: 12px; margin-top: 30px;">
+테스트 워크스페이스: workspace_motion_485_test.json (Y축 OFFSET 제거) / workspace_motion_485_no_offset.json (양축 OFFSET 제거)<br>
+정상 기준 커밋: ccb9fa2 (tag: v485-xy-zero-ok)<br>
+보고서 생성: 2026-04-13 10:20 | 생성: Claude Opus 4.6
+</p>
+
+</div>
+</body>
+</html>

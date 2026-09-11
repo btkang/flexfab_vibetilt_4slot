@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>2026-04-15 작업 정리</title>
+<style>
+body{font-family:'Malgun Gothic',sans-serif;max-width:1100px;margin:20px auto;padding:20px;background:#f5f5f5}
+h1{color:#1a237e;border-bottom:3px solid #1a237e;padding-bottom:10px}
+h2{color:#283593;margin-top:30px}
+h3{color:#37474f;margin-top:20px}
+table{border-collapse:collapse;width:100%;margin:10px 0}
+th,td{border:1px solid #ccc;padding:8px 12px;text-align:left}
+th{background:#e8eaf6;font-weight:bold;text-align:center}
+.section{background:#fff;padding:20px;border-radius:8px;margin:15px 0;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.highlight{background:#e8f5e9;border-left:4px solid #4caf50;padding:12px;margin:10px 0;border-radius:4px}
+.warn{background:#fff3e0;border-left:4px solid #ff9800;padding:12px;margin:10px 0;border-radius:4px}
+.commit{font-family:monospace;background:#eceff1;padding:2px 6px;border-radius:3px;font-size:13px}
+.pass{color:#2e7d32;font-weight:bold}
+.fail{color:#c62828;font-weight:bold}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:bold;margin-right:4px}
+.tag-fix{background:#ffcdd2;color:#b71c1c}
+.tag-feat{background:#c8e6c9;color:#1b5e20}
+.tag-ui{background:#bbdefb;color:#0d47a1}
+.tag-json{background:#fff9c4;color:#f57f17}
+code{background:#eceff1;padding:2px 6px;border-radius:3px;font-size:13px}
+</style>
+</head>
+<body>
+
+<h1>2026-04-15 작업 정리</h1>
+<p><strong>브랜치:</strong> step6-motion-jig-test | <strong>커밋:</strong> 8건 | <strong>버전:</strong> v0.6.1.60415</p>
+
+<div class="highlight">
+<strong>요약:</strong> 485 롱런 안정화 + 보드 수평전개(스트리밍/INFO/JSON) + judge_mode 방향별 검사 + UI 컨텍스트 메뉴
+</div>
+
+<!-- ───────────────── 1. 485 롱런 분석 ───────────────── -->
+<div class="section">
+<h2>1. 485 롱런 분석 + 안정화 <span class="tag tag-fix">FIX</span></h2>
+
+<h3>롱런 241회 분석 결과</h3>
+<table>
+<tr><th>구분</th><th>건수</th><th>원인</th><th>조치</th></tr>
+<tr><td>APPCFG SAVE 실패</td><td class="fail">5건</td><td>FW Flash write 타이밍 (error code 7)</td><td>sleep 100ms + 1회 재시도 (500ms)</td></tr>
+<tr><td>Y축 통신 실패</td><td class="fail">2건</td><td>스트리밍 잔류 데이터 → COMM VER 오염</td><td>COMM 전 STOP + 버퍼 클리어</td></tr>
+<tr><td>수동 취소</td><td>1건</td><td>사용자 취소</td><td>-</td></tr>
+<tr><td><strong>합계</strong></td><td><strong>FAIL 7/241 (2.9%)</strong></td><td colspan="2">USB 문제 아님, 모두 SW로 해결</td></tr>
+</table>
+
+<h3>수정 내용</h3>
+<ul>
+<li>APPCFG SAVE: JSON 파라미터 <code>retry</code>, <code>retry_delay_ms</code>로 재시도 제어</li>
+<li>통신검사: STOP 3회 + 버퍼 클리어 (10회 읽기, 50ms timeout) 후 VER</li>
+<li><code>[NG]</code> 로그 태그: FAIL 시 로그 앞에 [NG] 추가 → 검색 용이</li>
+</ul>
+
+<table>
+<tr><th>커밋</th><th>내용</th></tr>
+<tr><td><span class="commit">ed61011</span></td><td>APPCFG SAVE 재시도 + 통신검사 스트리밍 잔류 방지 + [NG] 로그 태그</td></tr>
+<tr><td><span class="commit">3ade56c</span></td><td>v0.6.1.60415 릴리즈: 롱런 안정화 + 빌드/배포 절차 문서화</td></tr>
+</table>
+</div>
+
+<!-- ───────────────── 2. 보드 수평전개 ───────────────── -->
+<div class="section">
+<h2>2. 보드레벨 485 수평전개 <span class="tag tag-feat">FEAT</span><span class="tag tag-json">JSON</span></h2>
+
+<h3>스트리밍 전환</h3>
+<table>
+<tr><th>항목</th><th>변경 전</th><th>변경 후</th></tr>
+<tr><td>VIBE 데이터 수신</td><td>GAC 폴링 (단발 요청)</td><td>START → 자동 수신 → STOP (스트리밍)</td></tr>
+<tr><td>TILT 데이터 수신</td><td>AN 폴링 (단발 요청)</td><td>START → 자동 수신 → STOP (스트리밍)</td></tr>
+<tr><td>SAM/ATIM write</td><td>매번 write</td><td>제거 (FW 기본값: SAM=10, ATIM=0)</td></tr>
+<tr><td>finally 블록 기준</td><td>afterGac / afterAn</td><td>afterStart (START 발행 여부)</td></tr>
+</table>
+
+<h3>INFO 로그 추가</h3>
+<pre>
+[INFO] judge_mode=1 (1:값변화만확인 2:방향별각각확인)
+[INFO] VIBE: 1축=0.5~1.5 | 0축=-0.3~0.3 | RMS=0.1~2 | moving=0.05(0축&gt;0.05시 움직임감지) | pass_count=1 | TIMEOUT=10s
+[INFO] TILT: axis=X spec=5~95도 | axis=Y spec 동일 | pass_count=1 | TIMEOUT=10s
+</pre>
+
+<h3>JSON 최상위 요약 추가</h3>
+<pre>
+"_검색어": "one_min | one_max | zero_min | ... | skip"
+"_작업자_변경가능": "log_level | show_log | serial_duplicate_check | ..."
+"_현재_VIBE": "1축=0.5~1.5 | 0축=-0.3~0.3 | RMS=0.1~2.0 | ..."
+"_현재_TILT": "axis=X spec=5~95도 | axis=Y spec 동일 | ..."
+</pre>
+
+<table>
+<tr><th>커밋</th><th>내용</th></tr>
+<tr><td><span class="commit">60bb354</span></td><td>보드레벨 VIBE/TILT 스트리밍 전환 + JSON 정리</td></tr>
+<tr><td><span class="commit">5a3742e</span></td><td>보드레벨 INFO 로그 수평전개 + JSON 설정값 추가</td></tr>
+<tr><td><span class="commit">06ccea2</span></td><td>보드 VIBE INFO 로그 moving 용어 변경</td></tr>
+<tr><td><span class="commit">ef022af</span></td><td>JSON 최상위에 판정설정 요약 + 검색어 + moving 표기 추가</td></tr>
+</table>
+</div>
+
+<!-- ───────────────── 3. judge_mode ───────────────── -->
+<div class="section">
+<h2>3. judge_mode 방향별 검사 구현 <span class="tag tag-feat">FEAT</span></h2>
+
+<h3>개요</h3>
+<p>JSON <code>judge_mode</code> 파라미터로 판정 모드 전환. 설정만으로 1/2 전환 가능.</p>
+<table>
+<tr><th>mode</th><th>동작</th></tr>
+<tr><td><strong>1</strong> (기본)</td><td>값 변화만 확인, 방향 무시 (Math.Abs)</td></tr>
+<tr><td><strong>2</strong></td><td>방향별 각각 확인, +/- 부호 포함 판정</td></tr>
+</table>
+
+<h3>방향 매핑 (포트 모니터로 확정)</h3>
+<table>
+<tr><th>축</th><th>+ 방향</th><th>- 방향</th><th>확인 방법</th></tr>
+<tr><td><strong>X</strong></td><td>우측</td><td>좌측</td><td>우측 기울임 → X=+22도</td></tr>
+<tr><td><strong>Y</strong></td><td>뒤</td><td>앞</td><td>앞으로 기울임 → Y=-66도</td></tr>
+</table>
+
+<h3>judge_mode=2 팝업 및 PASS 조건</h3>
+<table>
+<tr><th>검사</th><th>라운드</th><th>팝업 메시지</th><th>PASS 조건</th></tr>
+<tr><td rowspan="2"><strong>VIBE</strong></td><td>R1 X축</td><td>우측으로 기울이세요.<br>X축 진동을 확인합니다.</td><td>one:0.5~1.5, zero:-0.3~0.3, RMS:0.1~2.0</td></tr>
+<tr><td>R2 Y축</td><td>뒤로 기울이세요.<br>Y축 진동을 확인합니다.</td><td>동일</td></tr>
+<tr><td rowspan="2"><strong>TILT_X</strong></td><td>R1 우측(+)</td><td>우측으로 기울이세요.<br>X축 우측 기울기를 확인합니다.</td><td>x &gt;= 5 &amp;&amp; x &lt;= 95</td></tr>
+<tr><td>R2 좌측(-)</td><td>좌측으로 기울이세요.<br>X축 좌측 기울기를 확인합니다.</td><td>x &gt;= -95 &amp;&amp; x &lt;= -5</td></tr>
+<tr><td rowspan="2"><strong>TILT_Y</strong></td><td>R1 뒤(+)</td><td>뒤로 기울이세요.<br>Y축 뒤 기울기를 확인합니다.</td><td>y &gt;= 5 &amp;&amp; y &lt;= 95</td></tr>
+<tr><td>R2 앞(-)</td><td>앞으로 기울이세요.<br>Y축 앞 기울기를 확인합니다.</td><td>y &gt;= -95 &amp;&amp; y &lt;= -5</td></tr>
+</table>
+
+<div class="warn">
+<strong>VIBE Z축 라운드 삭제:</strong> 수평 상태에서 Z축은 항상 1G → 기울이지 않아도 PASS. 의미 없으므로 X/Y 2라운드만 유지.
+</div>
+
+<h3>구현 구조</h3>
+<ul>
+<li><code>TILT_WithJudgeMode()</code>: mode=2 시 TILT_Internal 2회 호출 (+방향 → -방향, 부호 반전)</li>
+<li><code>VIBE_WithJudgeMode()</code>: mode=2 시 VIBE_Internal 2회 호출 (X → Y)</li>
+<li>검사 항목 수 10개 유지, 같은 항목 안에서 라운드 분리</li>
+</ul>
+
+<h3>검증 결과</h3>
+<p>485 TEST judge_mode=2: <span class="pass">ALL PASS</span> (VIBE 2라운드 + TILT_X 2라운드 + TILT_Y 2라운드)</p>
+
+<table>
+<tr><th>커밋</th><th>내용</th></tr>
+<tr><td><span class="commit">7a255d7</span></td><td>judge_mode 방향 매핑 구현: TILT 우측/좌측/뒤/앞 팝업 + VIBE Z축 제거(2라운드)</td></tr>
+</table>
+</div>
+
+<!-- ───────────────── 4. UI 개선 ───────────────── -->
+<div class="section">
+<h2>4. UI 개선 <span class="tag tag-ui">UI</span></h2>
+
+<h3>"현재 Test" 라벨 우클릭 컨텍스트 메뉴</h3>
+<table>
+<tr><th>메뉴 항목</th><th>동작</th></tr>
+<tr><td><code>workspace_board_485_TEST.json</code> (파일명)</td><td>메모장으로 열기</td></tr>
+<tr><td>폴더 열기</td><td>탐색기로 워크스페이스 폴더 열기</td></tr>
+</table>
+
+<table>
+<tr><th>커밋</th><th>내용</th></tr>
+<tr><td><span class="commit">f42fdfd</span></td><td>현재 Test 라벨 우클릭 컨텍스트 메뉴 추가: 파일명(메모장) + 폴더 열기(탐색기)</td></tr>
+</table>
+</div>
+
+<!-- ───────────────── 수정 파일 요약 ───────────────── -->
+<div class="section">
+<h2>수정 파일 요약</h2>
+<table>
+<tr><th>파일</th><th>변경 내용</th></tr>
+<tr><td><code>ff_vibetilt/VibeTilt.cs</code></td><td>TILT_WithJudgeMode, VIBE_WithJudgeMode, 방향 매핑, 스트리밍 전환, APPCFG 재시도</td></tr>
+<tr><td><code>ff_vibetilt/MotionJig.cs</code></td><td>CommCheckInternal STOP + 버퍼 클리어</td></tr>
+<tr><td><code>flexfab_mini/FlexfabForm.cs</code></td><td>INFO 로그, [NG] 태그, 우클릭 컨텍스트 메뉴</td></tr>
+<tr><td><code>workspace_board_*.json</code> (8파일)</td><td>judge_mode, 스트리밍 명령, _judge_mode_comment 방향, 요약 주석</td></tr>
+</table>
+</div>
+
+</body>
+</html>

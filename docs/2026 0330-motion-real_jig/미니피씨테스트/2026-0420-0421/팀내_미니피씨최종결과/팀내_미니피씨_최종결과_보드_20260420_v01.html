@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>팀내 미니PC 최종결과 - 보드 (2026-04-20)</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; background:#f5f5f5; padding:30px; color:#222; line-height:1.55; }
+  .wrap { background:#fff; padding:40px 50px; max-width:1200px; margin:0 auto; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+  h1 { color:#1f4e79; border-bottom:3px solid #1f4e79; padding-bottom:10px; font-size:1.6em; }
+  h2 { color:#1f4e79; margin-top:34px; border-left:6px solid #1f4e79; padding-left:10px; font-size:1.25em; }
+  h3 { color:#2e5b8a; margin-top:24px; font-size:1.08em; }
+  table { border-collapse:collapse; margin:14px 0; font-size:13px; width:100%; }
+  th, td { border:1px solid #999; padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#1f4e79; color:#fff; font-weight:bold; text-align:center; }
+  td.c { text-align:center; }
+  td.num { text-align:right; font-family:Consolas, monospace; }
+  .pass { color:#2e7d32; font-weight:bold; }
+  .fail { color:#c62828; font-weight:bold; background:#ffebee; }
+  .warn { color:#e65100; font-weight:bold; }
+  .tag { display:inline-block; padding:3px 10px; border-radius:3px; font-size:12px; font-weight:bold; }
+  .tag-ok { background:#e8f5e9; color:#2e7d32; border:1px solid #2e7d32; }
+  .tag-fail { background:#ffebee; color:#c62828; border:1px solid #c62828; }
+  .tag-warn { background:#fff3e0; color:#e65100; border:1px solid #e65100; }
+  .tag-team { background:#e3f2fd; color:#1565c0; border:1px solid #1565c0; }
+  .box { border:1px solid #ccc; border-left:5px solid #1f4e79; background:#fafafa; padding:12px 16px; margin:14px 0; }
+  .box-ok { border-left-color:#2e7d32; background:#e8f5e9; }
+  .box-warn { border-left-color:#ed7d31; background:#fff4e6; }
+  .box-err { border-left-color:#c62828; background:#ffebee; }
+  .meta { background:#f0f4f8; padding:14px 18px; border:1px solid #d0dae4; border-radius:4px; margin-bottom:20px; font-size:14px; }
+  .meta div { margin:3px 0; }
+  .meta b { color:#1f4e79; display:inline-block; min-width:140px; }
+  pre { background:#2b2b2b; color:#e8e8e8; padding:12px 14px; border-radius:4px; font-size:12px; overflow-x:auto; line-height:1.4; }
+  code { background:#eef1f5; color:#c7254e; padding:2px 5px; border-radius:3px; font-size:12px; }
+  .kpi { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin:14px 0 22px; }
+  .kpi-box { background:#fff; border-radius:8px; padding:14px; box-shadow:0 1px 4px rgba(0,0,0,0.08); text-align:center; border:1px solid #d0dae4; }
+  .kpi-box .num { font-size:1.8em; font-weight:700; color:#1f4e79; }
+  .kpi-box .label { font-size:0.85em; color:#666; margin-top:4px; }
+  .kpi-box.pass .num { color:#2e7d32; }
+  .kpi-box.warn .num { color:#e65100; }
+  .version { display:inline-block; background:#1f4e79; color:#fff; padding:4px 12px; border-radius:4px; font-size:13px; margin-left:10px; }
+  .port-card { background:#f0f4f8; border:2px solid #1f4e79; border-radius:6px; padding:14px 18px; margin:12px 0; font-size:14px; }
+  .port-card h4 { margin:0 0 8px; color:#1f4e79; font-size:1em; }
+  ul { padding-left:22px; }
+  .td-pass { background:#e8f5e9; }
+  .td-fail { background:#ffebee; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>팀내 미니PC 최종결과 — 보드 검사 <span class="version">v01</span></h1>
+
+<div class="meta">
+  <div><b>문서 대상</b> VL10 보드 (RS-232) / VL20 보드 (RS-485)</div>
+  <div><b>검사 일자</b> 2026-04-20</div>
+  <div><b>검사 장비</b> <span class="tag tag-team">팀 미니PC</span></div>
+  <div><b>SW 버전</b> <code>ff_vibetilt.dll v0.6.3.60420</code></div>
+  <div><b>문서 버전</b> v01 (2026-04-21 작성)</div>
+  <div><b>테스트 환경</b> 미니PC, workspace_MP 모드</div>
+</div>
+
+<div class="box box-warn">
+  <b>📍 중요 주의사항:</b>
+  <ul style="margin-top:6px;">
+    <li>보드 검사는 <b>2026-04-20 팀 미니PC</b>에서 진행된 결과 — 양산 미니PC에서는 <b>보드 지그 부재로 미실시</b></li>
+    <li>양산 본 가동 전 양산 미니PC에 보드 지그 설치 후 재검증 권장</li>
+    <li>SW 버전은 <code>0.6.3.60420</code> (오늘 양산 배포 버전은 <code>0.6.4.60421</code>이나 보드 검사 로직 변경 없음)</li>
+  </ul>
+</div>
+
+<h2>1. 최종 판정 요약</h2>
+
+<div class="kpi">
+  <div class="kpi-box pass">
+    <div class="num">10 / 10</div>
+    <div class="label">VL10 보드 232 PASS</div>
+  </div>
+  <div class="kpi-box warn">
+    <div class="num">9 / 10</div>
+    <div class="label">VL20 보드 485 (전류 FAIL)</div>
+  </div>
+  <div class="kpi-box">
+    <div class="num">95%</div>
+    <div class="label">항목 PASS율</div>
+  </div>
+  <div class="kpi-box">
+    <div class="num">5 Sample</div>
+    <div class="label">검사 수량</div>
+  </div>
+</div>
+
+<div class="box box-warn">
+  <b>⚠️ VL20 485 전류 검사 1건 FAIL (반복 발생)</b> — 실기기 이상 아닌 <b>spec 괴리</b>로 추정. spec 재검토 필요.
+</div>
+
+<h3>1.1 검사 결과 요약표</h3>
+<table>
+  <tr>
+    <th>대상</th><th>시도</th><th>S/N</th><th>결과</th><th>테스트 시간</th><th>FAIL 항목</th>
+  </tr>
+  <tr class="td-pass">
+    <td rowspan="2">VL10 보드 (RS-232) MP</td>
+    <td class="c">1</td><td class="c">00001</td><td class="c"><span class="tag tag-ok">OK=10 / FAIL=0</span></td><td class="c">23.9s</td><td>—</td>
+  </tr>
+  <tr class="td-pass">
+    <td class="c">2</td><td class="c">00002</td><td class="c"><span class="tag tag-ok">OK=10 / FAIL=0</span></td><td class="c">21.1s</td><td>—</td>
+  </tr>
+  <tr class="td-fail">
+    <td rowspan="3">VL20 보드 (RS-485) MP</td>
+    <td class="c">1</td><td class="c">00001</td><td class="c"><span class="tag tag-fail">OK=9 / FAIL=1</span></td><td class="c">27.7s</td><td class="fail">전류 검사 (3.78 mA)</td>
+  </tr>
+  <tr class="td-fail">
+    <td class="c">2</td><td class="c">00002</td><td class="c"><span class="tag tag-fail">OK=9 / FAIL=1</span></td><td class="c">28.8s</td><td class="fail">전류 검사 (3.78 mA)</td>
+  </tr>
+  <tr class="td-fail">
+    <td class="c">3</td><td class="c">00003</td><td class="c"><span class="tag tag-fail">OK=9 / FAIL=1</span></td><td class="c">26.0s</td><td class="fail">전류 검사 (3.78 mA)</td>
+  </tr>
+</table>
+
+<h2>2. VL10 보드 (RS-232) 상세 — 전체 PASS</h2>
+
+<table>
+  <tr><th>검사 항목</th><th>spec</th><th>S/N 00001</th><th>S/N 00002</th><th>판정</th></tr>
+  <tr><td>24V (DPM_24V)</td><td class="c">23.28~24.72 V</td><td class="num">23.439</td><td class="num">23.451</td><td class="c pass">OK</td></tr>
+  <tr><td>3.3V (DPM_3V3)</td><td class="c">2.0~3.5 V</td><td class="num">3.304</td><td class="num">3.304</td><td class="c pass">OK</td></tr>
+  <tr><td>전류 (DPM_CURR)</td><td class="c">-1~500 mA</td><td class="num">8.470</td><td class="num">8.470</td><td class="c pass">OK</td></tr>
+  <tr><td>통신검사 RS-232</td><td>STOP/MODE/VER 응답</td><td colspan="2"><code>[VER,0,F/W ver.1.0.4]</code></td><td class="c pass">OK</td></tr>
+  <tr><td>FW 버전</td><td>F/W ver.1.0.4 일치</td><td colspan="2" class="c">일치</td><td class="c pass">OK</td></tr>
+  <tr><td>센서온도</td><td class="c">20~40 ℃</td><td class="num">32.53</td><td class="num">32.64</td><td class="c pass">OK</td></tr>
+  <tr><td>Config (APPCFG)</td><td><code>00/10/1/115200</code></td><td colspan="2" class="c">일치</td><td class="c pass">OK</td></tr>
+  <tr><td>진동 X (0축)</td><td class="c">-0.3~0.3</td><td class="num">-0.01</td><td class="num">-0.01</td><td class="c pass">OK</td></tr>
+  <tr><td>진동 Y (0축)</td><td class="c">-0.3~0.3</td><td class="num">0.03</td><td class="num">0.29</td><td class="c pass">OK</td></tr>
+  <tr><td>진동 Z (1축)</td><td class="c">0.5~1.5</td><td class="num">1.03</td><td class="num">0.95</td><td class="c pass">OK</td></tr>
+  <tr><td>진동 RMS</td><td class="c">0.1~2.0</td><td class="num">0.59</td><td class="num">0.57</td><td class="c pass">OK</td></tr>
+  <tr><td>기울기 X (|X|)</td><td class="c">5~95°</td><td class="num">5.16</td><td class="num">5.13</td><td class="c pass">OK</td></tr>
+  <tr><td>기울기 Y (|Y|)</td><td class="c">5~95°</td><td class="num">-5.31</td><td class="num">5.05</td><td class="c pass">OK</td></tr>
+</table>
+
+<div class="box box-ok">
+  <b>VL10 232 보드 전체 PASS.</b> 기기 이상 없음. 양산 투입 가능.
+</div>
+
+<h2>3. VL20 보드 (RS-485) 상세 — 전류 FAIL</h2>
+
+<h3>3.1 안정화 후 측정값 (3회 반복)</h3>
+<table>
+  <tr>
+    <th>검사 항목</th><th>spec</th><th>S/N 00001</th><th>S/N 00002</th><th>S/N 00003</th><th>판정</th>
+  </tr>
+  <tr><td>24V (DPM_24V)</td><td class="c">22.42~24.78 V</td><td class="num">23.549</td><td class="num">23.568</td><td class="num">23.561</td><td class="c pass">OK</td></tr>
+  <tr><td>3.3V (DPM_3V3)</td><td class="c">3.13~3.46 V</td><td class="num">3.317</td><td class="num">3.317</td><td class="num">3.317</td><td class="c pass">OK</td></tr>
+  <tr class="td-fail">
+    <td><b>전류 (DPM_CURR)</b></td>
+    <td class="c"><b>4.0~7.0 mA</b></td>
+    <td class="num"><b>3.780</b></td>
+    <td class="num"><b>3.780 / 3.800</b></td>
+    <td class="num"><b>3.760 / 3.780</b></td>
+    <td class="c fail">FAIL</td>
+  </tr>
+  <tr><td>통신검사 RS-485</td><td><code>[VER,0,1,F/W ver.2.0.2]</code></td><td colspan="3" class="c">OK</td><td class="c pass">OK</td></tr>
+  <tr><td>FW 버전</td><td>F/W ver.2.0.2 일치</td><td colspan="3" class="c">일치</td><td class="c pass">OK</td></tr>
+  <tr><td>센서온도</td><td class="c">20~40 ℃</td><td class="num">30.59</td><td class="num">—</td><td class="num">29.54</td><td class="c pass">OK</td></tr>
+  <tr><td>Config (APPCFG)</td><td><code>1/00/0/10/1/115200</code></td><td colspan="3" class="c">일치</td><td class="c pass">OK</td></tr>
+  <tr><td>진동 X (0축)</td><td class="c">-0.3~0.3</td><td class="num">-0.05</td><td class="num">-0.02</td><td class="num">0.04</td><td class="c pass">OK</td></tr>
+  <tr><td>진동 Y (0축)</td><td class="c">-0.3~0.3</td><td class="num">-0.06</td><td class="num">0.03</td><td class="num">0.19</td><td class="c pass">OK</td></tr>
+  <tr><td>진동 Z (1축)</td><td class="c">0.5~1.5</td><td class="num">1.01</td><td class="num">1.04</td><td class="num">1.04</td><td class="c pass">OK</td></tr>
+  <tr><td>진동 RMS</td><td class="c">0.1~2.0</td><td class="num">0.59</td><td class="num">0.60</td><td class="num">0.61</td><td class="c pass">OK</td></tr>
+  <tr><td>기울기 X (|X|)</td><td class="c">5~95°</td><td class="num">-5.11</td><td class="num">5.35</td><td class="num">-5.10</td><td class="c pass">OK</td></tr>
+  <tr><td>기울기 Y (|Y|)</td><td class="c">5~95°</td><td class="num">-5.18</td><td class="num">5.20</td><td class="num">-5.10</td><td class="c pass">OK</td></tr>
+</table>
+
+<h3>3.2 전류 검사 FAIL 분석</h3>
+
+<div class="box box-err">
+  <b>현황:</b>
+  <ul>
+    <li><b>spec:</b> 4.0 ~ 7.0 mA (<code>MP_workspace_VL20_board_485.json:142-143</code>)</li>
+    <li><b>실측:</b> 3.76 ~ 3.80 mA (3회 반복, 편차 ±0.02mA 이내 매우 안정)</li>
+    <li><b>하한 미달:</b> 약 0.2 mA (spec 하한의 약 5% 부족)</li>
+    <li><b>측정 신뢰성:</b> DPM 통한 반복 측정값 일관적 → 실기기 편차가 아닌 <b>구조적 spec 괴리</b> 추정</li>
+  </ul>
+</div>
+
+<h3>3.3 원인 후보 및 조치 방향</h3>
+<table>
+  <tr><th>후보</th><th>근거</th><th>검증 방법</th></tr>
+  <tr>
+    <td><b>spec이 현 하드웨어와 괴리</b></td>
+    <td>3회 반복 측정 편차 ±0.02mA로 매우 일관 → 실기기 편차 아님</td>
+    <td>개발팀 사양서 근거 재확인, 실 보드 소비전류 기준 재산정</td>
+  </tr>
+  <tr>
+    <td>DPM 측정 오차 / 보정 필요</td>
+    <td><code>scale=1000</code> 적용 (A→mA 변환) 오차 가능성</td>
+    <td>별도 멀티미터 크로스체크</td>
+  </tr>
+  <tr>
+    <td>보드 조립/부품 편차</td>
+    <td>1대 샘플 한정 가능</td>
+    <td>다른 개체(복수 보드) 추가 측정</td>
+  </tr>
+</table>
+
+<div class="box box-warn">
+  <b>조치 방향 제안:</b>
+  <ol style="margin-top:6px;">
+    <li><b>개발팀에 4.0~7.0 mA 근거 재확인</b> 요청 (양산 VL20 485 보드 정격 소비전류)</li>
+    <li>필요 시 spec 하한 완화 (예: 3.0~5.0 mA 또는 3.5~4.5 mA) 후 <code>_comment</code> 필드에 변경 사유 기록</li>
+    <li><b>Debug + Release 양쪽 워크스페이스 동시 수정</b> (운용 규칙)</li>
+    <li>양산 투입 전 멀티미터로 실제 소비전류 크로스체크 (1대 이상)</li>
+  </ol>
+</div>
+
+<h2>4. 미니PC 포트 구성 (설치 참고)</h2>
+
+<div class="port-card">
+  <h4>📟 보드 검사 포트 구성</h4>
+  <table>
+    <tr>
+      <th style="width:25%;">장비</th><th style="width:15%;">포트</th><th style="width:15%;">속도/설정</th><th>용도</th>
+    </tr>
+    <tr>
+      <td><b>VL10 보드 (RS-232)</b></td><td class="c"><code>COM13</code></td>
+      <td class="c">115200 bps</td><td>VL 센서 (uart_232)</td>
+    </tr>
+    <tr>
+      <td><b>VL20 보드 (RS-485)</b></td><td class="c"><code>COM11</code></td>
+      <td class="c">115200 bps</td><td>VL 센서 (uart_485)</td>
+    </tr>
+    <tr>
+      <td><b>DPM</b></td><td class="c"><code>uart_dpm</code></td>
+      <td class="c">—</td><td>전압/전류 측정 (24V/3.3V/CURR)</td>
+    </tr>
+  </table>
+  <p style="margin:10px 0 0; font-size:12px; color:#666;">
+    ※ 보드 검사는 모션 검사와 별도 포트 사용 가능. 보드 지그 필요.
+  </p>
+</div>
+
+<h2>5. 발견된 환경 이슈 (팀 미니PC 초기 설치 시)</h2>
+
+<table>
+  <tr><th>#</th><th>이슈</th><th>원인</th><th>해결</th></tr>
+  <tr>
+    <td class="c">1</td>
+    <td><code>ff_dpm.dll</code> 로드 실패</td>
+    <td>publish 폴더에 DLL 누락</td>
+    <td>재배포로 해결 (배포 체크리스트 강화 TODO)</td>
+  </tr>
+  <tr>
+    <td class="c">2</td>
+    <td>UART COM3 연결 실패 (초기)</td>
+    <td>워크스페이스 로드 전 초기 포트 미스매치</td>
+    <td>워크스페이스 재세팅 후 정상</td>
+  </tr>
+  <tr>
+    <td class="c">3</td>
+    <td>MongoDB 업로드 실패</td>
+    <td>미니PC 네트워크 환경 (사내 DB 미접속)</td>
+    <td>로컬 JSON만 유지 (옵션 기능)</td>
+  </tr>
+</table>
+
+<h2>6. FW 버전 정보</h2>
+
+<table>
+  <tr>
+    <th>대상</th><th>FW 버전</th><th>상태</th>
+  </tr>
+  <tr>
+    <td>VL10 보드 (RS-232)</td>
+    <td class="c"><code>F/W ver.1.0.4</code></td>
+    <td class="c pass">OK (보드 검사엔 UID 없음)</td>
+  </tr>
+  <tr>
+    <td>VL20 보드 (RS-485)</td>
+    <td class="c"><code>F/W ver.2.0.2</code></td>
+    <td class="c pass">OK (보드 검사엔 UID 없음)</td>
+  </tr>
+</table>
+
+<div class="box">
+  보드 검사는 UID 명령을 사용하지 않아 FW 1.0.4 / 2.0.2에서도 정상 동작. (UID 명령은 모션 검사에서만 사용 → 1.0.4.2 / 2.0.2.3 필요)
+</div>
+
+<h2>7. 최종 결론</h2>
+
+<div class="box box-ok">
+  <p><b>✅ VL10 보드 (RS-232) — 양산 투입 가능</b></p>
+  <ul>
+    <li>10/10 PASS × 2회 반복 확인</li>
+    <li>전기/통신/FW/센서/진동/기울기 전 항목 spec 내</li>
+  </ul>
+</div>
+
+<div class="box box-warn">
+  <p><b>⚠️ VL20 보드 (RS-485) — spec 재검토 후 양산 가능</b></p>
+  <ul>
+    <li>9/10 PASS (전류 검사만 반복 FAIL)</li>
+    <li>전류 실측 3.78 mA vs spec 4.0~7.0 mA → <b>spec 괴리 추정</b></li>
+    <li>개발팀 사양서 재확인 → spec 조정 후 양산 투입 권장</li>
+    <li>조정 전 임시 가동 시 전류 검사 spec을 실측 기준(예: 3.0~5.0)으로 워크스페이스 업데이트</li>
+  </ul>
+</div>
+
+<div class="box box-warn">
+  <p><b>📍 양산 미니PC 보드 검사 별도 수행 권장</b></p>
+  <ul>
+    <li>본 검증은 팀 미니PC 결과 기반</li>
+    <li>양산 본 가동 전 양산 미니PC에 보드 지그 설치 → 동일 검증 1회 권장</li>
+  </ul>
+</div>
+
+<h2>8. 참고 자료</h2>
+
+<ul>
+  <li>원본 결과 JSON:
+    <ul>
+      <li><code>docs/2026 0330-motion-real_jig/미니피씨테스트/2026-0420-0421/보드/Result/VL10보드검사(RS-232)_MP/2026-04-20/00001.json</code></li>
+      <li><code>docs/.../보드/Result/VL10보드검사(RS-232)_MP/2026-04-20/00002.json</code></li>
+    </ul>
+  </li>
+  <li>원본 로그:
+    <ul>
+      <li><code>docs/.../보드/Log/VL10보드검사(RS-232)_MP/2026-04-20.log</code></li>
+      <li><code>docs/.../보드/Log/VL20보드검사(RS-485)_MP/2026-04-20.log</code></li>
+    </ul>
+  </li>
+  <li>상세 분석 리포트:
+    <ul>
+      <li><code>REPORT_미니PC보드검사결과_20260420_v01.html</code> (상세)</li>
+      <li><code>REPORT_미니PC보드검사결과_20260420_v01.md</code> (마크다운)</li>
+    </ul>
+  </li>
+  <li>관련 워크스페이스:
+    <ul>
+      <li><code>output/Release/net8.0-windows/MP_workspace_VL10_board_232.json</code></li>
+      <li><code>output/Release/net8.0-windows/MP_workspace_VL20_board_485.json</code></li>
+    </ul>
+  </li>
+  <li>관련 커밋: <code>f83e6df</code>, <code>6571f9a</code>, <code>4c1ac7a</code></li>
+</ul>
+
+</div>
+</body>
+</html>

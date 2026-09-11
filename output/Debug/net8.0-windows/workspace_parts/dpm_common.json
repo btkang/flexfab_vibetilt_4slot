@@ -1,0 +1,85 @@
+{
+  "libraries": [
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_dpm",
+      "config": {
+        "port": "COM12",
+        "baudrate": 57600,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_dpm.dll",
+      "classname": "Cantops.FlexFab.Dpm",
+      "id": "dpm",
+      "config": {
+        "uart": "uart_dpm"
+      }
+    }
+  ],
+  "library_depencency": ["uart_dpm", "dpm"],
+  "procs": [
+    {
+      "libid": "vibetilt",
+      "id": "DPM_24V",
+      "name": "24V 검사",
+      "dpmport": "uart_dpm",
+      "unit": "V",
+      "param": {
+        "test_count": 1,
+        "delay": 1000,
+        "tests": [
+          {
+            "id": "id13",
+            "error_rate": "3%",
+            "min": "23.28",
+            "max": "24.72"
+          }
+        ]
+      }
+    },
+    {
+      "libid": "vibetilt",
+      "id": "DPM_3V3",
+      "name": "3.3V 검사",
+      "dpmport": "uart_dpm",
+      "unit": "V",
+      "param": {
+        "test_count": 1,
+        "delay": 1000,
+        "tests": [
+          {
+            "id": "id12",
+            "error_rate": "3%",
+            "min": "2.0",
+            "max": "3.5"
+          }
+        ]
+      }
+    },
+    {
+      "libid": "vibetilt",
+      "id": "DPM_CURR",
+      "name": "전류 검사",
+      "dpmport": "uart_dpm",
+      "unit": "mA",
+      "scale": 1000,
+      "_comment": "DPM 수신값은 A 단위. scale=1000 적용하여 mA로 변환. min/max도 mA 단위",
+      "param": {
+        "test_count": 1,
+        "delay": 1000,
+        "tests": [
+          {
+            "id": "id01",
+            "min": "-1.0",
+            "max": "500.0"
+          }
+        ]
+      }
+    }
+  ]
+}

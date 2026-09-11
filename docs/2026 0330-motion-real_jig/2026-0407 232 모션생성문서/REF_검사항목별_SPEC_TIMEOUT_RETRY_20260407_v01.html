@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>검사 항목별 Spec / Timeout / Retry 정리</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; margin: 30px; background: #fafafa; color: #333; line-height: 1.7; }
+  h1 { color: #1a5276; border-bottom: 3px solid #1a5276; padding-bottom: 8px; }
+  h2 { color: #2c3e50; margin-top: 25px; border-left: 4px solid #3498db; padding-left: 10px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th { background: #2c3e50; color: white; padding: 8px; text-align: left; font-size: 13px; }
+  td { border: 1px solid #ddd; padding: 7px; font-size: 12px; }
+  tr:nth-child(even) { background: #f2f2f2; }
+  .warn { background: #fef9e7; }
+  .timeout { color: #e74c3c; font-weight: bold; }
+  code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 11px; }
+  .section { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin: 15px 0; }
+</style>
+</head>
+<body>
+
+<h1>검사 항목별 Spec / Timeout / Retry 정리</h1>
+<p>날짜: 2026-04-07 | 기준: MP_LOG 듀얼 1회 (15:01~15:04)</p>
+
+<h2>X축 검사 (COM13)</h2>
+<table>
+  <tr>
+    <th>#</th><th>항목</th><th>소요시간</th>
+    <th>Spec</th><th>Timeout</th><th>Retry</th><th>비고</th>
+  </tr>
+  <tr>
+    <td>0</td><td>FW 버전 확인</td><td>1초</td>
+    <td>VER 응답 확인</td><td>-</td><td>-</td><td></td>
+  </tr>
+  <tr>
+    <td>1</td><td>X축 영점 초기화</td><td>21초</td>
+    <td>FineAdjust ±0.03도(strict) / ±0.05도(relaxed)</td>
+    <td>PMO011: 15초<br>MoveSteps: 3~5초<br>자이로 폴링: 20초</td>
+    <td>MoveSteps: 1차+재시도1회</td>
+    <td>팝업 대기 포함 시 +α</td>
+  </tr>
+  <tr>
+    <td>2</td><td>X축 Calibration</td><td>7초</td>
+    <td>AN X: ±0.05</td><td>VL 스트리밍: 1초</td><td>-</td><td>~400샘플 수집</td>
+  </tr>
+  <tr>
+    <td>3</td><td>X축 파라미터 저장</td><td>1초</td>
+    <td>APPCFG SAVE 응답</td><td>-</td><td>-</td><td></td>
+  </tr>
+  <tr class="warn">
+    <td>4</td><td>X축 기울기 (4각도)</td><td><strong>47초</strong></td>
+    <td>±20도: 오차 ±0.2도<br>±45도: 오차 ±0.5도<br>센서차이: &lt;10도</td>
+    <td>MoveSteps: 3~5초/step<br>VL 스트리밍: 1초/각도</td>
+    <td>MoveSteps: 1차+재시도1회</td>
+    <td>1각도당 ~12초<br>FineAdjust ~6초 + VL ~5초</td>
+  </tr>
+  <tr>
+    <td>5</td><td>Y축 진동 (-90도)</td><td>4초</td>
+    <td>GAC Y: 0.99~1.01</td><td>GAC TIMEOUT: 10초<br>MoveSteps: 3~5초</td>
+    <td>GAC 연속 3회 PASS</td>
+    <td>FineAdjust 건너뜀 (90도)</td>
+  </tr>
+</table>
+
+<h2>Y축 검사 (COM14)</h2>
+<table>
+  <tr>
+    <th>#</th><th>항목</th><th>소요시간</th>
+    <th>Spec</th><th>Timeout</th><th>Retry</th><th>비고</th>
+  </tr>
+  <tr>
+    <td>0-Y</td><td>FW 버전 확인 (Y)</td><td>1초</td>
+    <td>VER 응답 확인</td><td>-</td><td>-</td><td></td>
+  </tr>
+  <tr>
+    <td>7</td><td>Y축 영점 초기화</td><td>18초</td>
+    <td>FineAdjust ±0.03도(strict) / ±0.05도(relaxed)</td>
+    <td>PMO011: 15초<br>MoveSteps: 3~5초<br>자이로 폴링: 20초</td>
+    <td>MoveSteps: 1차+재시도1회</td>
+    <td>팝업 없음 (2회차부터 자동)</td>
+  </tr>
+  <tr>
+    <td>8</td><td>Y축 Calibration</td><td>8초</td>
+    <td>AN Y: ±0.05</td><td>VL 스트리밍: 1초</td><td>-</td><td>~400샘플 수집</td>
+  </tr>
+  <tr>
+    <td>9</td><td>Y축 파라미터 저장</td><td>1초</td>
+    <td>APPCFG SAVE 응답</td><td>-</td><td>-</td><td></td>
+  </tr>
+  <tr class="warn">
+    <td>10</td><td>Y축 기울기 (4각도)</td><td><strong>48초</strong></td>
+    <td>±20도: 오차 ±0.2도<br>±45도: 오차 ±0.5도<br>센서차이: &lt;10도</td>
+    <td>MoveSteps: 3~5초/step<br>VL 스트리밍: 1초/각도</td>
+    <td>MoveSteps: 1차+재시도1회</td>
+    <td>1각도당 ~12초<br>FineAdjust ~6초 + VL ~5초</td>
+  </tr>
+  <tr>
+    <td>11</td><td>X축 진동 (-90도)</td><td>3초</td>
+    <td>GAC X: 0.99~1.01</td><td>GAC TIMEOUT: 10초<br>MoveSteps: 3~5초</td>
+    <td>GAC 연속 3회 PASS</td>
+    <td>FineAdjust 건너뜀 (90도)</td>
+  </tr>
+  <tr class="warn">
+    <td>12</td><td>Z축 진동 (0도)</td><td><strong>19초</strong></td>
+    <td>GAC Z: 0.99~1.01</td><td>MoveSteps: 3~5초<br>GAC TIMEOUT: 10초</td>
+    <td>MoveSteps: 1차+재시도1회</td>
+    <td class="timeout">EMIO TIMEOUT 간헐 발생<br>-90도→0도 복귀 시 ~5초 지연</td>
+  </tr>
+</table>
+
+<h2>시간 분석 (듀얼 1사이클)</h2>
+<table>
+  <tr><th>구분</th><th>시간</th><th>비율</th><th>개선 가능성</th></tr>
+  <tr class="warn"><td>기울기 (#4+#10)</td><td><strong>95초</strong></td><td>53%</td><td>PMS 속도/가속도 조정</td></tr>
+  <tr><td>영점 (#1+#7)</td><td>39초</td><td>22%</td><td>PMS 원점 속도 조정</td></tr>
+  <tr class="warn"><td>Z축 진동 #12</td><td>19초</td><td>11%</td><td>EMIO 특성, 재시도로 처리</td></tr>
+  <tr><td>CAL (#2+#8)</td><td>15초</td><td>8%</td><td>스트리밍 시간 조정</td></tr>
+  <tr><td>진동 (#5+#11)</td><td>7초</td><td>4%</td><td>-</td></tr>
+  <tr><td>기타 (FW, 저장)</td><td>3초</td><td>2%</td><td>-</td></tr>
+  <tr><th>합계</th><th>2분 59초</th><th>100%</th><th></th></tr>
+</table>
+
+<h2>Timeout 설정값</h2>
+<table>
+  <tr><th>파라미터</th><th>값</th><th>계산</th><th>비고</th></tr>
+  <tr><td><code>_moveTimeoutMin</code></td><td>3000ms</td><td>최소 타임아웃</td><td>JSON: move_timeout_min</td></tr>
+  <tr><td><code>_moveTimeoutMax</code></td><td>5000ms</td><td>최대 타임아웃</td><td>JSON: move_timeout_max</td></tr>
+  <tr><td>MoveSteps 계산</td><td>|steps|×5+3000</td><td>클램프 3000~5000</td><td>800step = 5000ms</td></tr>
+  <tr><td><code>_homeTimeout</code></td><td>15000ms</td><td>PMO011 홈 복귀</td><td>JSON: home_timeout</td></tr>
+  <tr><td>GAC TIMEOUT</td><td>10000ms</td><td>진동 GAC 측정</td><td>JSON: TIMEOUT</td></tr>
+  <tr><td>PPC00</td><td>3000ms</td><td>에러 클리어</td><td>고정</td></tr>
+  <tr><td>PMS 응답</td><td>3000ms</td><td>소프트 리밋 설정</td><td>고정</td></tr>
+</table>
+
+<h2>Retry 정책</h2>
+<table>
+  <tr><th>구간</th><th>재시도</th><th>대기</th><th>실패 시</th></tr>
+  <tr><td>MoveSteps (FineAdjust 내)</td><td>1차 + 재시도 1회 = 총 2회</td><td>2초</td><td>FAIL: 모터 이동 2회 연속 실패</td></tr>
+  <tr><td>GAC 측정</td><td>연속 3회 PASS 필요</td><td>-</td><td>TIMEOUT 시 FAIL</td></tr>
+  <tr><td>PMO011 홈 복귀</td><td>1회</td><td>-</td><td>15초 TIMEOUT → FAIL</td></tr>
+</table>
+
+<h2>소프트 리밋 설정</h2>
+<table>
+  <tr><th>단계</th><th>시점</th><th>Plus</th><th>Minus</th><th>목적</th></tr>
+  <tr><td>1단계</td><td>영점 전</td><td>+8000</td><td>-8000</td><td>PMO011 방해 안 되게</td></tr>
+  <tr><td>2단계</td><td>영점 후</td><td>+3000</td><td>-3000</td><td>검사 범위 보호</td></tr>
+  <tr><td>3단계</td><td>검사 완료</td><td>+8000</td><td>-8000</td><td>다음 영점 준비</td></tr>
+</table>
+
+<h2>#12 Z축 TIMEOUT 이력</h2>
+<table>
+  <tr><th>시점</th><th>move_timeout_min</th><th>move_timeout_max</th><th>800step 계산</th><th>결과</th></tr>
+  <tr><td>초기</td><td>3000</td><td>10000</td><td>7000ms</td><td>5초 TIMEOUT</td></tr>
+  <tr><td>04-06</td><td>3000</td><td>15000</td><td>7000ms</td><td>5초 TIMEOUT</td></tr>
+  <tr><td>04-07 1차</td><td>7000</td><td>15000</td><td>11000ms</td><td>9초 TIMEOUT</td></tr>
+  <tr><td>04-07 2차</td><td>12000(#12만)</td><td>15000</td><td>15000ms</td><td>14초 TIMEOUT</td></tr>
+  <tr><td>04-07 현재</td><td>3000</td><td><strong>5000</strong></td><td>5000ms</td><td>간헐 TIMEOUT, 재시도 성공</td></tr>
+</table>
+<p>원인: EMIO 특성 — -90도→0도 800step 복귀 시 첫 응답 지연 (pmd5011 선행 추정)</p>
+
+<hr>
+<p style="color:#888; font-size:12px;">Generated by Claude Code — 2026-04-07</p>
+</body>
+</html>

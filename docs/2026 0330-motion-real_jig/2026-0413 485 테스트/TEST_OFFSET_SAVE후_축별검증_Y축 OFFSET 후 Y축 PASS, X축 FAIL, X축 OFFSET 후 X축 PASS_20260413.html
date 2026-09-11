@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>OFFSET SAVE 후 축별 검증 (2026-04-13)</title>
+<style>
+body { font-family: 'Malgun Gothic', sans-serif; margin: 30px; background: #f5f5f5; }
+.container { max-width: 950px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+h1 { color: #1a73e8; border-bottom: 3px solid #1a73e8; padding-bottom: 10px; font-size: 22px; }
+h2 { color: #333; font-size: 16px; margin-top: 25px; border-left: 4px solid #1a73e8; padding-left: 10px; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+th { background: #1a73e8; color: white; padding: 8px 10px; text-align: left; }
+td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:hover { background: #f0f7ff; }
+.pass { color: #0d8043; font-weight: bold; }
+.fail { color: #d93025; font-weight: bold; }
+.summary { padding: 15px; border-radius: 6px; margin: 15px 0; }
+.summary-pass { background: #e8f5e9; border-left: 4px solid #4caf50; }
+.summary-fail { background: #fce4ec; border-left: 4px solid #d93025; }
+.summary-info { background: #e3f2fd; border-left: 4px solid #1a73e8; }
+.removed { background: #fce4ec; }
+.section-num { display: inline-block; background: #1a73e8; color: white; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold; margin-right: 6px; }
+.tag-pass { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #c8e6c9; color: #2e7d32; }
+.tag-fail { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #ffcdd2; color: #c62828; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>OFFSET SAVE 후 축별 검증</h1>
+<p><strong>날짜:</strong> 2026-04-13 | <strong>FW:</strong> 2.0.2.3 | <strong>모드:</strong> single | <strong>시료:</strong> 시료2</p>
+<p><strong>목적:</strong> X축 OFFSET + Y축 OFFSET 순서로 SAVE 후, 마지막 SAVE된 축(Y축)만 스펙인 되는지 확인</p>
+<p><strong>배경:</strong> 개발팀 &mdash; "마지막 OFFSET SAVE된 축은 스펙인, 다른 축은 스펙아웃 예상"</p>
+
+<div class="summary summary-info">
+<strong>테스트 순서:</strong><br>
+1. 전체 검사 (X축 OFFSET + Y축 OFFSET) &rarr; ALL PASS (13:47)<br>
+2. Y축 OFFSET 없이 Y축 기울기 재측정 &rarr; PASS (13:56) &mdash; SAVE된 보정값 유지<br>
+3. X축 OFFSET 없이 X축 기울기 재측정 &rarr; FAIL (13:59) &mdash; Y축 OFFSET이 덮어씌움
+</div>
+
+<h2><span class="section-num">1</span>전체 검사 — X/Y 둘 다 OFFSET &mdash; <span class="tag-pass">ALL PASS</span></h2>
+<table>
+<tr><th>축</th><th>각도</th><th>오차</th><th>결과</th></tr>
+<tr><td>X</td><td>-20도</td><td>0.026</td><td class="pass">OK</td></tr>
+<tr><td>X</td><td>-45도</td><td>0.050</td><td class="pass">OK</td></tr>
+<tr><td>X</td><td>+20도</td><td>-0.019</td><td class="pass">OK</td></tr>
+<tr><td>X</td><td>+45도</td><td>0.059</td><td class="pass">OK</td></tr>
+<tr><td>Y</td><td>+20도</td><td>0.024</td><td class="pass">OK</td></tr>
+<tr><td>Y</td><td>+45도</td><td>0.104</td><td class="pass">OK</td></tr>
+<tr><td>Y</td><td>-20도</td><td>0.027</td><td class="pass">OK</td></tr>
+<tr><td>Y</td><td>-45도</td><td>0.080</td><td class="pass">OK</td></tr>
+</table>
+
+<h2><span class="section-num">2</span>Y축 OFFSET 없이 Y축 기울기 재측정 &mdash; <span class="tag-pass">ALL PASS</span></h2>
+<p>OFFSET/SAVE 스킵, 저장된 보정값으로만 측정</p>
+<table>
+<tr><th>각도</th><th>자이로</th><th>VL</th><th>오차</th><th>SPEC</th><th>결과</th></tr>
+<tr><td>+20도</td><td>19.984</td><td>20.010</td><td>0.026</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>+45도</td><td>45.023</td><td>45.110</td><td>0.087</td><td>±0.5</td><td class="pass">OK</td></tr>
+<tr><td>-20도</td><td>-19.972</td><td>-19.950</td><td>0.022</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>-45도</td><td>-44.952</td><td>-44.860</td><td>0.092</td><td>±0.5</td><td class="pass">OK</td></tr>
+</table>
+<div class="summary summary-pass">
+<strong>Y축 OFFSET SAVE 후, 재측정 시 OFFSET 명령 없이도 ALL PASS.</strong><br>
+저장된 보정값이 유지되어 스펙인 확인.
+</div>
+
+<h2><span class="section-num">3</span>X축 OFFSET 없이 X축 기울기 재측정 &mdash; <span class="tag-fail">2/4 NG</span></h2>
+<p>Y축 OFFSET SAVE 상태에서 X축 기울기 측정 (X축 OFFSET 스킵)</p>
+<table>
+<tr><th>각도</th><th>자이로</th><th>VL</th><th>오차</th><th>SPEC</th><th>결과</th></tr>
+<tr class="removed"><td>-20도</td><td>-19.969</td><td class="fail">-20.450</td><td class="fail">-0.481</td><td>±0.2</td><td class="fail">NG</td></tr>
+<tr><td>-45도</td><td>-45.020</td><td>-45.340</td><td>-0.320</td><td>±0.5</td><td class="pass">OK</td></tr>
+<tr class="removed"><td>+20도</td><td>19.940</td><td class="fail">19.460</td><td class="fail">-0.480</td><td>±0.2</td><td class="fail">NG</td></tr>
+<tr><td>+45도</td><td>44.963</td><td>44.630</td><td>-0.333</td><td>±0.5</td><td class="pass">OK</td></tr>
+</table>
+<div class="summary summary-fail">
+<strong>X축 ±20도 NG (오차 0.48도), ±45도 아슬 OK (오차 0.32~0.33도).</strong><br>
+Y축 OFFSET이 X축 보정값을 덮어씌워서 X축은 스펙아웃. 개발팀 예상대로.
+</div>
+
+<h2><span class="section-num">4</span>X축 OFFSET SAVE 후 X축 기울기 재측정 &mdash; <span class="tag-pass">ALL PASS</span></h2>
+<p>X축 OFFSET + SAVE 후 → X축 기울기 OFFSET 없이 재측정 (SAVE된 보정값으로만)</p>
+<table>
+<tr><th>각도</th><th>자이로</th><th>VL</th><th>오차</th><th>SPEC</th><th>결과</th></tr>
+<tr><td>-20도</td><td>-19.976</td><td>-20.000</td><td>-0.024</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>-45도</td><td>-45.019</td><td>-45.000</td><td>0.019</td><td>±0.5</td><td class="pass">OK</td></tr>
+<tr><td>+20도</td><td>20.031</td><td>20.020</td><td>-0.011</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>+45도</td><td>44.968</td><td>44.990</td><td>0.022</td><td>±0.5</td><td class="pass">OK</td></tr>
+</table>
+<div class="summary summary-pass">
+<strong>X축 OFFSET SAVE 후, 재측정 시 OFFSET 명령 없이도 ALL PASS.</strong><br>
+Y축과 동일하게, 저장된 보정값이 유지되어 스펙인 확인.
+</div>
+
+<h2>결론</h2>
+<div class="summary summary-info">
+<strong>1. OFFSET SAVE 후 재측정 시 보정값 유지</strong> &mdash; X축/Y축 모두 SAVE 후 OFFSET 없이 PASS 확인<br><br>
+<strong>2. 마지막 OFFSET SAVE된 축만 유효</strong> &mdash; Y축 OFFSET 후 Y축 PASS, X축 FAIL (덮어씌움)<br><br>
+<strong>3. 양산 검사에서의 의미</strong><br>
+&nbsp;&nbsp;&bull; 검사 순서: X축 OFFSET → X축 측정 → Y축 OFFSET → Y축 측정 (현행 유지)<br>
+&nbsp;&nbsp;&bull; X축은 OFFSET 직후 측정하므로 PASS<br>
+&nbsp;&nbsp;&bull; Y축은 마지막 OFFSET이므로 제품에 저장됨<br>
+&nbsp;&nbsp;&bull; 고객은 Y축 보정값 기준으로 사용 (설치 방향에 따라 재 OFFSET 필요)<br><br>
+<strong>4. 검사 순서가 중요</strong> &mdash; 반드시 X축 먼저 OFFSET+측정, Y축 나중에 OFFSET+측정
+</div>
+
+<p style="color: #666; font-size: 12px; margin-top: 30px;">
+테스트 워크스페이스: workspace_motion_485_test.json (원복 상태, 항목별 스킵으로 검증)<br>
+보고서 생성: 2026-04-13 14:00 | 생성: Claude Opus 4.6
+</p>
+
+</div>
+</body>
+</html>

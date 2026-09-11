@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>작업자 매뉴얼 - 모션지그 검사 (RS-232)</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; margin: 30px; background: #f9f9f9; color: #333; max-width: 900px; }
+  h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; }
+  h2 { color: #2c3e50; margin-top: 30px; border-left: 4px solid #3498db; padding-left: 10px; }
+  h3 { color: #34495e; margin-top: 20px; }
+  table { border-collapse: collapse; margin: 10px 0; width: 100%; }
+  th, td { border: 1px solid #bdc3c7; padding: 8px 12px; text-align: left; }
+  th { background: #2c3e50; color: white; }
+  td { background: white; }
+  .info-box { background: #eaf2f8; border: 1px solid #aed6f1; border-radius: 6px; padding: 15px; margin: 15px 0; }
+  .warn-box { background: #fef9e7; border: 1px solid #f9e79f; border-radius: 6px; padding: 15px; margin: 15px 0; }
+  .danger-box { background: #fdedec; border: 1px solid #f5b7b1; border-radius: 6px; padding: 15px; margin: 15px 0; }
+  .step { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin: 10px 0; }
+  .step-num { display: inline-block; background: #3498db; color: white; border-radius: 50%; width: 30px; height: 30px; text-align: center; line-height: 30px; font-weight: bold; margin-right: 10px; }
+  code { background: #ecf0f1; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+  .pass { color: #27ae60; font-weight: bold; }
+  .fail { color: #e74c3c; font-weight: bold; }
+  ol.flow > li { margin-bottom: 8px; }
+  .footer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; color: #888; font-size: 12px; }
+  .toc { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px 25px; margin: 20px 0; }
+  .toc a { text-decoration: none; color: #2c3e50; }
+  .toc a:hover { color: #3498db; }
+</style>
+</head>
+<body>
+
+<h1>작업자 매뉴얼 - 모션지그 검사 (RS-232, VL10)</h1>
+<p><strong>SW 버전:</strong> v0.4.0 | <strong>작성일:</strong> 2026-04-09 | <strong>대상:</strong> 양산 라인 작업자</p>
+
+<div class="toc">
+<strong>목차</strong>
+<ol>
+  <li><a href="#hw">하드웨어 구성</a></li>
+  <li><a href="#cable">케이블 연결</a></li>
+  <li><a href="#power">전원 ON 순서</a></li>
+  <li><a href="#run">프로그램 실행</a></li>
+  <li><a href="#single">싱글 모드 검사</a></li>
+  <li><a href="#dual">듀얼 모드 검사</a></li>
+  <li><a href="#seq">검사 항목 (13개)</a></li>
+  <li><a href="#result">결과 확인</a></li>
+  <li><a href="#trouble">문제 해결</a></li>
+  <li><a href="#shutdown">종료 순서</a></li>
+</ol>
+</div>
+
+<!-- ───────────── 1. 하드웨어 구성 ───────────── -->
+<h2 id="hw">1. 하드웨어 구성</h2>
+
+<table>
+  <tr><th>장비</th><th>역할</th><th>연결</th></tr>
+  <tr><td>미니PC</td><td>검사 프로그램 실행</td><td>모니터, 키보드, 마우스</td></tr>
+  <tr><td>EMIO 보드</td><td>스텝모터 제어 (원판 회전)</td><td>LAN 케이블 → 미니PC</td></tr>
+  <tr><td>파워서플라이</td><td>EMIO + 모터 전원 공급</td><td>DC 24V</td></tr>
+  <tr><td>VL10 제품 (X축)</td><td>검사 대상 센서</td><td>RS-232 → COM13</td></tr>
+  <tr><td>VL10 제품 (Y축)</td><td>검사 대상 센서 (듀얼 시)</td><td>RS-232 → COM14</td></tr>
+  <tr><td>자이로 (SOLAR-360-420)</td><td>레퍼런스 각도 센서</td><td>RS-232 → COM15</td></tr>
+  <tr><td>홈 센서</td><td>원판 영점 위치 감지</td><td>EMIO IN1 연결</td></tr>
+</table>
+
+<!-- ───────────── 2. 케이블 연결 ───────────── -->
+<h2 id="cable">2. 케이블 연결</h2>
+
+<div class="step">
+<span class="step-num">1</span> <strong>LAN 케이블</strong> — EMIO 보드 ↔ 미니PC (고정 IP: 100.100.100.70)
+</div>
+<div class="step">
+<span class="step-num">2</span> <strong>COM13</strong> — X축 안착지그 ↔ 미니PC (VL10 제품, RS-232)
+</div>
+<div class="step">
+<span class="step-num">3</span> <strong>COM14</strong> — Y축 안착지그 ↔ 미니PC (VL10 제품, RS-232, 듀얼 시)
+</div>
+<div class="step">
+<span class="step-num">4</span> <strong>COM15</strong> — 자이로 센서 ↔ 미니PC (레퍼런스)
+</div>
+<div class="step">
+<span class="step-num">5</span> <strong>파워서플라이</strong> — EMIO 보드 + 모터 전원 (DC 24V)
+</div>
+
+<div class="warn-box">
+<strong>주의:</strong> COM 포트 번호는 미니PC USB 포트 위치에 따라 다를 수 있음. 장치관리자에서 확인 필요.
+</div>
+
+<!-- ───────────── 3. 전원 ON ───────────── -->
+<h2 id="power">3. 전원 ON 순서</h2>
+
+<ol class="flow">
+  <li><strong>파워서플라이 ON</strong> — EMIO + 모터 전원 먼저</li>
+  <li><strong>미니PC ON</strong></li>
+  <li>자이로 센서 전원 확인 (LED 점등)</li>
+  <li>홈 센서 LED 확인 (원판 홈 위치에서 점등)</li>
+</ol>
+
+<div class="danger-box">
+<strong>중요:</strong> 파워서플라이를 먼저 켜야 EMIO TCP 연결이 됩니다. 미니PC를 먼저 켜면 TCP 연결 실패합니다.
+</div>
+
+<!-- ───────────── 4. 프로그램 실행 ───────────── -->
+<h2 id="run">4. 프로그램 실행</h2>
+
+<div class="step">
+<span class="step-num">1</span> <code>flexfab.exe</code> 실행
+</div>
+<div class="step">
+<span class="step-num">2</span> 워크스페이스 선택:
+<table style="margin-top:8px">
+  <tr><th>용도</th><th>파일명</th><th>설명</th></tr>
+  <tr><td>양산 검사</td><td><code>workspace_motion_232.json</code></td><td>듀얼 모드, 1회</td></tr>
+  <tr><td>롱런 테스트 (듀얼)</td><td><code>longrun_motion_232_dual.json</code></td><td>X+Y 동시, 350회 반복</td></tr>
+  <tr><td>롱런 테스트 (X축만)</td><td><code>longrun_motion_232_x.json</code></td><td>X축만 반복</td></tr>
+  <tr><td>롱런 테스트 (Y축만)</td><td><code>longrun_motion_232_y.json</code></td><td>Y축만 반복</td></tr>
+</table>
+</div>
+<div class="step">
+<span class="step-num">3</span> 시리얼 번호 입력 (또는 자동 채번)
+</div>
+<div class="step">
+<span class="step-num">4</span> <strong>START</strong> 버튼 클릭
+</div>
+
+<!-- ───────────── 5. 싱글 모드 ───────────── -->
+<h2 id="single">5. 싱글 모드 검사</h2>
+
+<ol class="flow">
+  <li>X축 안착지그에 VL10 제품 장착</li>
+  <li>START → 작업자 확인 팝업 → 확인 버튼</li>
+  <li>X축 검사 자동 진행 (#0~#5)</li>
+  <li>X축 완료 후 <strong>"Y축에 제품을 장착해주세요"</strong> 팝업</li>
+  <li>제품을 Y축 안착지그로 이동 후 확인 버튼</li>
+  <li>Y축 검사 자동 진행 (#7~#11)</li>
+  <li>결과 표시</li>
+</ol>
+
+<!-- ───────────── 6. 듀얼 모드 ───────────── -->
+<h2 id="dual">6. 듀얼 모드 검사</h2>
+
+<ol class="flow">
+  <li>X축 안착지그에 <strong>새 제품</strong>, Y축 안착지그에 <strong>이전 제품</strong>(또는 비워둠) 장착</li>
+  <li>START → 작업자 확인 팝업 → 확인 버튼</li>
+  <li>X축 검사 (#0~#5) → Y축 검사 (#0-Y~#11) 연속 자동 진행</li>
+  <li>완료 후 다음 반복에서 제품 교체 팝업</li>
+</ol>
+
+<div class="info-box">
+<strong>듀얼 모드:</strong> X축(COM13)과 Y축(COM14)에 각각 다른 제품이 장착됩니다.
+X축 검사 동안 Y축 제품은 대기, Y축 검사 동안 X축 제품은 대기합니다.
+</div>
+
+<!-- ───────────── 7. 검사 항목 ───────────── -->
+<h2 id="seq">7. 검사 항목 (회당 13개)</h2>
+
+<h3>X축 (COM13)</h3>
+<table>
+  <tr><th>#</th><th>검사명</th><th>내용</th><th>판정 기준</th></tr>
+  <tr><td>0</td><td>FW 버전 확인</td><td>VL10 펌웨어 응답 확인</td><td>VER 응답 수신</td></tr>
+  <tr><td>1</td><td>X축 영점 초기화</td><td>홈 센서(IN1) → 0도 이동 → 자이로 확인</td><td>자이로 0.00도 수렴</td></tr>
+  <tr><td>2</td><td>X축 Calibration</td><td>OFFSET 명령 → AN X값 검증</td><td>AN X: ±0.05 이내</td></tr>
+  <tr><td>3</td><td>X축 파라미터 저장</td><td>APPCFG SAVE</td><td>응답 확인</td></tr>
+  <tr><td>4</td><td>X축 기울기 측정</td><td>-20, -45, +20, +45도 이동 → VL vs 자이로 비교</td><td>±20도: ±0.2 / ±45도: ±0.5</td></tr>
+  <tr><td>5</td><td>Y축 진동 측정</td><td>+90도 이동 → GAC Y값 확인</td><td>GAC: 0.99~1.01</td></tr>
+</table>
+
+<h3>Y축 (COM14, 듀얼 시)</h3>
+<table>
+  <tr><th>#</th><th>검사명</th><th>내용</th><th>판정 기준</th></tr>
+  <tr><td>0-Y</td><td>FW 버전 확인</td><td>Y축 제품 펌웨어 확인</td><td>VER 응답 수신</td></tr>
+  <tr><td>7</td><td>Y축 영점 초기화</td><td>홈 센서 → 0도 이동</td><td>자이로 0.00도 수렴</td></tr>
+  <tr><td>8</td><td>Y축 Calibration</td><td>OFFSET → AN Y값 검증</td><td>AN Y: ±0.05 이내</td></tr>
+  <tr><td>9</td><td>Y축 파라미터 저장</td><td>APPCFG SAVE</td><td>응답 확인</td></tr>
+  <tr><td>12</td><td>Z축 진동 측정</td><td>0도 상태에서 GAC Z 확인</td><td>GAC: 0.99~1.01</td></tr>
+  <tr><td>10</td><td>Y축 기울기 측정</td><td>+20, +45, -20, -45도 이동 → VL vs 자이로 비교</td><td>±20도: ±0.2 / ±45도: ±0.5</td></tr>
+  <tr><td>11</td><td>X축 진동 측정</td><td>-90도 이동 → GAC X값 확인</td><td>GAC: 0.99~1.01</td></tr>
+</table>
+
+<div class="info-box">
+<strong>소요 시간:</strong> 회당 약 2분 50초 (13개 항목 전부)
+</div>
+
+<!-- ───────────── 8. 결과 확인 ───────────── -->
+<h2 id="result">8. 결과 확인</h2>
+
+<table>
+  <tr><th>결과</th><th>의미</th><th>조치</th></tr>
+  <tr><td class="pass">PASS (OK)</td><td>모든 항목 합격</td><td>다음 제품 진행</td></tr>
+  <tr><td class="fail">FAIL</td><td>1개 이상 항목 불합격</td><td>로그 확인 → 제품 불량 또는 지그 이상 확인</td></tr>
+</table>
+
+<p>결과 파일 위치:</p>
+<ul>
+  <li>로그: <code>Log\모션지그검사(RS-232)\YYYY-MM-DD.log</code></li>
+  <li>검사 결과: <code>Result\모션지그검사(RS-232)\YYYY-MM-DD\시리얼번호.json</code></li>
+</ul>
+
+<!-- ───────────── 9. 문제 해결 ───────────── -->
+<h2 id="trouble">9. 문제 해결</h2>
+
+<table>
+  <tr><th>증상</th><th>원인</th><th>조치</th></tr>
+  <tr><td>TCP 연결 실패</td><td>EMIO 전원 OFF / LAN 미연결</td><td>파워서플라이 ON 확인, LAN 케이블 확인</td></tr>
+  <tr><td>영점 초기화 FAIL (PMO011 timeout)</td><td>홈 센서 미감지</td><td>홈 센서 LED 확인, 원판 홈 테이프 상태, EMIO IN1 배선</td></tr>
+  <tr><td>FW 버전 FAIL (VER timeout)</td><td>제품 미장착 / COM 포트 오류</td><td>제품 장착 확인, 장치관리자에서 COM 포트 확인</td></tr>
+  <tr><td>기울기 FAIL</td><td>제품 불량 / 자이로 이상</td><td>오차값 확인 → Spec 경계면 재시도, 크면 제품 불량</td></tr>
+  <tr><td>진동 FAIL (GAC 범위 이탈)</td><td>제품 불량 / 제품 미정위</td><td>제품 장착 상태 확인, 재시도</td></tr>
+  <tr><td>과회전 감지 (IN2)</td><td>원판 과회전</td><td>프로그램 재시작, 원판 수동 위치 조정</td></tr>
+  <tr><td>절전 후 FAIL</td><td>미니PC 절전 → TCP 끊김</td><td>전원 설정 → 절전: 안 함</td></tr>
+</table>
+
+<!-- ───────────── 10. 종료 순서 ───────────── -->
+<h2 id="shutdown">10. 종료 순서</h2>
+
+<ol class="flow">
+  <li>프로그램에서 <strong>STOP</strong> (검사 중이면)</li>
+  <li>프로그램 종료</li>
+  <li>미니PC 종료</li>
+  <li><strong>파워서플라이 OFF</strong> (마지막에)</li>
+</ol>
+
+<div class="warn-box">
+<strong>퇴근 시 롱런 돌릴 때:</strong>
+<ul>
+  <li>미니PC 전원 설정 → <strong>절전: 안 함</strong> (필수!)</li>
+  <li>화면 끄기: 10분 (상관없음)</li>
+  <li>파워서플라이 ON 유지</li>
+</ul>
+</div>
+
+<div class="footer">
+  작성: Claude | 버전: v0.4.0.60408 | 2026-04-09
+</div>
+
+</body>
+</html>

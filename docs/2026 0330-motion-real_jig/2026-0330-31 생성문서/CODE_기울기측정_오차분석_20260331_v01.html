@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>X축 기울기 측정 오차 분석 - 20260331</title>
+<style>
+body { font-family: 'Malgun Gothic', sans-serif; max-width: 960px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.6; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; color: #2c3e50; }
+h2 { border-bottom: 1px solid #bdc3c7; padding-bottom: 6px; margin-top: 40px; color: #34495e; }
+h3 { color: #7f8c8d; margin-top: 24px; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+th, td { border: 1px solid #bdc3c7; padding: 8px 12px; text-align: center; }
+th { background: #2c3e50; color: #fff; }
+tr:nth-child(even) { background: #f8f9fa; }
+.ng { background: #ffe0e0; color: #c0392b; font-weight: bold; }
+.ok { background: #e0ffe0; color: #27ae60; font-weight: bold; }
+.warn { background: #fff3cd; color: #856404; }
+.info-box { background: #eaf2f8; border-left: 4px solid #2980b9; padding: 12px 16px; margin: 16px 0; }
+.alert-box { background: #fdedec; border-left: 4px solid #e74c3c; padding: 12px 16px; margin: 16px 0; }
+.summary-box { background: #f4f6f7; border: 1px solid #bdc3c7; border-radius: 8px; padding: 16px; margin: 20px 0; }
+code { background: #ecf0f1; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+.meta { color: #95a5a6; font-size: 13px; }
+.section-num { color: #2980b9; }
+</style>
+</head>
+<body>
+
+<h1>X축 기울기 측정 오차 분석</h1>
+<p class="meta">작성일: 2026-03-31 | 브랜치: step6-motion-jig-test</p>
+
+<div class="alert-box">
+<strong>결론:</strong> VL 센서의 각도 비례 오차는 <strong>센서 자체 특성</strong>으로 확인됨 (이정환대리 측정 데이터에서도 동일 패턴).
+현재 SPEC(20도 &plusmn;0.2, 45도 &plusmn;0.5)으로는 45도에서 PASS 불가. <strong>SPEC 재검토 또는 보정 방식 결정 필요.</strong>
+</div>
+
+<!-- ============================================ -->
+<h2><span class="section-num">1.</span> 사양서 SPEC</h2>
+
+<table>
+<tr><th>측정 각도</th><th>허용 오차</th></tr>
+<tr><td>&plusmn;20도</td><td>&plusmn;0.2도</td></tr>
+<tr><td>&plusmn;45도</td><td>&plusmn;0.5도</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="section-num">2.</span> 우리 측정 결과 (20260331)</h2>
+
+<h3>2.1 시료1 - 토크 미설정 (초기값 5 = 0.35A)</h3>
+<table>
+<tr><th>각도</th><th>자이로</th><th>VL</th><th>오차</th><th>Y축 값</th><th>SPEC</th><th>결과</th></tr>
+<tr><td>-20</td><td>-20.008</td><td>-19.790</td><td>+0.218</td><td>0.38</td><td>&plusmn;0.2</td><td class="ng">NG</td></tr>
+<tr><td>-45</td><td>-45.038</td><td>-44.210</td><td>+0.828</td><td>0.69</td><td>&plusmn;0.5</td><td class="ng">NG</td></tr>
+<tr><td>+20</td><td>19.989</td><td>20.090</td><td>+0.101</td><td>-0.43</td><td>&plusmn;0.2</td><td class="ok">OK</td></tr>
+<tr><td>+45</td><td>45.046</td><td>45.550</td><td>+0.504</td><td>-0.98</td><td>&plusmn;0.5</td><td class="ng">NG</td></tr>
+</table>
+
+<h3>2.2 시료1 - 토크 1A 설정 (14 = 0.98A, PMS050614)</h3>
+<table>
+<tr><th>각도</th><th>자이로</th><th>VL</th><th>오차</th><th>Y축 값</th><th>SPEC</th><th>결과</th></tr>
+<tr><td>-20</td><td>-20.015</td><td>-19.820</td><td>+0.195</td><td>0.03</td><td>&plusmn;0.2</td><td class="ok">OK</td></tr>
+<tr><td>-45</td><td>-45.047</td><td>-44.210</td><td>+0.837</td><td>-0.03</td><td>&plusmn;0.5</td><td class="ng">NG</td></tr>
+<tr><td>+20</td><td>19.987</td><td>20.080</td><td>+0.093</td><td>-0.07</td><td>&plusmn;0.2</td><td class="ok">OK</td></tr>
+<tr><td>+45</td><td>45.044</td><td>45.570</td><td>+0.526</td><td>-0.23</td><td>&plusmn;0.5</td><td class="ng">NG</td></tr>
+</table>
+
+<h3>2.3 토크 설정 효과</h3>
+<div class="info-box">
+<strong>정지 토크 설정: 초기값 5 (0.35A) &rarr; 14 (0.98A)</strong><br>
+EMIO 명령: <code>PMS050614</code> (파라미터 06 = 정지 토크, 단위 0.07A)<br><br>
+<table>
+<tr><th>항목</th><th>토크 미설정 (0.35A)</th><th>토크 1A (0.98A)</th><th>변화</th></tr>
+<tr><td>-20도 오차</td><td>0.218 (NG)</td><td class="ok">0.195 (OK)</td><td>개선</td></tr>
+<tr><td>-45도 오차</td><td>0.828 (NG)</td><td>0.837 (NG)</td><td>비슷</td></tr>
+<tr><td>+20도 오차</td><td>0.101 (OK)</td><td class="ok">0.093 (OK)</td><td>소폭 개선</td></tr>
+<tr><td>+45도 오차</td><td>0.504 (NG)</td><td>0.526 (NG)</td><td>비슷</td></tr>
+<tr><td>-20도 Y축</td><td class="ng">0.38</td><td class="ok">0.03</td><td><strong>대폭 감소</strong></td></tr>
+<tr><td>+45도 Y축</td><td class="ng">-0.98</td><td class="ok">-0.23</td><td><strong>대폭 감소</strong></td></tr>
+</table>
+<br>
+<strong>결론:</strong> 정지 토크 증가로 Y축 흔들림(크로스축 커플링) 대폭 감소. -20도가 NG&rarr;OK으로 개선.
+하지만 45도의 X축 체계적 오차(~0.5~0.8도)는 토크로 해결 불가 &mdash; 센서 특성.
+</div>
+
+<h3>2.4 시료2 (다른 VL 센서 개체, 토크 1A)</h3>
+<table>
+<tr><th>각도</th><th>자이로(레퍼런스)</th><th>VL(센서)</th><th>오차</th><th>SPEC</th><th>결과</th></tr>
+<tr><td>-20</td><td>-20.015</td><td>-19.870</td><td>+0.145</td><td>&plusmn;0.2</td><td class="ok">OK</td></tr>
+<tr><td>-45</td><td>-45.045</td><td>-44.450</td><td>+0.595</td><td>&plusmn;0.5</td><td class="ng">NG</td></tr>
+<tr><td>+20</td><td>19.978</td><td>20.080</td><td>+0.102</td><td>&plusmn;0.2</td><td class="ok">OK</td></tr>
+<tr><td>+45</td><td>45.037</td><td>45.590</td><td>+0.553</td><td>&plusmn;0.5</td><td class="ng">NG</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="section-num">3.</span> 이정환대리 측정 결과 (20260224, X축)</h2>
+
+<div class="info-box">
+csv 경로: <code>docs/2026 0330-motion-real_jig/260326-이정환대리 모션 md/motion_angle_test/MotionAngleApp/csv/</code><br>
+측정 방식: 10도 단위 0~+90~0~-90~0, 센서1(자이로)과 센서2(VL) 동시 CSV 저장
+</div>
+
+<table>
+<tr><th>각도</th><th>자이로</th><th>VL</th><th>오차(VL-자이로)</th><th>절대오차</th></tr>
+<tr><td>+10</td><td>9.98</td><td>9.80</td><td>-0.18</td><td>0.18</td></tr>
+<tr><td>-10</td><td>-9.98</td><td>-9.64</td><td>+0.34</td><td>0.34</td></tr>
+<tr><td>+20</td><td>20.01</td><td>19.59</td><td class="warn">-0.42</td><td class="warn">0.42</td></tr>
+<tr><td>-20</td><td>-19.99</td><td>-19.39</td><td class="ng">+0.60</td><td class="ng">0.60</td></tr>
+<tr><td>+30</td><td>29.98</td><td>29.34</td><td>-0.64</td><td>0.64</td></tr>
+<tr><td>-30</td><td>-29.98</td><td>-29.15</td><td>+0.83</td><td>0.83</td></tr>
+<tr><td>+40</td><td>39.96</td><td>39.13</td><td>-0.83</td><td>0.83</td></tr>
+<tr><td>-40</td><td>-39.99</td><td>-38.97</td><td class="ng">+1.02</td><td class="ng">1.02</td></tr>
+<tr><td>+50</td><td>50.02</td><td>49.04</td><td>-0.98</td><td>0.98</td></tr>
+<tr><td>-50</td><td>-49.98</td><td>-48.80</td><td class="ng">+1.18</td><td class="ng">1.18</td></tr>
+<tr><td>+60</td><td>60.04</td><td>58.95</td><td>-1.09</td><td>1.09</td></tr>
+<tr><td>-60</td><td>-60.00</td><td>-58.73</td><td>+1.27</td><td>1.27</td></tr>
+<tr><td>+70</td><td>69.97</td><td>68.80</td><td>-1.17</td><td>1.17</td></tr>
+<tr><td>-70</td><td>-70.01</td><td>-68.65</td><td>+1.36</td><td>1.36</td></tr>
+<tr><td>+80</td><td>80.03</td><td>78.85</td><td>-1.18</td><td>1.18</td></tr>
+<tr><td>-80</td><td>-79.97</td><td>-78.63</td><td>+1.34</td><td>1.34</td></tr>
+<tr><td>+90</td><td>90.01</td><td>88.84</td><td>-1.17</td><td>1.17</td></tr>
+<tr><td>-90</td><td>-89.97</td><td>-88.62</td><td>+1.35</td><td>1.35</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2><span class="section-num">4.</span> 오차 패턴 분석</h2>
+
+<div class="summary-box">
+<h3 style="margin-top:0">공통 패턴 (이대리 + 우리 모두 동일)</h3>
+<ul>
+<li><strong>VL 센서가 절대값을 작게 읽음</strong> (양수는 작게, 음수는 덜 음수)</li>
+<li><strong>각도에 비례하여 오차 증가</strong>: 10도 ~0.2도 / 20도 ~0.5도 / 45도 ~0.9도 / 90도 ~1.2도</li>
+<li><strong>비대칭</strong>: 음수 방향 오차가 양수보다 큼</li>
+<li><strong>센서 개체 차이</strong>: 시료1과 시료2 오차 다름 (패턴은 동일)</li>
+</ul>
+</div>
+
+<h3>4.1 우리 vs 이대리 비교 (20도 기준)</h3>
+<table>
+<tr><th>출처</th><th>+20도 오차</th><th>-20도 오차</th></tr>
+<tr><td>이대리</td><td>-0.42</td><td>+0.60</td></tr>
+<tr><td>시료1</td><td>+0.093</td><td>+0.195</td></tr>
+<tr><td>시료2</td><td>+0.102</td><td>+0.145</td></tr>
+</table>
+<div class="info-box">우리가 더 양호한 이유: 수평 영점 후 OFFSET 캘리브레이션 실행. 이대리는 데이터 수집 도구로 판정 없이 저장만 수행.</div>
+
+<!-- ============================================ -->
+<h2><span class="section-num">5.</span> BG01 vs VL10 센서 비교</h2>
+
+<div class="info-box">
+BG01은 다른 모델(CTS_BG01_MOS_Tester)에서 사용하는 센서이며, VL10과는 센서 종류가 다릅니다.
+VL10은 Z축이 없는데, 이는 제품이 2축(X,Y)만 필요하기 때문입니다.
+</div>
+
+<h3>5.1 센서 사양 비교</h3>
+<table>
+<tr><th>항목</th><th>BG01</th><th>VL10</th></tr>
+<tr><td>센서 타입</td><td>IMU (가속도 + 자이로 + 기울기)</td><td>가속도 + 기울기 (자이로 없음)</td></tr>
+<tr><td>측정 축</td><td>3축 (X, Y, Z)</td><td><strong>2축 (X, Y)</strong></td></tr>
+<tr><td>기울기 범위</td><td>&plusmn;10.5도</td><td>&plusmn;45도</td></tr>
+<tr><td>기울기 정확도</td><td>&plusmn;0.6도 (60 LSB)</td><td>&plusmn;0.2도 (SPEC)</td></tr>
+<tr><td>진동 측정</td><td>없음</td><td>있음 (GAC, 0.99~1.01g)</td></tr>
+<tr><td>자이로</td><td>있음 (각속도 측정)</td><td><strong>없음</strong></td></tr>
+<tr><td>온도 센서</td><td>있음</td><td>있음</td></tr>
+<tr><td>용도</td><td>센서 칩 검사</td><td>완성 모듈 검사</td></tr>
+</table>
+
+<h3>5.2 데이터 형식 비교</h3>
+<table>
+<tr><th>항목</th><th>BG01</th><th>VL10</th></tr>
+<tr><td>기울기 응답</td><td><code>A=0.33,-0.14,0.00,ACC=...,GA=...</code></td><td><code>[AN,X,Y]</code></td></tr>
+<tr><td>진동 응답</td><td>-</td><td><code>[GAC,X,Y,Z,RMS]</code></td></tr>
+<tr><td>단위</td><td>0.01도/LSB (1050 = 10.5도)</td><td>실제 도(&deg;) 단위</td></tr>
+<tr><td>통신</td><td>시리얼 115200/57600</td><td>시리얼 115200 (MODE 기반)</td></tr>
+</table>
+
+<h3>5.3 검사 항목 비교</h3>
+<table>
+<tr><th>항목</th><th>BG01</th><th>VL10</th></tr>
+<tr><td>기울기</td><td>&plusmn;10.5도 (고정)</td><td>&plusmn;20도, &plusmn;45도</td></tr>
+<tr><td>진동</td><td>없음</td><td>X, Y, Z축 진동값</td></tr>
+<tr><td>자이로 검증</td><td>있음 (각속도 범위 확인)</td><td>없음</td></tr>
+<tr><td>캘리브레이션</td><td>없음 (센서 칩 자체 검사)</td><td>OFFSET + APPCFG_SAVE</td></tr>
+<tr><td>시리얼 설정</td><td>없음</td><td>UID 설정</td></tr>
+</table>
+
+<h3>5.4 오차 원인 분석</h3>
+<div class="alert-box">
+<strong>VL10이 큰 각도에서 오차가 큰 근본 원인:</strong><br><br>
+VL10은 <strong>가속도 기반 기울기 센서</strong>입니다. 가속도계는 중력 벡터의 성분(sin/cos)으로 기울기를 계산하는데,
+이 원리상 <strong>각도가 커질수록 감도가 떨어집니다</strong>.<br><br>
+<ul>
+<li>0도 근처: sin 변화율이 크고 → 감도 높음 → 오차 작음</li>
+<li>45도: sin/cos 변화율 감소 → 감도 저하 → 오차 증가</li>
+<li>90도: cos 변화율 최소 → 감도 최저 → 오차 최대</li>
+</ul>
+BG01은 <strong>자이로 센서가 포함된 IMU</strong>라 자체 보정이 가능하고, 측정 범위가 &plusmn;10.5도로 좁아서 이 문제가 발생하지 않았습니다.<br><br>
+VL10은 자이로 없이 가속도만으로 &plusmn;45도를 측정하므로, <strong>구조적으로 큰 각도에서 오차가 커지는 특성</strong>이 있습니다.
+이는 센서 불량이 아니라 <strong>가속도 기반 기울기 센서의 물리적 한계</strong>입니다.
+</div>
+
+<!-- ============================================ -->
+<h2><span class="section-num">6.</span> 측정 환경</h2>
+
+<h3>5.1 하드웨어</h3>
+<table>
+<tr><th>장비</th><th>모델</th><th>연결</th></tr>
+<tr><td>EMIO 보드</td><td>CTS-EMIO-20EBxx</td><td>TCP 100.100.100.70:2233</td></tr>
+<tr><td>자이로(레퍼런스)</td><td>SOLAR-360-420</td><td>RS232 38400 8N1, COM15</td></tr>
+<tr><td>VL 센서(검사 대상)</td><td>CTS-IOTS-VL10</td><td>RS232 115200 8N1, COM13</td></tr>
+<tr><td>모터 해상도</td><td colspan="2">0.1125 도/step</td></tr>
+<tr><td>정지 토크</td><td colspan="2">14 (0.98A) - PMS050614</td></tr>
+</table>
+
+<h3>5.2 영점 초기화 시퀀스</h3>
+<ol>
+<li>PPC00 (에러 클리어)</li>
+<li>PMS050614 (정지 토크 1A)</li>
+<li>PMO011 (홈 복귀, ~135도 위치)</li>
+<li>setdir6 (자이로 X축 방향 설정)</li>
+<li>1250 step (홈 &rarr; 수평)</li>
+<li>setzcur 1차 (오프셋 리셋)</li>
+<li>FineAdjust (자이로 0도 수렴, 허용 0.03도)</li>
+<li>setzcur 2차 (기준점 확정)</li>
+<li>OFFSET,1 (VL 센서 캘리브레이션)</li>
+<li>APPCFG,SAVE (VL 센서 플래시 저장)</li>
+</ol>
+
+<h3>5.3 기울기 측정 방식</h3>
+<ol>
+<li>자이로 FineAdjust로 목표 각도 수렴 (허용 0.05도)</li>
+<li>VL 센서: MODE,06 &rarr; SAM,1 &rarr; START &rarr; AN 스트리밍</li>
+<li>1초 안정화 &rarr; 초기 데이터 버림 &rarr; 0.5초 대기 &rarr; 3초 수집</li>
+<li>마지막 샘플 값 사용</li>
+<li>자이로-VL 차이를 SPEC과 비교 (OK/NG)</li>
+</ol>
+
+<h3>6.4 AN 스트리밍 데이터 특성</h3>
+<table>
+<tr><th>항목</th><th>값</th></tr>
+<tr><td>수집 방식</td><td>스트리밍 (MODE,06 &rarr; SAM,1 &rarr; START &rarr; [AN,X,Y] 연속 수신 &rarr; STOP)</td></tr>
+<tr><td>SAM 설정</td><td>1 (1ms 주기 전송)</td></tr>
+<tr><td>수집 시간</td><td>3초</td></tr>
+<tr><td>수집 샘플 수</td><td>~345개</td></tr>
+<tr><td>실제 수신 간격</td><td>~8.7ms (UART 수신 처리 속도 한계)</td></tr>
+<tr><td>실제 수신율</td><td>~115 samples/sec (SAM,1 이론 1000/sec 대비 약 11.5%)</td></tr>
+<tr><td>판정 방식</td><td>마지막 샘플 1개 값 사용 (평균 미사용)</td></tr>
+<tr><td>CSV 저장</td><td>전체 샘플 저장 (<code>csv_tilt/AN_X_*.csv</code>)</td></tr>
+</table>
+<div class="info-box">
+폴링(<code>&lt;AN&gt;</code> 1회 요청 &rarr; 1회 응답)에서 스트리밍 방식으로 전환함.
+사양서 기준 기울기 측정은 스트리밍이 표준이며, 이정환대리 참고 코드도 동일 방식.
+</div>
+
+<!-- ============================================ -->
+<h2><span class="section-num">7.</span> 개발팀 확인 필요 사항</h2>
+
+<div class="alert-box">
+<ol>
+<li><strong>SPEC 재검토</strong>: 현재 SPEC이 VL 센서 특성 대비 너무 엄격한지 확인. 이대리 데이터에서도 20도 0.4~0.6도 오차.</li>
+<li><strong>이대리 데이터 해석</strong>: 이대리 측정 데이터를 기반으로 SPEC이 확정된 것인지, 아니면 SPEC 확정 전 데이터인지.</li>
+<li><strong>소프트웨어 보정(gain correction) 허용 여부</strong>: 센서별 보정 계수 적용이 양산에서 가능한지.</li>
+<li><strong>센서 장착 정렬 확인</strong>: VL 센서 X축과 지그 회전축의 정렬 상태.</li>
+</ol>
+</div>
+
+<!-- ============================================ -->
+<h2><span class="section-num">8.</span> 소프트웨어 개선 완료 항목</h2>
+
+<table>
+<tr><th>항목</th><th>상태</th></tr>
+<tr><td>영점 초기화 독립 검사항목 (MOTION_ZERO_232)</td><td class="ok">완료</td></tr>
+<tr><td>AN 스트리밍 방식 전환 (폴링 &rarr; 스트리밍)</td><td class="ok">완료</td></tr>
+<tr><td>VL 명령 응답 확인 (MODE, SAM, START)</td><td class="ok">완료</td></tr>
+<tr><td>정지 토크 1A 설정 (PMS050614)</td><td class="ok">완료</td></tr>
+<tr><td>setdir6 자이로 방향 설정</td><td class="ok">완료</td></tr>
+<tr><td>setzcur 2회 (리셋 + 확정)</td><td class="ok">완료</td></tr>
+<tr><td>_stopRequested 리셋 버그 수정</td><td class="ok">완료</td></tr>
+<tr><td>빌드 출력 git tracking 해제 (1017개)</td><td class="ok">완료</td></tr>
+<tr><td>영점 테스트 (0~75도 시작) 전부 PASS</td><td class="ok">완료</td></tr>
+<tr><td>기울기 45도 SPEC PASS</td><td class="ng">미해결</td></tr>
+</table>
+
+</body>
+</html>

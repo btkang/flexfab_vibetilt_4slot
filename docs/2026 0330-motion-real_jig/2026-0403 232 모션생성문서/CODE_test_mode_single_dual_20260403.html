@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>CODE: test_mode (single/dual) 구현 (2026-04-03)</title>
+<style>
+body { font-family: 'Malgun Gothic', sans-serif; max-width: 1200px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.7; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; color: #2c3e50; font-size: 22px; }
+h2 { border-bottom: 1px solid #bdc3c7; padding-bottom: 6px; margin-top: 40px; color: #34495e; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+th, td { border: 1px solid #bdc3c7; padding: 8px 12px; text-align: center; }
+th { background: #2c3e50; color: #fff; }
+tr:nth-child(even) { background: #f8f9fa; }
+td.left { text-align: left; }
+.ok { background: #e0ffe0; color: #27ae60; font-weight: bold; }
+.new { background: #d4edff; color: #2980b9; font-weight: bold; }
+.fix { background: #fff3cd; color: #856404; font-weight: bold; }
+.success-box { background: #eafaf1; border-left: 4px solid #27ae60; padding: 12px 16px; margin: 16px 0; }
+.info-box { background: #eaf2f8; border-left: 4px solid #3498db; padding: 12px 16px; margin: 16px 0; }
+.warn-box { background: #fef9e7; border-left: 4px solid #f39c12; padding: 12px 16px; margin: 16px 0; }
+.meta { color: #95a5a6; font-size: 13px; }
+pre { background: #2c3e50; color: #ecf0f1; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+code { background: #ecf0f1; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1>CODE: test_mode (single/dual) 구현</h1>
+<p class="meta">작성일: 2026-04-03 | 브랜치: step6-motion-jig-test | 기준: tag single-final (e99a87a)</p>
+
+<div class="success-box">
+<strong>결과:</strong> test_mode 옵션으로 single/dual 모드 전환 가능<br>
+&bull; <strong>single:</strong> 제품 1개, COM13만, SerialMac 폼, 14항목 ALL PASS (S/N: 00702)<br>
+&bull; <strong>dual:</strong> 제품 2개, COM13+COM14, 밀어내기식, 14항목 ALL PASS (기존 동작 유지)
+</div>
+
+<h2>1. workspace JSON 설정</h2>
+
+<pre>
+"test_mode": "dual",
+"_test_mode_comment": "dual: 밀어내기식 2개 동시 검사 (시리얼 2개, COM13+COM14) | single: 1개 제품 검사 (시리얼 1개, COM13만) | 양산 권장: dual"
+</pre>
+
+<h2>2. single vs dual 비교</h2>
+
+<table>
+<tr><th>항목</th><th>single</th><th>dual</th></tr>
+<tr><td class="left">제품 수</td><td>1개</td><td>2개 (밀어내기)</td></tr>
+<tr><td class="left">시리얼 입력</td><td>SerialMac 폼 (1개 + MAC)</td><td>DualSerial 폼 (X축 + Y축)</td></tr>
+<tr><td class="left">X축 (#0~#6) 포트</td><td>COM13</td><td>COM13</td></tr>
+<tr><td class="left">Y축 (#0-Y~#12) 포트</td><td class="fix">COM13 (오버라이드)</td><td>COM14 (uart_232_y)</td></tr>
+<tr><td class="left">#1 팝업</td><td>"제품을 X축 위치에 장착해주세요."</td><td>"X축: 새 제품, Y축: 이전 제품을 장착해주세요."</td></tr>
+<tr><td class="left">#7 팝업</td><td>"제품을 Y축 위치로 옮겨주세요."</td><td>없음 (밀어내기식)</td></tr>
+<tr><td class="left">pending 파일</td><td>없음</td><td>pending_x_result.json</td></tr>
+<tr><td class="left">결과 저장</td><td>SaveLog 즉시 (14항목)</td><td>pending + 합산 업로드</td></tr>
+<tr><td class="left">로컬 저장</td><td colspan="2">Result/모션지그검사(RS-232)/날짜/시리얼.json</td></tr>
+</table>
+
+<h2>3. single 모드 동작 흐름</h2>
+
+<div class="info-box">
+1. SerialMac 폼으로 시리얼 1개 입력<br>
+2. #0 FW 버전 &rarr; COM13<br>
+3. #1 X축 영점 (팝업: "X축 위치에 장착") &rarr; COM13<br>
+4. #2~#6 X축 검사 &rarr; COM13<br>
+5. 제품을 Y축 위치로 이동 (같은 COM13 케이블)<br>
+6. #0-Y FW 버전 &rarr; COM13 (uart_id 오버라이드)<br>
+7. #7 Y축 영점 (팝업: "Y축 위치로 옮겨주세요") &rarr; COM13<br>
+8. #8~#12 Y축 검사 &rarr; COM13 (uart_id 오버라이드)<br>
+9. 14항목 전부 OK &rarr; PASS &rarr; 로컬 JSON + MongoDB 업로드
+</div>
+
+<h2>4. 수정 파일</h2>
+
+<table>
+<tr><th>파일</th><th>변경 내용</th></tr>
+<tr><td class="left"><code>workspace_motion_232.json</code></td><td class="left"><code>test_mode</code> 옵션 추가 (dual/single)</td></tr>
+<tr><td class="left"><code>flexfab_mini/FlexfabForm.cs</code></td><td class="left">test_mode 분기: 시리얼 입력, uart_id 오버라이드, 팝업 메시지, 결과 저장</td></tr>
+</table>
+
+<h2>5. 핵심 코드 (FlexfabForm.cs)</h2>
+
+<h3>single 모드: uart_id 오버라이드 + 팝업 복원</h3>
+<pre>
+// single 모드: uart_id를 uart_232로 오버라이드 (COM14→COM13)
+if (pd.ContainsKey("uart_id") && pd["uart_id"]?.ToString() == "uart_232_y")
+{
+    pd["uart_id"] = "uart_232";
+}
+
+// #1 X축 영점: single용 메시지
+if (procId == "MOTION_ZERO_232" && gyroDir == "setdir6")
+    pd["operator_prompt"] = "제품을 X축 위치에 장착해주세요...";
+
+// #7 Y축 영점: 제품 이동 팝업 복원
+if (procId == "MOTION_ZERO_232" && gyroDir == "setdir5")
+    pd["operator_prompt"] = "제품을 Y축 위치로 옮겨주세요...";
+</pre>
+
+<h2>6. FAIL 원인 분석 (디버깅 과정)</h2>
+
+<table>
+<tr><th>증상</th><th>원인</th><th>해결</th></tr>
+<tr><td class="left">#10에서 불필요한 팝업</td><td class="left">gyro_dir=setdir5 조건이 #7뿐 아니라 #10~#12에도 매칭</td><td class="left"><code>proc.id == "MOTION_ZERO_232"</code> 조건 추가</td></tr>
+<tr><td class="left">#10 센서 차이 19.96도 FAIL</td><td class="left">Y축 proc이 COM14로 통신 &rarr; 제품은 COM13에 있음</td><td class="left">single 모드에서 uart_id를 uart_232로 오버라이드</td></tr>
+</table>
+
+<div class="warn-box">
+<strong>주의:</strong> single 모드에서 제품 케이블은 항상 COM13. Y축 위치로 이동할 때 같은 케이블 유지.<br>
+dual 모드에서는 제품 2개가 각각 COM13(X축), COM14(Y축)에 연결.
+</div>
+
+<h2>7. 검사 결과</h2>
+
+<table>
+<tr><th>모드</th><th>S/N</th><th>결과</th><th>소요시간</th></tr>
+<tr><td>single</td><td>00702</td><td class="ok">14/14 PASS</td><td>~4분 40초 (19:34:59~19:39:39, 팝업 대기 포함)</td></tr>
+<tr><td>dual (Y축만)</td><td>00701/00700</td><td class="ok">6/6 PASS (X축 스킵)</td><td>~2분</td></tr>
+</table>
+
+<h2>8. git tag</h2>
+
+<div class="info-box">
+<code>single-final</code> (e99a87a) &mdash; 밀어내기 구현 전 마지막 single 동작 커밋. dual 구현 시작점 기준.
+</div>
+
+</body>
+</html>

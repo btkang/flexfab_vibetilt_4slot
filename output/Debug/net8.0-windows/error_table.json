@@ -1,0 +1,133 @@
+{
+    "_description": "검사 에러 테이블. common: 공용 에러, project: 프로젝트별 에러",
+
+    "common": {
+        "COMM_TCP": {
+            "error_type": "Communication Fail",
+            "message": "TCP 연결 실패 (tcp_emio)",
+            "check": "1. LAN 케이블 연결 확인\n2. EMIO 보드 전원 확인\n3. IP 주소 확인 (100.100.100.70:2233)"
+        },
+        "COMM_UART": {
+            "error_type": "Communication Fail",
+            "message": "COM 포트 연결 실패",
+            "check": "1. USB 케이블 연결 확인\n2. COM 포트 번호 확인\n3. 장치관리자에서 포트 인식 확인"
+        },
+        "COMM_GYRO": {
+            "error_type": "Communication Fail",
+            "message": "자이로 센서 연결 실패 (uart_gyro)",
+            "check": "1. 자이로 COM 포트 연결 확인\n2. 자이로 전원 확인\n3. 케이블 상태 점검"
+        },
+        "MOVE_TIMEOUT": {
+            "error_type": "Move Fail",
+            "message": "모터 이동 2회 연속 실패",
+            "check": "1. 모터 케이블 점검\n2. EMIO 에러 상태 확인 (PPC00)\n3. 소프트 리밋 확인 (레지스터 28/29)"
+        },
+        "MOVE_HOME_TIMEOUT": {
+            "error_type": "Move Fail",
+            "message": "홈 센서 감지 실패 (PMO011 timeout)",
+            "check": "1. 홈 센서 LED 점등 확인\n2. 원판 홈 이물질/테이프 확인\n3. 센서-EMIO 배선 확인\n4. 센서 감도 조절 (해당 시)"
+        },
+        "GYRO_READ": {
+            "error_type": "Measurement Fail",
+            "message": "자이로 각도 읽기 실패",
+            "check": "1. 자이로 센서 통신 확인\n2. 자이로 케이블 점검\n3. 자이로 전원 확인"
+        },
+        "GYRO_SETZCUR": {
+            "error_type": "Measurement Fail",
+            "message": "자이로 0점 설정 실패 (setzcur)",
+            "check": "1. 자이로 센서 응답 확인\n2. 통신 케이블 점검"
+        }
+    },
+
+    "project": {
+        "ZERO_HOME_FAIL": {
+            "error_type": "Move Fail",
+            "message": "영점 초기화 실패 — 홈 복귀 timeout",
+            "check": "1. 홈 센서 LED 확인\n2. 원판 홈 테이프 상태\n3. EMIO IN1 배선\n4. 모터 구동 확인",
+            "proc": ["MOTION_ZERO_232"]
+        },
+        "ZERO_MOVE_FAIL": {
+            "error_type": "Move Fail",
+            "message": "영점 초기화 실패 — 0도 이동 실패",
+            "check": "1. 모터 케이블 점검\n2. 소프트 리밋 확인\n3. EMIO 에러 클리어 (PPC00)",
+            "proc": ["MOTION_ZERO_232"]
+        },
+        "ZERO_FINE_FAIL": {
+            "error_type": "Measurement Fail",
+            "message": "영점 초기화 실패 — 0도 미세조정 실패",
+            "check": "1. 자이로 센서 응답 확인\n2. 모터 step 정밀도 확인\n3. 기계적 간섭 확인",
+            "proc": ["MOTION_ZERO_232"]
+        },
+        "TILT_MOVE_FAIL": {
+            "error_type": "Move Fail",
+            "message": "기울기 측정 실패 — 각도 이동 실패",
+            "check": "1. 모터 케이블 점검\n2. 소프트 리밋 범위 확인\n3. 기계적 간섭 확인",
+            "proc": ["MOTION_TILT_X_232", "MOTION_TILT_Y_232"]
+        },
+        "TILT_FINE_FAIL": {
+            "error_type": "Measurement Fail",
+            "message": "기울기 측정 실패 — 미세조정 실패",
+            "check": "1. 자이로 센서 확인\n2. 모터 정밀도 확인",
+            "proc": ["MOTION_TILT_X_232", "MOTION_TILT_Y_232"]
+        },
+        "TILT_AN_PARSE_FAIL": {
+            "error_type": "Measurement Fail",
+            "message": "기울기 측정 실패 — AN 데이터 파싱 실패",
+            "check": "1. 제품 장착 상태 확인\n2. VL 센서 COM 포트 확인\n3. MODE 06 설정 확인",
+            "proc": ["MOTION_TILT_X_232", "MOTION_TILT_Y_232"]
+        },
+        "TILT_SENSOR_DIFF": {
+            "error_type": "Measurement Fail",
+            "message": "기울기 측정 실패 — 센서 차이 에러 (자이로-VL > 10도)",
+            "check": "1. COM 포트 불일치 확인\n2. 제품 장착 방향 확인\n3. 제품 불량 의심",
+            "proc": ["MOTION_TILT_X_232", "MOTION_TILT_Y_232"]
+        },
+        "TILT_SPEC_OUT": {
+            "error_type": "Measurement Fail",
+            "message": "기울기 측정 실패 — Spec 범위 초과",
+            "check": "1. 제품 불량\n2. ±20도: 오차 ±0.2 / ±45도: 오차 ±0.5",
+            "proc": ["MOTION_TILT_X_232", "MOTION_TILT_Y_232"],
+            "spec": {
+                "20deg": "±0.2도",
+                "45deg": "±0.5도"
+            }
+        },
+        "VIBE_MOVE_FAIL": {
+            "error_type": "Move Fail",
+            "message": "진동 측정 실패 — 각도 이동 실패",
+            "check": "1. 모터 케이블 점검\n2. 소프트 리밋 확인\n3. EMIO 에러 상태",
+            "proc": ["MOTION_VIBE_Y_232", "MOTION_VIBE_X_232", "MOTION_VIBE_Z_232"]
+        },
+        "VIBE_GAC_FAIL": {
+            "error_type": "Measurement Fail",
+            "message": "진동 측정 실패 — GAC 값 Spec 범위 초과",
+            "check": "1. 제품 불량\n2. 제품 장착 상태 확인\n3. GAC Spec: 0.99 ~ 1.01",
+            "proc": ["MOTION_VIBE_Y_232", "MOTION_VIBE_X_232", "MOTION_VIBE_Z_232"],
+            "spec": {
+                "vibe_min": 0.99,
+                "vibe_max": 1.01
+            }
+        },
+        "VIBE_GAC_PARSE_FAIL": {
+            "error_type": "Measurement Fail",
+            "message": "진동 측정 실패 — GAC 응답 파싱 실패",
+            "check": "1. 제품 장착 확인\n2. MODE 02 설정 확인\n3. VL 센서 통신 확인",
+            "proc": ["MOTION_VIBE_Y_232", "MOTION_VIBE_X_232", "MOTION_VIBE_Z_232"]
+        },
+        "OVERROTATION": {
+            "error_type": "Safety",
+            "message": "과회전 감지 (IN2)",
+            "check": "1. 케이블 꼬임 확인\n2. 원판 홈 상태 확인\n3. 소프트 리밋 설정 확인",
+            "proc": ["ALL"]
+        }
+    },
+
+    "emio_error_code": {
+        "pmd0011": { "description": "정상 완료", "action": "없음" },
+        "pmd4011": { "description": "명령 수행 불가 (동작 중)", "action": "재시도" },
+        "pmd5011": { "description": "소프트 리밋 충돌", "action": "무시, pmd0011 대기 (EMIO 자동 복구)" },
+        "ppc006": { "description": "에러 클리어 응답 (에러 있었음)", "action": "PPC00으로 클리어 후 계속" },
+        "x15": { "description": "원점 복귀 중 이동거리 초과", "action": "홈 센서 점검" },
+        "x17": { "description": "원점 복귀 파라미터 설정 에러", "action": "PMS 파라미터 확인" }
+    }
+}

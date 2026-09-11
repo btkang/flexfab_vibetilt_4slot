@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>485 모션지그 롱런 테스트 결과보고서 (2026-04-14~15)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', '맑은 고딕', sans-serif; background: #f5f5f5; color: #222; padding: 24px; line-height: 1.6; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.5em; border-bottom: 3px solid #1a73e8; padding-bottom: 8px; margin-bottom: 6px; }
+  .subtitle { color: #666; font-size: 0.9em; margin-bottom: 24px; }
+  h2 { font-size: 1.15em; margin: 28px 0 12px; padding: 6px 12px; background: #1a73e8; color: #fff; border-radius: 4px; }
+  h3 { font-size: 1em; margin: 18px 0 8px; color: #1a73e8; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 18px; font-size: 0.88em; }
+  th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: center; }
+  th { background: #e8eef7; font-weight: 600; }
+  tr:nth-child(even) { background: #fafafa; }
+  .ok { color: #0d7a0d; font-weight: 700; }
+  .fail { color: #d32f2f; font-weight: 700; }
+  .warn { color: #e65100; font-weight: 700; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; font-weight: 600; }
+  .tag-fw { background: #fce4ec; color: #c62828; }
+  .tag-comm { background: #e3f2fd; color: #1565c0; }
+  .tag-user { background: #f3e5f5; color: #7b1fa2; }
+  .summary-box { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin: 14px 0 22px; }
+  .sbox { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: center; }
+  .sbox .num { font-size: 2em; font-weight: 700; }
+  .sbox .label { font-size: 0.82em; color: #666; margin-top: 2px; }
+  .timeline { position: relative; padding-left: 24px; margin: 12px 0; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: #ccc; }
+  .tl-item { position: relative; margin-bottom: 12px; padding: 8px 14px; background: #fff; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .tl-item::before { content: ''; position: absolute; left: -20px; top: 14px; width: 10px; height: 10px; border-radius: 50%; }
+  .tl-ok::before { background: #0d7a0d; }
+  .tl-fail::before { background: #d32f2f; }
+  .tl-warn::before { background: #e65100; }
+  .tl-info::before { background: #1a73e8; }
+  .tl-time { font-weight: 700; font-size: 0.85em; color: #555; }
+  .tl-desc { font-size: 0.88em; margin-top: 2px; }
+  .bar-row { display: flex; align-items: center; margin: 3px 0; font-size: 0.85em; }
+  .bar-label { width: 240px; text-align: right; padding-right: 10px; font-size: 0.82em; }
+  .bar-track { flex: 1; height: 18px; background: #eee; border-radius: 3px; overflow: hidden; display: flex; }
+  .bar-ok { background: #4caf50; height: 100%; }
+  .bar-fail { background: #ef5350; height: 100%; }
+  .bar-pct { width: 60px; text-align: right; font-size: 0.78em; color: #888; padding-left: 6px; }
+  .cause-box { background: #fff; border-left: 4px solid; padding: 12px 16px; margin: 8px 0; border-radius: 0 6px 6px 0; }
+  .cause-fw { border-color: #c62828; }
+  .cause-comm { border-color: #1565c0; }
+  .cause-user { border-color: #7b1fa2; }
+  .verdict { display: inline-block; padding: 8px 24px; border-radius: 6px; font-size: 1.3em; font-weight: 700; margin: 8px 0; }
+  .verdict-pass { background: #e8f5e9; color: #2e7d32; border: 2px solid #4caf50; }
+  .compare { font-size: 0.85em; color: #555; background: #fff; padding: 12px 16px; border-radius: 6px; margin: 12px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 0.78em; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>RS-485 모션지그 롱런 테스트 결과보고서</h1>
+<div class="subtitle">
+  테스트 일시: 2026-04-14 19:54 ~ 2026-04-15 08:44 (약 12시간 49분) |
+  버전: v0.6.0.60414 |
+  워크스페이스: workspace_motion_485_TEST.json |
+  모드: dual (X+Y 연속) |
+  COM: X축=COM11, Y축=COM12, 자이로=COM15 | EMIO: TCP 100.100.100.70:2233
+</div>
+
+<h2>1. 실행 요약</h2>
+<div class="summary-box">
+  <div class="sbox">
+    <div class="num">241 <span style="font-size:0.5em; color:#888">/ 300</span></div>
+    <div class="label">반복 루프 진행 (80%)</div>
+  </div>
+  <div class="sbox">
+    <div class="num ok">4,108</div>
+    <div class="label">OK 결과 (항목 기준)</div>
+  </div>
+  <div class="sbox">
+    <div class="num fail">20</div>
+    <div class="label">FAIL 결과 (항목 기준)</div>
+  </div>
+  <div class="sbox">
+    <div class="num ok">99.5%</div>
+    <div class="label">항목 PASS률</div>
+  </div>
+  <div class="sbox">
+    <div class="num ok">95.9%</div>
+    <div class="label">ALL PASS 회차 (231/241)</div>
+  </div>
+</div>
+
+<p style="font-size:0.85em; color:#555;">
+  사전 테스트 4회 + 반복 루프 241/300회 = 총 약 245회 실행. 242번째(반복 루프 내)는 Y축 진동 측정 도중 사용자 수동 취소로 중단.
+</p>
+
+<h2>2. 항목별 OK/FAIL 통계</h2>
+
+<table>
+  <tr>
+    <th>#</th>
+    <th>검사 항목</th>
+    <th>OK</th>
+    <th>FAIL</th>
+    <th>합계</th>
+    <th>OK%</th>
+    <th>FAIL 원인</th>
+  </tr>
+  <tr>
+    <td>#0</td>
+    <td style="text-align:left">통신검사 RS-485</td>
+    <td class="ok">243</td><td class="fail">2</td><td>245</td><td class="ok">99.2%</td>
+    <td><span class="tag tag-comm">Y축 통신단절</span></td>
+  </tr>
+  <tr>
+    <td>#1-X</td>
+    <td style="text-align:left">FW 버전 확인 (X축)</td>
+    <td class="ok">244</td><td>0</td><td>244</td><td class="ok">100%</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>#1-Y</td>
+    <td style="text-align:left">FW 버전 확인 (Y축)</td>
+    <td class="ok">242</td><td class="fail">2</td><td>244</td><td class="ok">99.2%</td>
+    <td><span class="tag tag-comm">Y축 통신단절</span></td>
+  </tr>
+  <tr>
+    <td>#2</td>
+    <td style="text-align:left">시리얼번호 설정 (X축)</td>
+    <td class="ok">244</td><td class="fail">1</td><td>245</td><td class="ok">99.6%</td>
+    <td><span class="tag tag-user">수동오류</span></td>
+  </tr>
+  <tr>
+    <td>#3</td>
+    <td style="text-align:left">X축 영점 초기화 (0도)</td>
+    <td class="ok">244</td><td>0</td><td>244</td><td class="ok">100%</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>#4</td>
+    <td style="text-align:left">X축 Calibration (0도)</td>
+    <td class="ok">244</td><td>0</td><td>244</td><td class="ok">100%</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>#5</td>
+    <td style="text-align:left">X축 파라미터 저장 (0도)</td>
+    <td class="ok">240</td><td class="fail">4</td><td>244</td><td class="ok">98.4%</td>
+    <td><span class="tag tag-fw">APPCFG 에러7</span></td>
+  </tr>
+  <tr>
+    <td>#6</td>
+    <td style="text-align:left">X축 기울기값 측정</td>
+    <td class="ok">244</td><td>0</td><td>244</td><td class="ok">100%</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>#7</td>
+    <td style="text-align:left">Y축 진동값 측정 (+90도)</td>
+    <td class="ok">244</td><td>0</td><td>244</td><td class="ok">100%</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>#8</td>
+    <td style="text-align:left">시리얼번호 설정 (Y축)</td>
+    <td class="ok">242</td><td class="fail">2</td><td>244</td><td class="ok">99.2%</td>
+    <td><span class="tag tag-comm">Y축 통신단절</span></td>
+  </tr>
+  <tr>
+    <td>#9</td>
+    <td style="text-align:left">Y축 영점 초기화 (0도)</td>
+    <td class="ok">244</td><td>0</td><td>244</td><td class="ok">100%</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>#10</td>
+    <td style="text-align:left">Y축 Calibration (0도)</td>
+    <td class="ok">242</td><td class="fail">2</td><td>244</td><td class="ok">99.2%</td>
+    <td><span class="tag tag-comm">Y축 통신단절</span></td>
+  </tr>
+  <tr>
+    <td>#11</td>
+    <td style="text-align:left">Y축 파라미터 저장 (0도)</td>
+    <td class="ok">237</td><td class="fail">7</td><td>244</td><td class="ok">97.1%</td>
+    <td><span class="tag tag-fw">APPCFG 에러7</span> <span class="tag tag-comm">통신단절</span></td>
+  </tr>
+  <tr>
+    <td>#12</td>
+    <td style="text-align:left">Z축 진동값 측정 (0도)</td>
+    <td class="ok">244</td><td>0</td><td>244</td><td class="ok">100%</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>#13</td>
+    <td style="text-align:left">Y축 기울기값 측정</td>
+    <td class="ok">244</td><td>0</td><td>244</td><td class="ok">100%</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>#14</td>
+    <td style="text-align:left">X축 진동값 측정 (-90도)</td>
+    <td class="ok">244</td><td>0</td><td>244</td><td class="ok">100%</td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td>#15</td>
+    <td style="text-align:left">Config 확인 (APPCFG)</td>
+    <td class="ok">244</td><td>0</td><td>244</td><td class="ok">100%</td>
+    <td>-</td>
+  </tr>
+</table>
+
+<h3>OK/FAIL 비율 차트 (FAIL 발생 항목만)</h3>
+<div style="background:#fff; padding:16px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+  <div class="bar-row"><div class="bar-label">#0 통신검사</div><div class="bar-track"><div class="bar-ok" style="width:99.2%"></div><div class="bar-fail" style="width:0.8%"></div></div><div class="bar-pct ok">99.2%</div></div>
+  <div class="bar-row"><div class="bar-label">#1-Y FW 버전 (Y축)</div><div class="bar-track"><div class="bar-ok" style="width:99.2%"></div><div class="bar-fail" style="width:0.8%"></div></div><div class="bar-pct ok">99.2%</div></div>
+  <div class="bar-row"><div class="bar-label">#2 시리얼번호 (X축)</div><div class="bar-track"><div class="bar-ok" style="width:99.6%"></div><div class="bar-fail" style="width:0.4%"></div></div><div class="bar-pct ok">99.6%</div></div>
+  <div class="bar-row"><div class="bar-label">#5 X축 파라미터 저장</div><div class="bar-track"><div class="bar-ok" style="width:98.4%"></div><div class="bar-fail" style="width:1.6%"></div></div><div class="bar-pct ok">98.4%</div></div>
+  <div class="bar-row"><div class="bar-label">#8 시리얼번호 (Y축)</div><div class="bar-track"><div class="bar-ok" style="width:99.2%"></div><div class="bar-fail" style="width:0.8%"></div></div><div class="bar-pct ok">99.2%</div></div>
+  <div class="bar-row"><div class="bar-label">#10 Y축 Calibration</div><div class="bar-track"><div class="bar-ok" style="width:99.2%"></div><div class="bar-fail" style="width:0.8%"></div></div><div class="bar-pct ok">99.2%</div></div>
+  <div class="bar-row"><div class="bar-label">#11 Y축 파라미터 저장</div><div class="bar-track"><div class="bar-ok" style="width:97.1%"></div><div class="bar-fail" style="width:2.9%"></div></div><div class="bar-pct ok">97.1%</div></div>
+</div>
+
+<h2>3. FAIL 원인 분류</h2>
+
+<h3>A. APPCFG SAVE 실패 &mdash; 에러코드 7 (레지스터 쓰기 실패) [9건]</h3>
+<div class="cause-box cause-fw">
+  <strong>#5 X축 파라미터 저장: 4건 / #11 Y축 파라미터 저장: 5건 (단독 FAIL)</strong><br>
+  FW 응답: <code>[APPCFG,7,1,SAVE]</code> (기대값: <code>[APPCFG,0,1,SAVE]</code>)<br>
+  에러코드 7 = Flash/EEPROM 레지스터 쓰기 실패. 간헐적 발생 후 <strong>다음 회차에서 자동 복구됨</strong>.<br>
+  <strong>원인:</strong> FW 내부 Flash 쓰기 타이밍 이슈 (검사 프로그램 문제 아님)<br>
+  <strong>영향:</strong> 검사 중단 없음 (fail_stop 미적용 항목). 양산 시 FAIL 시 자동 재검사로 커버 가능.
+</div>
+
+<h3>B. APPCFG SAVE 실패 &mdash; 에러코드 1 (패킷 수신 불가) [1건]</h3>
+<div class="cause-box cause-fw">
+  <strong>#11 Y축 파라미터 저장 (115회차, 01:40)</strong><br>
+  FW 응답: <code>[APPCFG,1,1,SAVE]</code><br>
+  에러코드 1 = 패킷 수신 불가 상태. 1회 발생 후 복구됨.<br>
+  <strong>원인:</strong> FW가 일시적으로 busy 상태였던 것으로 추정.
+</div>
+
+<h3>C. Y축 통신 완전 단절 [2세트, 각 5건 = 10건]</h3>
+<div class="cause-box cause-comm">
+  <strong>168회차 (04:34) / 235회차 (08:19) &mdash; Y축 통신이 일시적으로 끊김</strong><br>
+  <code>#0 통신검사</code> &rarr; <code>#1-Y FW버전</code> &rarr; <code>#8 시리얼</code> &rarr; <code>#10 Cal</code> &rarr; <code>#11 저장</code> 5개 항목 연쇄 FAIL<br>
+  에러: <code>Y축: NG (응답 없음)</code><br>
+  <strong>핵심:</strong> 두 경우 모두 <strong>다음 회차(169, 236)에서 자동 복구</strong>됨 &mdash; USB 커넥터 접촉 또는 FW 일시 hang 추정<br>
+  <strong>vs 이전(0409):</strong> 이전 테스트에서는 통신 단절 후 끝까지 미복구. 이번에는 복구 확인 &mdash; 대폭 개선.
+</div>
+
+<h3>D. 시리얼번호 접두사 누락 [1건, 사전 테스트]</h3>
+<div class="cause-box cause-user">
+  <strong>최초 1회차: <code>&lt;UID,1,00001&gt;</code> 전송 &rarr; <code>VL2-</code> 접두사 없이 FAIL</strong><br>
+  수동 설정 오류. 이후 <code>VL2-00001</code>로 수정하여 재발 없음. 프로그램 문제 아님.
+</div>
+
+<h2>4. FAIL 발생 타임라인</h2>
+
+<div class="timeline">
+  <div class="tl-item tl-ok">
+    <div class="tl-time">19:54 (4/14) &mdash; 사전 테스트 시작</div>
+    <div class="tl-desc">workspace_motion_485_TEST.json 로드, 사전 확인 4회</div>
+  </div>
+  <div class="tl-item tl-fail">
+    <div class="tl-time">19:54:33 (4/14) &mdash; 사전 테스트 1회차</div>
+    <div class="tl-desc"><span class="fail">#2 UID FAIL</span> &mdash; 접두사 VL2- 누락 (수동 오류, 즉시 수정)</div>
+  </div>
+  <div class="tl-item tl-ok">
+    <div class="tl-time">20:06 (4/14) &mdash; 반복 루프 시작 (1/300)</div>
+    <div class="tl-desc">정상 동작 시작. X축, Y축 모두 통신 정상.</div>
+  </div>
+  <div class="tl-item tl-ok">
+    <div class="tl-time">20:06 ~ 22:22 (1~47회차)</div>
+    <div class="tl-desc"><strong>ALL PASS 구간 (약 2시간 16분, 47회 연속)</strong></div>
+  </div>
+  <div class="tl-item tl-warn">
+    <div class="tl-time">22:22 (4/14) &mdash; 48회차</div>
+    <div class="tl-desc"><span class="warn">#11 Y축 파라미터 저장 FAIL</span> &mdash; APPCFG 에러7 (1건 단독, 다음 회차 복구)</div>
+  </div>
+  <div class="tl-item tl-ok">
+    <div class="tl-time">22:22 ~ 23:38 (49~73회차)</div>
+    <div class="tl-desc">ALL PASS 구간 (25회 연속)</div>
+  </div>
+  <div class="tl-item tl-warn">
+    <div class="tl-time">23:38, 23:43 (4/14) &mdash; 74, 76회차</div>
+    <div class="tl-desc"><span class="warn">#11 Y축 파라미터 저장 FAIL</span> &mdash; APPCFG 에러7 (각 1건 단독, 복구)</div>
+  </div>
+  <div class="tl-item tl-ok">
+    <div class="tl-time">23:43 ~ 01:40 (77~114회차)</div>
+    <div class="tl-desc">ALL PASS 구간 (38회 연속)</div>
+  </div>
+  <div class="tl-item tl-warn">
+    <div class="tl-time">01:40 (4/15) &mdash; 115회차</div>
+    <div class="tl-desc"><span class="warn">#11 Y축 파라미터 저장 FAIL</span> &mdash; APPCFG 에러1 (패킷 수신 불가, 복구)</div>
+  </div>
+  <div class="tl-item tl-ok">
+    <div class="tl-time">01:40 ~ 03:12 (116~142회차)</div>
+    <div class="tl-desc">ALL PASS 구간 (27회 연속)</div>
+  </div>
+  <div class="tl-item tl-warn">
+    <div class="tl-time">03:12, 04:15, 04:28 (4/15) &mdash; 143, 162, 166회차</div>
+    <div class="tl-desc"><span class="warn">#5 X축 파라미터 저장 FAIL</span> &mdash; APPCFG 에러7 (각 1건, 복구)</div>
+  </div>
+  <div class="tl-item tl-fail">
+    <div class="tl-time">04:34 (4/15) &mdash; 168회차</div>
+    <div class="tl-desc"><span class="fail">Y축 통신 단절 &mdash; 5개 항목 연쇄 FAIL</span> (#0, #1-Y, #8, #10, #11)<br>
+      <strong>169회차에서 복구 확인</strong></div>
+  </div>
+  <div class="tl-item tl-ok">
+    <div class="tl-time">04:38 ~ 07:04 (169~211회차)</div>
+    <div class="tl-desc">ALL PASS 구간 (43회 연속) &mdash; 통신 복구 후 안정</div>
+  </div>
+  <div class="tl-item tl-warn">
+    <div class="tl-time">07:04 (4/15) &mdash; 212회차</div>
+    <div class="tl-desc"><span class="warn">#11 Y축 파라미터 저장 FAIL</span> &mdash; APPCFG 에러7 (1건, 복구)</div>
+  </div>
+  <div class="tl-item tl-warn">
+    <div class="tl-time">07:56 (4/15) &mdash; 228회차</div>
+    <div class="tl-desc"><span class="warn">#5 X축 파라미터 저장 FAIL</span> &mdash; APPCFG 에러7 (1건, 복구)</div>
+  </div>
+  <div class="tl-item tl-fail">
+    <div class="tl-time">08:19 (4/15) &mdash; 235회차</div>
+    <div class="tl-desc"><span class="fail">Y축 통신 단절 &mdash; 5개 항목 연쇄 FAIL</span> (2번째 발생)<br>
+      <strong>236회차에서 복구 확인</strong></div>
+  </div>
+  <div class="tl-item tl-ok">
+    <div class="tl-time">08:22 ~ 08:43 (236~241회차)</div>
+    <div class="tl-desc">ALL PASS 구간 (6회 연속)</div>
+  </div>
+  <div class="tl-item tl-info">
+    <div class="tl-time">08:44 (4/15) &mdash; 242회차 도중</div>
+    <div class="tl-desc">사용자 수동 취소 &mdash; Y축 진동 측정 GAC 스트리밍 중 정상 중단</div>
+  </div>
+</div>
+
+<h2>5. 100% OK 항목 (11개/17개)</h2>
+<table>
+  <tr><th>항목</th><th>OK</th><th>비고</th></tr>
+  <tr><td>#1-X FW 버전 확인 (X축)</td><td class="ok">244/244 (100%)</td><td>X축 통신 안정</td></tr>
+  <tr><td>#3 X축 영점 초기화</td><td class="ok">244/244 (100%)</td><td>EMIO + 자이로 사용</td></tr>
+  <tr><td>#4 X축 Calibration</td><td class="ok">244/244 (100%)</td><td>-</td></tr>
+  <tr><td>#6 X축 기울기값 측정</td><td class="ok">244/244 (100%)</td><td>AN 스트리밍 정상</td></tr>
+  <tr><td>#7 Y축 진동값 측정</td><td class="ok">244/244 (100%)</td><td>GAC 스트리밍 정상</td></tr>
+  <tr><td>#9 Y축 영점 초기화</td><td class="ok">244/244 (100%)</td><td>EMIO + 자이로 사용</td></tr>
+  <tr><td>#12 Z축 진동값 측정</td><td class="ok">244/244 (100%)</td><td>-</td></tr>
+  <tr><td>#13 Y축 기울기값 측정</td><td class="ok">244/244 (100%)</td><td>AN 스트리밍 정상</td></tr>
+  <tr><td>#14 X축 진동값 측정</td><td class="ok">244/244 (100%)</td><td>GAC 스트리밍 정상</td></tr>
+  <tr><td>#15 Config 확인 (APPCFG)</td><td class="ok">244/244 (100%)</td><td>읽기는 100% 성공</td></tr>
+</table>
+<p style="font-size:0.85em; color:#555; margin-top:6px;">
+  영점 초기화, 기울기 측정, 진동 측정, FW 버전, Config 읽기 &mdash; 핵심 검사 항목 모두 <strong>12시간+ 안정</strong>.<br>
+  EMIO TCP와 자이로 COM15는 전체 구간에서 무장애.
+</p>
+
+<h2>6. 이전 테스트 대비 비교</h2>
+
+<div class="compare">
+  <table>
+    <tr>
+      <th>항목</th>
+      <th>0409-10 (이전)</th>
+      <th>0414-15 (이번)</th>
+      <th>변화</th>
+    </tr>
+    <tr>
+      <td>반복 횟수</td>
+      <td>239회 / 450</td>
+      <td>241회 / 300</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>항목 OK률</td>
+      <td class="fail">31.6%</td>
+      <td class="ok">99.5%</td>
+      <td class="ok">+67.9%p</td>
+    </tr>
+    <tr>
+      <td>ALL PASS 회차</td>
+      <td class="fail">~0% (코드버그로 전멸)</td>
+      <td class="ok">95.9% (231/241)</td>
+      <td class="ok">대폭 개선</td>
+    </tr>
+    <tr>
+      <td>코드 버그 (OFFSET/TILT)</td>
+      <td class="fail">100% FAIL (4개 항목)</td>
+      <td class="ok">수정 완료 (0건)</td>
+      <td class="ok">해결</td>
+    </tr>
+    <tr>
+      <td>통신 단절</td>
+      <td class="fail">Y축 1.7h후, X축 5.3h후 &mdash; 미복구</td>
+      <td class="warn">Y축 2회 일시 단절 &mdash; 자동 복구</td>
+      <td class="ok">복구 확인</td>
+    </tr>
+    <tr>
+      <td>APPCFG SAVE</td>
+      <td class="fail">통신장애로 대량 FAIL</td>
+      <td class="warn">간헐 에러7 (9건, 3.7%)</td>
+      <td class="ok">FW 이슈만 잔존</td>
+    </tr>
+  </table>
+</div>
+
+<h2>7. 결론</h2>
+
+<div style="text-align:center;">
+  <div class="verdict verdict-pass">PASS &mdash; 양산 검사 안정성 확인</div>
+</div>
+
+<table>
+  <tr><th style="width:40px">#</th><th>구분</th><th>내용</th><th>판정</th></tr>
+  <tr>
+    <td>1</td>
+    <td>SW 검사 로직</td>
+    <td style="text-align:left">이전 코드버그(OFFSET/TILT) 모두 수정 완료. 17개 검사항목 중 11개 100% OK. 나머지 6개도 97%+ OK.</td>
+    <td class="ok">PASS</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>통신 안정성</td>
+    <td style="text-align:left">X축 통신 12시간 무장애. Y축 2회 일시 단절 있었으나 자동 복구됨. 이전 대비 대폭 개선.</td>
+    <td class="ok">PASS</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>EMIO / 자이로</td>
+    <td style="text-align:left">TCP EMIO, 자이로(COM15) 전 구간 무장애. 모터 제어 및 기준각도 측정 100% 안정.</td>
+    <td class="ok">PASS</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>APPCFG SAVE</td>
+    <td style="text-align:left">간헐적 에러7 (9건/244회 = 3.7%). FW 내부 Flash 쓰기 타이밍. 양산 시 재검사로 커버 가능.</td>
+    <td class="warn">주의</td>
+  </tr>
+</table>
+
+<h3>잔여 조치사항</h3>
+<table>
+  <tr><th>#</th><th>구분</th><th>내용</th><th>담당</th><th>우선순위</th></tr>
+  <tr>
+    <td>1</td>
+    <td><span class="tag tag-fw">FW</span></td>
+    <td style="text-align:left">APPCFG SAVE 에러7 간헐 발생 &mdash; FW Flash 쓰기 안정성 확인 요청<br>
+      양산 대응: 검사 프로그램에서 SAVE 실패 시 1회 자동 재시도 로직 추가 검토</td>
+    <td>FW / SW</td>
+    <td class="warn">MEDIUM</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><span class="tag tag-comm">통신</span></td>
+    <td style="text-align:left">Y축 일시 통신 단절 원인 확인 &mdash; USB-485 커넥터 접촉, 케이블 점검<br>
+      자동 복구되므로 양산 영향 낮음. 지그 하드웨어 점검 권장.</td>
+    <td>HW</td>
+    <td>LOW</td>
+  </tr>
+</table>
+
+<div class="footer">
+  생성일: 2026-04-15 | 버전: v0.6.0.60414 | 로그: docs/2026 0330-motion-real_jig/퇴근시 롱런/2026-0414-15 퇴근테스트/
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,244 @@
+{
+  "time": "2026-04-17T05:15:00.5408836Z",
+  "Ins": "홍길동",
+  "Proj": "VL10 보드검사 (RS-232)_TEST",
+  "project_type": "board",
+  "comm_type": "RS-232",
+  "lib": [
+    "{ff_common.dll},{1.0}",
+    "{ff_vibetilt.dll},{0.3.0.60409}",
+    "{ff_dpm.dll},{1.0}"
+  ],
+  "sn": "00001",
+  "mac": null,
+  "result": [
+    {
+      "Name": "24V 검사",
+      "id": "DPM_24V",
+      "Range": "23.280-24.720",
+      "Measure": "23.493",
+      "Unit": "V",
+      "error_rate": "3%",
+      "result": "OK"
+    },
+    {
+      "Name": "3.3V 검사",
+      "id": "DPM_3V3",
+      "Range": "2.000-3.500",
+      "Measure": "3.304",
+      "Unit": "V",
+      "error_rate": "3%",
+      "result": "OK"
+    },
+    {
+      "Name": "전류 검사",
+      "id": "DPM_CURR",
+      "Range": "-1.000-500.000",
+      "Measure": "8.380",
+      "Unit": "mA",
+      "result": "OK"
+    },
+    {
+      "Name": "통신검사 RS-232",
+      "id": "COMM_232",
+      "data": [
+        {
+          "command": "<STOP>",
+          "value": "[STOP,1]",
+          "result": "OK"
+        },
+        {
+          "command": "<MODE,0>",
+          "value": "[MODE,0,00]",
+          "result": "OK"
+        },
+        {
+          "command": "<VER>",
+          "value": "[VER,0,F/W ver.1.0.4]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "FW 버전 확인 RS-232",
+      "id": "FWVER_232",
+      "data": [
+        {
+          "command": "<VER>",
+          "value": "[VER,0,F/W ver.1.0.4]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "센서온도 RS-232",
+      "id": "SENTEMP_232",
+      "data": [
+        {
+          "item": "센서온도",
+          "value": 36.47,
+          "min": 20,
+          "max": 40,
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "Config확인 RS-232",
+      "id": "APPCFG_232",
+      "data": [
+        {
+          "item": "MODE,0",
+          "value": "[MODE,0,00]",
+          "expected": "[MODE,0,00]",
+          "result": "OK"
+        },
+        {
+          "item": "Config",
+          "value": "[APPCFG,0,00/10/1/115200]",
+          "expected": "[APPCFG,0,00/10/1/115200]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "진동검사 RS-232",
+      "id": "VIBE_232",
+      "data": [
+        {
+          "item": "진동 X(0축)",
+          "value": -0.02,
+          "min": -0.3,
+          "max": 0.3,
+          "result": "OK"
+        },
+        {
+          "item": "진동 Y(0축)",
+          "value": -0.16,
+          "min": -0.3,
+          "max": 0.3,
+          "result": "OK"
+        },
+        {
+          "item": "진동 Z(1축)",
+          "value": 0.99,
+          "min": 0.5,
+          "max": 1.5,
+          "result": "OK"
+        },
+        {
+          "item": "진동 RMS",
+          "value": 0.58,
+          "min": 0.1,
+          "max": 2,
+          "result": "OK"
+        },
+        {
+          "item": "샘플수",
+          "value": 79,
+          "result": "INFO"
+        },
+        {
+          "item": "판정시점(ms)",
+          "value": 1006,
+          "result": "INFO"
+        },
+        {
+          "item": "연속 PASS 샘플",
+          "value": 1,
+          "result": "INFO"
+        },
+        {
+          "item": "모션 감지",
+          "value": true,
+          "result": "INFO"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "기울기검사 X축 RS-232",
+      "id": "TILT_X_232",
+      "data": [
+        {
+          "item": "기울기 X",
+          "value": -5.09,
+          "_value_desc": "절대값 판정 (부호 무시, |값|이 min~max 이내면 PASS)",
+          "min": 5,
+          "max": 95,
+          "result": "OK"
+        },
+        {
+          "item": "샘플수",
+          "value": 95,
+          "result": "INFO"
+        },
+        {
+          "item": "판정시점(ms)",
+          "value": 981,
+          "result": "INFO"
+        },
+        {
+          "item": "연속 PASS 샘플",
+          "value": 1,
+          "result": "INFO"
+        },
+        {
+          "item": "모션 감지",
+          "value": true,
+          "result": "INFO"
+        },
+        {
+          "item": "변화폭(ΔX/ΔY)",
+          "value": "5.20/0.24",
+          "result": "INFO"
+        }
+      ],
+      "result": "OK"
+    },
+    {
+      "Name": "기울기검사 Y축 RS-232",
+      "id": "TILT_Y_232",
+      "data": [
+        {
+          "item": "기울기 Y",
+          "value": 5.15,
+          "_value_desc": "절대값 판정 (부호 무시, |값|이 min~max 이내면 PASS)",
+          "min": 5,
+          "max": 95,
+          "result": "OK"
+        },
+        {
+          "item": "샘플수",
+          "value": 285,
+          "result": "INFO"
+        },
+        {
+          "item": "판정시점(ms)",
+          "value": 2991,
+          "result": "INFO"
+        },
+        {
+          "item": "연속 PASS 샘플",
+          "value": 1,
+          "result": "INFO"
+        },
+        {
+          "item": "모션 감지",
+          "value": true,
+          "result": "INFO"
+        },
+        {
+          "item": "변화폭(ΔX/ΔY)",
+          "value": "13.08/4.73",
+          "result": "INFO"
+        }
+      ],
+      "result": "OK"
+    }
+  ]
+}

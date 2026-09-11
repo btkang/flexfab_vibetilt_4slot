@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>OFFSET 축별 필수 확인 결과 — 시료2 (2026-04-13)</title>
+<style>
+body { font-family: 'Malgun Gothic', sans-serif; margin: 30px; background: #f5f5f5; }
+.container { max-width: 950px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+h1 { color: #1a73e8; border-bottom: 3px solid #1a73e8; padding-bottom: 10px; font-size: 22px; }
+h2 { color: #333; font-size: 16px; margin-top: 25px; border-left: 4px solid #1a73e8; padding-left: 10px; }
+h3 { color: #555; font-size: 14px; margin-top: 15px; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+th { background: #1a73e8; color: white; padding: 8px 10px; text-align: left; }
+td { padding: 6px 10px; border-bottom: 1px solid #e0e0e0; }
+tr:hover { background: #f0f7ff; }
+.pass { color: #0d8043; font-weight: bold; }
+.fail { color: #d93025; font-weight: bold; }
+.summary { padding: 15px; border-radius: 6px; margin: 15px 0; }
+.summary-pass { background: #e8f5e9; border-left: 4px solid #4caf50; }
+.summary-fail { background: #fce4ec; border-left: 4px solid #d93025; }
+.summary-info { background: #e3f2fd; border-left: 4px solid #1a73e8; }
+.summary-warn { background: #fff3e0; border-left: 4px solid #ff9800; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+.tag-pass { background: #c8e6c9; color: #2e7d32; }
+.tag-fail { background: #ffcdd2; color: #c62828; }
+.highlight { background: #fff3e0; }
+.removed { background: #fce4ec; }
+.section-num { display: inline-block; background: #1a73e8; color: white; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold; margin-right: 6px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>OFFSET 축별 필수 확인 결과 &mdash; 시료2</h1>
+<p><strong>날짜:</strong> 2026-04-13 | <strong>FW:</strong> 2.0.2.3 | <strong>모드:</strong> single | <strong>COM:</strong> COM11</p>
+<p><strong>목적:</strong> 시료1과 동일 조건으로 2번째 개체 검증 (개체간 편차 확인)</p>
+
+<div class="summary summary-fail">
+<strong>시료2 결과: Y축 기울기 FAIL + #14 GAC X FAIL</strong><br>
+시료1보다 원시 오프셋이 크고(Y=0.78도), 진동(GAC)까지 FAIL 발생 &mdash; 개체에 따라 진동도 영향받음
+</div>
+
+<!-- 원시 오프셋 -->
+<h2><span class="section-num">1</span>원시 오프셋 (OFFSET 직전 AN 응답)</h2>
+<p>X축 결합 0도에서 <code>&lt;OFFSET,1,1&gt;</code> 직전 AN 값</p>
+<table>
+<tr><th>시료</th><th>AN X (도)</th><th>AN Y (도)</th><th>비고</th></tr>
+<tr><td>시료1</td><td>-0.20</td><td>0.53</td><td></td></tr>
+<tr class="highlight"><td><strong>시료2</strong></td><td><strong>-0.02</strong></td><td class="fail"><strong>0.78</strong></td><td>Y축 오프셋이 시료1보다 0.25도 더 큼</td></tr>
+</table>
+
+<!-- X축 기울기 -->
+<h2><span class="section-num">2</span>X축 기울기 (OFFSET 있음) &mdash; <span class="tag tag-pass">ALL PASS</span></h2>
+<table>
+<tr><th>각도</th><th>자이로</th><th>VL</th><th>오차</th><th>SPEC</th><th>결과</th></tr>
+<tr><td>-20도</td><td>-19.975</td><td>-19.960</td><td>0.015</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>-45도</td><td>-45.027</td><td>-44.990</td><td>0.037</td><td>±0.5</td><td class="pass">OK</td></tr>
+<tr><td>+20도</td><td>20.033</td><td>20.030</td><td>-0.003</td><td>±0.2</td><td class="pass">OK</td></tr>
+<tr><td>+45도</td><td>44.976</td><td>44.970</td><td>-0.006</td><td>±0.5</td><td class="pass">OK</td></tr>
+</table>
+
+<!-- Y축 기울기 -->
+<h2><span class="section-num">3</span>Y축 기울기 (OFFSET 없음) &mdash; <span class="tag tag-fail">2/4 NG</span></h2>
+<table>
+<tr><th>각도</th><th>자이로</th><th>VL</th><th>오차</th><th>SPEC</th><th>결과</th></tr>
+<tr class="removed"><td>+20도</td><td>19.984</td><td class="fail">19.340</td><td class="fail">-0.644</td><td>±0.2</td><td class="fail">NG</td></tr>
+<tr><td>+45도</td><td>45.033</td><td>44.590</td><td>-0.443</td><td>±0.5</td><td class="pass">OK</td></tr>
+<tr class="removed"><td>-20도</td><td>-20.033</td><td class="fail">-20.690</td><td class="fail">-0.657</td><td>±0.2</td><td class="fail">NG</td></tr>
+<tr><td>-45도</td><td>-44.966</td><td>-45.450</td><td>-0.484</td><td>±0.5</td><td class="pass">OK</td></tr>
+</table>
+<div class="summary summary-fail">
+±20도 NG (오차 0.64~0.66도), ±45도는 아슬아슬 OK (오차 0.44~0.48도, SPEC ±0.5).<br>
+시료1(4/4 NG)보다 45도에서 살짝 나았지만, ±20도는 여전히 확실한 NG.
+</div>
+
+<!-- 진동 -->
+<h2><span class="section-num">4</span>진동(GAC) 측정 &mdash; <span class="tag tag-fail">#14 FAIL</span></h2>
+<table>
+<tr><th>항목</th><th>측정값</th><th>SPEC</th><th>결과</th><th>비고</th></tr>
+<tr><td>#7 GAC Y (90도)</td><td class="pass">1.0000</td><td>0.99~1.01</td><td class="pass">OK</td><td>X축 결합</td></tr>
+<tr><td>#12 GAC Z (0도)</td><td class="pass">1.0000</td><td>0.99~1.01</td><td class="pass">OK</td><td>Y축 결합</td></tr>
+<tr class="removed"><td>#14 GAC X (-90도)</td><td class="fail">1.0200</td><td>0.99~1.01</td><td class="fail">FAIL</td><td>Y축 결합, 14회 시도 중 OK 2회뿐</td></tr>
+</table>
+<div class="summary summary-fail">
+<strong>시료2에서 #14 GAC X FAIL!</strong> GAC X가 지속적으로 1.02 (SPEC 상한 1.01 초과).<br>
+시료1은 1.01로 OK였지만, 시료2는 원시 오프셋이 커서 GAC까지 영향받음.<br>
+<strong>진동(GAC)도 개체에 따라 OFFSET 없으면 FAIL 가능 &mdash; 시료1 결론 수정 필요</strong>
+</div>
+
+<!-- 시료 비교 -->
+<h2><span class="section-num">5</span>시료1 vs 시료2 비교</h2>
+<table>
+<tr><th>항목</th><th>시료1</th><th>시료2</th><th>비고</th></tr>
+<tr><td>원시 오프셋 X</td><td>-0.20도</td><td>-0.02도</td><td></td></tr>
+<tr><td>원시 오프셋 Y</td><td>0.53도</td><td class="fail">0.78도</td><td>시료2가 0.25도 더 큼</td></tr>
+<tr><td>X축 기울기 (OFFSET 있음)</td><td class="pass">ALL PASS</td><td class="pass">ALL PASS</td><td></td></tr>
+<tr><td>Y축 +20도 오차</td><td class="fail">-0.750</td><td class="fail">-0.644</td><td>둘 다 NG</td></tr>
+<tr><td>Y축 +45도 오차</td><td class="fail">-0.599</td><td>-0.443</td><td>시료1 NG, 시료2 아슬OK</td></tr>
+<tr><td>Y축 -20도 오차</td><td class="fail">-0.774</td><td class="fail">-0.657</td><td>둘 다 NG</td></tr>
+<tr><td>Y축 -45도 오차</td><td class="fail">-0.597</td><td>-0.484</td><td>시료1 NG, 시료2 아슬OK</td></tr>
+<tr><td>#7 GAC Y</td><td class="pass">1.00 OK</td><td class="pass">1.00 OK</td><td></td></tr>
+<tr><td>#12 GAC Z</td><td class="pass">1.00 OK</td><td class="pass">1.00 OK</td><td></td></tr>
+<tr><td>#14 GAC X</td><td class="pass">1.01 OK</td><td class="fail">1.02 FAIL</td><td>개체 차이로 FAIL</td></tr>
+</table>
+
+<!-- 재테스트 -->
+<h2><span class="section-num">6</span>시료2 재테스트 (12:43) &mdash; 오차 증가 확인</h2>
+<p>동일 시료2를 사양서대로 다시 측정. 원시 오프셋 변화 + 오차 악화</p>
+<table>
+<tr><th>항목</th><th>1차 (11:17)</th><th>재테스트 (12:43)</th><th>변화</th></tr>
+<tr><td>원시 오프셋 X</td><td>-0.02</td><td>0.10</td><td></td></tr>
+<tr><td>원시 오프셋 Y</td><td>0.78</td><td class="fail">0.92</td><td>+0.14 증가</td></tr>
+<tr><td>Y +20도 오차</td><td class="fail">-0.644</td><td class="fail">-0.767</td><td>악화</td></tr>
+<tr class="removed"><td>Y +45도 오차</td><td>-0.443 (OK)</td><td class="fail">-0.548 (NG)</td><td>OK→NG</td></tr>
+<tr><td>Y -20도 오차</td><td class="fail">-0.657</td><td class="fail">-0.788</td><td>악화</td></tr>
+<tr class="removed"><td>Y -45도 오차</td><td>-0.484 (OK)</td><td class="fail">-0.548 (NG)</td><td>OK→NG</td></tr>
+<tr><td>#14 GAC X</td><td class="fail">1.02 FAIL</td><td class="fail">1.02 FAIL</td><td>동일</td></tr>
+</table>
+<div class="summary summary-fail">
+<strong>재테스트에서 오차 증가:</strong> ±45도도 OK→NG, 4각도 전부 NG.<br>
+원시 오프셋이 0.78→0.92로 변동 &mdash; OFFSET 없이 반복 사용 시 오프셋이 누적/변동될 수 있음.<br>
+<strong>동일 개체도 테스트 시점에 따라 결과가 달라짐 → OFFSET 없이는 품질 재현성 없음.</strong>
+</div>
+
+<!-- 결론 -->
+<h2>시료2 추가 결론</h2>
+<div class="summary summary-fail">
+<strong>1. Y축 기울기 FAIL 재확인</strong> &mdash; 시료2도 ±20도 확실 NG, OFFSET 필수 확정<br><br>
+<strong>2. 진동(GAC)도 개체에 따라 FAIL</strong> &mdash; 시료1은 OK였지만 시료2는 #14 GAC X FAIL<br>
+&nbsp;&nbsp;&bull; 원시 오프셋이 큰 개체(Y=0.78도)에서는 GAC도 SPEC 초과<br>
+&nbsp;&nbsp;&bull; <strong>"진동은 OFFSET 무관"이라는 시료1 결론은 모든 개체에 해당하지 않음</strong><br><br>
+<strong>3. 개체간 편차 큼</strong> &mdash; 원시 오프셋이 시료1=0.53도, 시료2=0.78~0.92도<br>
+&nbsp;&nbsp;&bull; OFFSET 없이 양산하면 일부만 PASS, 일부 FAIL → 품질 보장 불가<br><br>
+<strong>4. 동일 개체도 재테스트 시 오차 변동</strong> &mdash; 시료2 원시 오프셋 0.78→0.92, ±45도 OK→NG<br>
+&nbsp;&nbsp;&bull; OFFSET 없이는 품질 재현성 없음<br><br>
+<strong>5. 최종 권장:</strong> 현행 유지 (X/Y 축별 OFFSET + APPCFG SAVE 필수)
+</div>
+
+<p style="color: #666; font-size: 12px; margin-top: 30px;">
+테스트 워크스페이스: workspace_motion_485_test.json (Y축 OFFSET 제거, fail_continue: true)<br>
+시료1 보고서: TEST_OFFSET_축별필수_확인결과_시료1_20260413.html<br>
+보고서 생성: 2026-04-13 11:20 | 생성: Claude Opus 4.6
+</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{
+  "time": "2026-04-23T04:37:15.9242442Z",
+  "Ins": "홍길동",
+  "Proj": "VL20 보드검사 (RS-485)_TEST",
+  "project_type": "board",
+  "comm_type": "RS-485",
+  "lib": [
+    "{ff_common.dll},{1.0}",
+    "{ff_vibetilt.dll},{0.3.0.60409}",
+    "{ff_dpm.dll},{1.0}"
+  ],
+  "sn": "00003",
+  "mac": null,
+  "result": [
+    {
+      "Name": "24V 검사",
+      "id": "DPM_24V",
+      "Range": "22.420-24.780",
+      "Measure": "23.611",
+      "Unit": "V",
+      "error_rate": "사양서 기반",
+      "result": "OK"
+    },
+    {
+      "Name": "3.3V 검사",
+      "id": "DPM_3V3",
+      "Range": "3.130-3.460",
+      "Measure": "3.317",
+      "Unit": "V",
+      "error_rate": "사양서 기반",
+      "result": "OK"
+    },
+    {
+      "Name": "전류 검사",
+      "id": "DPM_CURR",
+      "Range": "2.000-9.000",
+      "Measure": "3.720",
+      "Unit": "mA",
+      "error_rate": "사양서 기반",
+      "result": "OK"
+    }
+  ]
+}

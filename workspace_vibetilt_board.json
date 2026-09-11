@@ -1,0 +1,90 @@
+{
+  "libraries": [
+    {
+      "filename": "ff_common.dll",
+      "classname": "Cantops.FlexFab.Uart",
+      "id": "uart_232",
+      "config": {
+        "port": "COM3",
+        "baudrate": 115200,
+        "databits": 8,
+        "parity": "None",
+        "stopbits": "One"
+      }
+    },
+    {
+      "filename": "ff_vibetilt.dll",
+      "classname": "Cantops.FlexFab.VibeTilt",
+      "id": "vibetilt",
+      "config": {
+        "uart_232": "uart_232"
+      }
+    }
+  ],
+  "projects": [
+    {
+      "id": "prj-board-232",
+      "name": "VL10 보드레벨 검사 (RS-232)",
+      "library_depencency": [ "uart_232", "vibetilt" ],
+      "procs": [
+        {
+          "libid": "vibetilt",
+          "id": "VER_232",
+          "name": "버전 통신검사",
+          "param": {
+            "TIMEOUT": 5000
+          }
+        },
+        {
+          "libid": "vibetilt",
+          "id": "SENTEMP_232",
+          "name": "센서온도",
+          "param": {
+            "TIMEOUT": 5000,
+            "min": 20,
+            "max": 40
+          }
+        },
+        {
+          "libid": "vibetilt",
+          "id": "APPCFG_232",
+          "name": "Config확인",
+          "param": {
+            "TIMEOUT": 5000,
+            "expected": "00/10/1/115200"
+          }
+        },
+        {
+          "libid": "vibetilt",
+          "id": "VIBE_232",
+          "name": "진동검사",
+          "param": {
+            "TIMEOUT": 5000,
+            "DURATION": 3000,
+            "one_min": 0.9,
+            "one_max": 1.1,
+            "zero_min": -0.1,
+            "zero_max": 0.1,
+            "rms_min": 0.5,
+            "rms_max": 0.65
+          }
+        },
+        {
+          "libid": "vibetilt",
+          "id": "TILT_232",
+          "name": "기울기검사",
+          "param": {
+            "TIMEOUT": 5000,
+            "DURATION": 3000,
+            "x_min": 85,
+            "x_max": 90,
+            "y_min": -90,
+            "y_max": -85,
+            "tilt_baud": 460800,
+            "normal_baud": 115200
+          }
+        }
+      ]
+    }
+  ]
+}

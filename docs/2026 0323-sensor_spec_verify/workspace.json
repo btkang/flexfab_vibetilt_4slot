@@ -1,0 +1,330 @@
+{
+    "log_level":  "MP_LOG",
+    "libraries":  [
+                      {
+                          "filename":  "ff_common.dll",
+                          "classname":  "Cantops.FlexFab.Uart",
+                          "id":  "uart_485",
+                          "config":  {
+                                         "port":  "COM11",
+                                         "baudrate":  115200,
+                                         "databits":  8,
+                                         "parity":  "None",
+                                         "stopbits":  "One"
+                                     }
+                      },
+                      {
+                          "filename":  "ff_common.dll",
+                          "classname":  "Cantops.FlexFab.Uart",
+                          "id":  "uart_dpm",
+                          "config":  {
+                                         "port":  "COM12",
+                                         "baudrate":  57600,
+                                         "databits":  8,
+                                         "parity":  "None",
+                                         "stopbits":  "One"
+                                     }
+                      },
+                      {
+                          "filename":  "ff_common.dll",
+                          "classname":  "Cantops.FlexFab.Ctsp",
+                          "id":  "ctsp",
+                          "config":  {
+                                         "commlib":  "uart_485"
+                                     }
+                      },
+                      {
+                          "filename":  "ff_vibetilt.dll",
+                          "classname":  "Cantops.FlexFab.VibeTilt",
+                          "id":  "vibetilt",
+                          "config":  {
+                                         "uart_485":  "uart_485",
+                                         "dpm":  "dpm"
+                                     }
+                      },
+                      {
+                          "filename":  "ff_dpm.dll",
+                          "classname":  "Cantops.FlexFab.Dpm",
+                          "id":  "dpm",
+                          "config":  {
+                                         "uart":  "uart_dpm"
+                                     }
+                      }
+                  ],
+    "projects":  [
+                     {
+                         "id":  "prj-vl20-rs485",
+                         "name":  "VL20 검사 (RS-485)",
+                         "library_depencency":  [
+                                                    "uart_485",
+                                                    "vibetilt",
+                                                    "ctsp",
+                                                    "uart_dpm",
+                                                    "dpm"
+                                                ],
+                         "procs":  [
+                                       {
+                                           "libid":  "vibetilt",
+                                           "id":  "DPM_24V",
+                                           "name":  "24V 검사",
+                                           "dpmport":  "uart_dpm",
+                                           "param":  {
+                                                         "test_count":  1,
+                                                         "delay":  500,
+                                                         "tests":  [
+                                                                       {
+                                                                           "id":  "id41",
+                                                                           "error_rate":  "3%",
+                                                                           "min":  "23.28",
+                                                                           "max":  "24.72"
+                                                                       }
+                                                                   ]
+                                                     }
+                                       },
+                                       {
+                                           "libid":  "vibetilt",
+                                           "id":  "DPM_3V3",
+                                           "name":  "3.3V 검사",
+                                           "dpmport":  "uart_dpm",
+                                           "param":  {
+                                                         "test_count":  1,
+                                                         "delay":  500,
+                                                         "tests":  [
+                                                                       {
+                                                                           "id":  "id43",
+                                                                           "error_rate":  "3%",
+                                                                           "min":  "2.0",
+                                                                           "max":  "3.5"
+                                                                       }
+                                                                   ]
+                                                     }
+                                       },
+                                       {
+                                           "libid":  "vibetilt",
+                                           "id":  "DPM_CURR",
+                                           "name":  "전류 검사",
+                                           "dpmport":  "uart_dpm",
+                                           "param":  {
+                                                         "test_count":  1,
+                                                         "delay":  500,
+                                                         "tests":  [
+                                                                       {
+                                                                           "id":  "id09",
+                                                                           "min":  "-0.001",
+                                                                           "max":  "0.5"
+                                                                       }
+                                                                   ]
+                                                     }
+                                       },
+                                       {
+                                           "libid":  "vibetilt",
+                                           "id":  "VER_485",
+                                           "name":  "버전 통신검사 RS-485",
+                                           "param":  {
+                                                         "TIMEOUT":  5000,
+                                                         "tests":  [
+                                                                       {
+                                                                           "command":  "\u003cVER,1\u003e",
+                                                                           "expected_response":  "VER"
+                                                                       }
+                                                                   ]
+                                                     }
+                                       },
+                                       {
+                                           "libid":  "vibetilt",
+                                           "id":  "SENTEMP_485",
+                                           "name":  "센서온도 RS-485",
+                                           "param":  {
+                                                         "TIMEOUT":  5000,
+                                                         "min":  20,
+                                                         "max":  40,
+                                                         "tests":  [
+                                                                       {
+                                                                           "command":  "\u003cSENTEMP,1\u003e"
+                                                                       }
+                                                                   ]
+                                                     }
+                                       },
+                                       {
+                                           "libid":  "vibetilt",
+                                           "id":  "APPCFG_485",
+                                           "name":  "Config확인 RS-485",
+                                           "param":  {
+                                                         "TIMEOUT":  5000,
+                                                         "tests":  [
+                                                                       {
+                                                                           "command":  "\u003cMODE,1,0\u003e",
+                                                                           "expected_response":  "[MODE,0,1,00]"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cATIM,1,10\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cSAM,1,10\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cAPPCFG,1\u003e",
+                                                                           "expected_response":  "[APPCFG,0,1/00/10/10/1/115200]"
+                                                                       }
+                                                                   ]
+                                                     }
+                                       },
+                                       {
+                                           "libid":  "vibetilt",
+                                           "id":  "VIBE_485",
+                                           "name":  "진동검사 RS-485",
+                                           "param":  {
+                                                         "TIMEOUT":  10000,
+                                                         "DURATION":  3000,
+                                                         "line_ending":  "lf",
+                                                         "_comment":  "보드레벨 완화 스펙 | 양산: 1축 0.9~1.1, 0축 -0.1~0.1, RMS 0.5~0.65 | 센서 동작 여부 확인 목적",
+                                                         "require_motion":  true,
+                                                         "motion_threshold":  0.05,
+                                                         "_motion_comment":  "모션 감지 threshold. 0축 값이 0.05 초과하면 움직임 감지. zero 범위와 독립",
+                                                         "one_min":  0.5,
+                                                         "one_max":  1.5,
+                                                         "zero_min":  -0.3,
+                                                         "zero_max":  0.3,
+                                                         "rms_min":  0.1,
+                                                         "rms_max":  2.0,
+                                                         "_rms_comment":  "완화값(0.1~2.0): RMS 완전 불량(0 반환) 감지 목적. 모션검사 정상범위 0.5~0.65 대비 완화",
+                                                         "sampling_ms":  10,
+                                                         "sample_log_interval_ms":  500,
+                                                         "pass_consecutive_count":  1,
+                                                         "operator_prompt":  "지그를 앞으로 기울이고 돌아오세요.\n진동 센서 동작 여부를 확인합니다.",
+                                                         "tests":  [
+                                                                       {
+                                                                           "command":  "\u003cMODE,1,0\u003e"
+                                                                       },
+                                                                       {
+                                                                           "_comment":  "폴링 모드: 자동전송 비활성화",
+                                                                           "command":  "\u003cATIM,1,0\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cSAM,1,10\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cMODE,1,2\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cSTART,1\u003e"
+                                                                       },
+                                                                       {
+                                                                           "_comment":  "GAC 폴링 마커: while 루프에서 매 회 <GAC,1> 송신",
+                                                                           "command":  "\u003cGAC,1\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cSTOP,1\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cMODE,1,0\u003e"
+                                                                       }
+                                                                   ]
+                                                     }
+                                       },
+                                       {
+                                           "libid":  "vibetilt",
+                                           "id":  "TILT_X_485",
+                                           "name":  "기울기검사 X축 RS-485",
+                                           "param":  {
+                                                         "TIMEOUT":  10000,
+                                                         "DURATION":  3000,
+                                                         "line_ending":  "lf",
+                                                         "_comment":  "2026-03-24 X축 기울기 범위 검사 | 앞으로 기울여 70~95도 확인 | 한축 고장 감지 목적",
+                                                         "alive_check":  false,
+                                                         "check_axis":  "x",
+                                                         "x_min":  5.0,
+                                                         "x_max":  95.0,
+                                                         "sampling_ms":  10,
+                                                         "sample_log_interval_ms":  500,
+                                                         "tilt_baud":  115200,
+                                                         "normal_baud":  115200,
+                                                         "pass_consecutive_count":  1,
+                                                         "operator_prompt":  "좌우로 기울이세요.\nX축 기울기를 확인합니다.",
+                                                         "tests":  [
+                                                                       {
+                                                                           "_comment":  "VIBE 종료 후 잔류 스트림 차단용",
+                                                                           "command":  "\u003cATIM,1,0\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cSTOP,1\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cSAM,1,10\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cMODE,1,6\u003e",
+                                                                           "expected_response":  "[MODE,0,1,06]"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cSTART,1\u003e"
+                                                                       },
+                                                                       {
+                                                                           "_comment":  "AN 폴링 마커",
+                                                                           "command":  "\u003cAN,1\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cSTOP,1\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cMODE,1,0\u003e"
+                                                                       }
+                                                                   ]
+                                                     }
+                                       },
+                                       {
+                                           "libid":  "vibetilt",
+                                           "id":  "TILT_Y_485",
+                                           "name":  "기울기검사 Y축 RS-485",
+                                           "param":  {
+                                                         "TIMEOUT":  10000,
+                                                         "DURATION":  3000,
+                                                         "line_ending":  "lf",
+                                                         "_comment":  "2026-03-24 Y축 기울기 범위 검사 | 오른쪽으로 기울여 -95~-70도 확인 | 한축 고장 감지 목적",
+                                                         "alive_check":  false,
+                                                         "check_axis":  "y",
+                                                         "y_min":  5.0,
+                                                         "y_max":  95.0,
+                                                         "sampling_ms":  10,
+                                                         "sample_log_interval_ms":  500,
+                                                         "tilt_baud":  115200,
+                                                         "normal_baud":  115200,
+                                                         "pass_consecutive_count":  1,
+                                                         "operator_prompt":  "앞뒤로 기울이세요.\nY축 기울기를 확인합니다.",
+                                                         "tests":  [
+                                                                       {
+                                                                           "_comment":  "VIBE 종료 후 잔류 스트림 차단용",
+                                                                           "command":  "\u003cATIM,1,0\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cSTOP,1\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cSAM,1,10\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cMODE,1,6\u003e",
+                                                                           "expected_response":  "[MODE,0,1,06]"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cSTART,1\u003e"
+                                                                       },
+                                                                       {
+                                                                           "_comment":  "AN 폴링 마커",
+                                                                           "command":  "\u003cAN,1\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cSTOP,1\u003e"
+                                                                       },
+                                                                       {
+                                                                           "command":  "\u003cMODE,1,0\u003e"
+                                                                       }
+                                                                   ]
+                                                     }
+                                       }
+                                   ]
+                     }
+                 ],
+    "mongodb_uri":  "mongodb://192.168.10.10:45029/?serverSelectionTimeoutMS=4000&connectTimeoutMS=4000&socketTimeoutMS=4000&directConnection=true",
+    "active_project":  "prj-vl20-rs485"
+}

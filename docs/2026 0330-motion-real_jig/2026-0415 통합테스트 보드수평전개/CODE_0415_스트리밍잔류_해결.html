@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>스트리밍 잔류 문제 원인 및 해결 — 2026-04-15</title>
+<style>
+body{font-family:'Malgun Gothic',sans-serif;max-width:1100px;margin:20px auto;padding:20px;background:#f5f5f5}
+h1{color:#1a237e;border-bottom:3px solid #1a237e;padding-bottom:10px}
+h2{color:#283593;margin-top:30px}
+h3{color:#37474f;margin-top:20px}
+table{border-collapse:collapse;width:100%;margin:10px 0}
+th,td{border:1px solid #ccc;padding:8px 12px;text-align:left}
+th{background:#e8eaf6;font-weight:bold;text-align:center}
+.section{background:#fff;padding:20px;border-radius:8px;margin:15px 0;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.fail{background:#ffebee;border-left:4px solid #c62828;padding:12px;margin:10px 0;border-radius:4px}
+.fix{background:#e8f5e9;border-left:4px solid #2e7d32;padding:12px;margin:10px 0;border-radius:4px}
+.warn{background:#fff3e0;border-left:4px solid #ff9800;padding:12px;margin:10px 0;border-radius:4px}
+code{background:#eceff1;padding:2px 6px;border-radius:3px;font-size:13px}
+pre{background:#263238;color:#eeffff;padding:15px;border-radius:6px;overflow-x:auto;font-size:13px;line-height:1.5}
+.commit{font-family:monospace;background:#eceff1;padding:2px 6px;border-radius:3px;font-size:13px}
+.pass{color:#2e7d32;font-weight:bold}
+.fail-text{color:#c62828;font-weight:bold}
+.arrow{color:#1565c0;font-weight:bold}
+</style>
+</head>
+<body>
+
+<h1>스트리밍 잔류 문제 원인 및 해결</h1>
+<p><strong>날짜:</strong> 2026-04-15 | <strong>버전:</strong> v0.6.2.60415 | <strong>커밋:</strong> <span class="commit">f5fcc4c</span></p>
+
+<!-- ───────────────── 문제 요약 ───────────────── -->
+<div class="section">
+<h2>문제 요약</h2>
+<p>보드 검사(485)에서 VIBE→TILT 전환 시, 또는 이전 세션의 스트리밍이 남아있을 때 <span class="fail-text">COMM/TILT FAIL</span> 발생.</p>
+<p>근본 원인: FW 스트리밍(GAC/AN) 데이터가 STOP 후에도 잔류하여, 후속 명령(MODE, VER)의 응답을 오염시킴.</p>
+
+<table>
+<tr><th>발생 시점</th><th>현상</th><th>빈도</th></tr>
+<tr><td>VIBE → TILT 전환</td><td>GAC 잔류 → MODE,6 실패 → AN 대신 GAC 수신 → TILT FAIL</td><td>간헐 (타이밍 의존)</td></tr>
+<tr><td>이전 세션 잔류</td><td>AN 스트리밍 잔류 → COMM의 VER 응답 오염 → COMM FAIL</td><td>이전 테스트가 비정상 종료 시</td></tr>
+<tr><td>연속 테스트 2회차</td><td>STOP RV=1 (이미 정지) → VER_Internal이 에러 처리 → COMM FAIL</td><td>매번 (정상 상태에서도)</td></tr>
+</table>
+</div>
+
+<!-- ───────────────── 문제 1: TILT 전환 실패 ───────────────── -->
+<div class="section">
+<h2>문제 1: VIBE→TILT 전환 시 GAC 잔류</h2>
+
+<h3>증상</h3>
+<div class="fail">
+<pre>
+TX: &lt;MODE,1,6&gt;
+RX: ...GAC...[MODE,1,1,02]...GAC...   ← MODE 변경 실패! RV=1, 여전히 MODE 02
+TX: &lt;START,1&gt;
+RX: ...GAC...GAC...[START,2,1]...GAC   ← START도 실패, GAC 계속 수신
+→ [TILT] 기울기 데이터 수집 실패 → FAIL
+</pre>
+</div>
+
+<h3>원인</h3>
+<p>VIBE finally 블록에서 STOP + 버퍼 클리어 + MODE,0을 했지만, GAC 스트리밍이 완전히 배출되기 전에 TILT가 시작됨. TILT의 <code>STOP → MODE,6</code> 사이에 MODE,0이 없어서 스트리밍 모드(02)가 유지됨.</p>
+
+<h3>수정 전/후</h3>
+<table>
+<tr><th>항목</th><th>수정 전</th><th>수정 후</th></tr>
+<tr>
+<td><strong>TILT tests</strong></td>
+<td><code>STOP → MODE,6 → START</code></td>
+<td><code>STOP → MODE,0 → sleep 200ms → MODE,6 → START</code></td>
+</tr>
+</table>
+
+<div class="fix">
+<strong>JSON 수정 (TILT_X, TILT_Y):</strong>
+<pre>
+"tests": [
+  {"_comment": "스트리밍 잔류 방지: STOP → MODE,0 → sleep 후 MODE,6"},
+  {"command": "&lt;STOP,1&gt;"},         // 활성 스트리밍 정지
+  {"command": "&lt;MODE,1,0&gt;"},       // MODE 0으로 초기화
+  {"sleep": 200},                     // 버퍼 배출 대기
+  {"command": "&lt;MODE,1,6&gt;", "expected_response": "[MODE,0,1,06]"},
+  {"command": "&lt;START,1&gt;"},
+  {"command": "&lt;STOP,1&gt;"},
+  {"command": "&lt;MODE,1,0&gt;"}
+]
+</pre>
+</div>
+</div>
+
+<!-- ───────────────── 문제 2: 이전 세션 잔류 ───────────────── -->
+<div class="section">
+<h2>문제 2: 이전 세션 스트리밍 잔류 → COMM FAIL</h2>
+
+<h3>증상</h3>
+<div class="fail">
+<pre>
+TX: &lt;MODE,1,0&gt;
+RX: [AN,1,-0.77,0.60][AN,1,-0.77,0.60]...   ← 이전 세션의 TILT AN 잔류
+    [VER] MODE RV 오류: 1 (패킷 수신 불가 상태)
+TX: &lt;VER,1&gt;
+RX: ...AN...[VER,0,1,F/W ver.2.0.2]...AN...  ← VER 응답이 AN에 묻힘
+    [VER] 응답 명령 불일치: [AN,1,-0.77,0.60] → FAIL
+</pre>
+</div>
+
+<h3>원인</h3>
+<p>이전 테스트가 비정상 종료(FAIL, 취소 등)되면 보드가 스트리밍 상태로 남음. 다음 세션의 COMM이 <code>MODE,0</code>만 보내면, 활성 스트리밍 중에는 MODE 변경이 안 됨 (STOP을 먼저 해야 함).</p>
+
+<h3>수정 전/후</h3>
+<table>
+<tr><th>항목</th><th>수정 전</th><th>수정 후</th></tr>
+<tr>
+<td><strong>COMM tests (485)</strong></td>
+<td><code>MODE,0 → sleep 100 → VER</code></td>
+<td><code>STOP → MODE,0 → sleep 200 → VER</code></td>
+</tr>
+<tr>
+<td><strong>COMM tests (232 MP)</strong></td>
+<td><code>VER</code> (보호 없음)</td>
+<td><code>STOP → MODE,0 → sleep 200 → VER</code></td>
+</tr>
+</table>
+
+<div class="fix">
+<strong>JSON 수정 (COMM):</strong>
+<pre>
+"tests": [
+  {"_comment": "스트리밍 잔류 방지: STOP → MODE,0 → sleep 후 VER"},
+  {"command": "&lt;STOP,1&gt;"},         // 활성 스트리밍 정지
+  {"command": "&lt;MODE,1,0&gt;"},       // MODE 0으로 초기화
+  {"sleep": 200},                     // 버퍼 배출 대기
+  {"command": "&lt;VER,1&gt;", "expected_response": "VER"}
+]
+</pre>
+</div>
+</div>
+
+<!-- ───────────────── 문제 3: STOP RV=1 ───────────────── -->
+<div class="section">
+<h2>문제 3: STOP RV=1 → COMM FAIL (이미 정지 상태)</h2>
+
+<h3>증상</h3>
+<div class="fail">
+<pre>
+TX: &lt;STOP,1&gt;
+RX: [STOP,1,1]                        ← RV=1: 이미 정지 상태
+    [VER] STOP RV 오류: 1 (패킷 수신 불가 상태) → FAIL
+TX: &lt;VER,1&gt;
+RX: [VER,0,1,F/W ver.2.0.2]          ← VER은 정상인데 이미 FAIL 처리됨
+</pre>
+</div>
+
+<h3>원인</h3>
+<p>COMM tests에 STOP을 추가했지만, 보드가 이미 정지 상태면 <code>[STOP,1,1]</code> (RV=1)을 반환. VER_Internal이 모든 RV!=0을 에러로 처리하여 FAIL 발생.</p>
+<p>STOP의 RV=1은 "이미 정지" 상태로 <strong>정상</strong>임. 에러가 아님.</p>
+
+<h3>코드 수정</h3>
+<div class="fix">
+<strong>VibeTilt.cs — VER_Internal:</strong>
+<pre>
+// 수정 전
+if (!TryGetRvCode(mergedLast, out int rv) || rv != 0)
+{
+    logAction($"[VER] {commandToken} RV 오류: {rv} ({GetRvDescription(rv)})");
+    ok = false;
+    stepOk = false;
+}
+
+// 수정 후
+if (!TryGetRvCode(mergedLast, out int rv) || rv != 0)
+{
+    bool isStopRv1 = commandToken.StartsWith("STOP") && rv == 1;
+    if (isStopRv1)
+    {
+        logAction($"[VER] {commandToken} RV=1 (이미 정지 상태, 무시)");
+        // ok, stepOk 변경 안 함 → PASS 유지
+    }
+    else
+    {
+        logAction($"[VER] {commandToken} RV 오류: {rv} ({GetRvDescription(rv)})");
+        ok = false;
+        stepOk = false;
+    }
+}
+</pre>
+</div>
+</div>
+
+<!-- ───────────────── 최종 패턴 정리 ───────────────── -->
+<div class="section">
+<h2>최종 패턴 정리</h2>
+<p>모든 보드 검사 항목의 tests 시작 패턴:</p>
+
+<table>
+<tr><th>검사 항목</th><th>시작 패턴</th><th>목적</th></tr>
+<tr><td><strong>COMM</strong></td><td><code>STOP → MODE,0 → sleep 200 → VER</code></td><td>이전 세션 잔류 방지</td></tr>
+<tr><td><strong>VIBE</strong></td><td><code>MODE,0 → MODE,2 → START</code></td><td>MODE 초기화 후 진동모드</td></tr>
+<tr><td><strong>TILT_X</strong></td><td><code>STOP → MODE,0 → sleep 200 → MODE,6 → START</code></td><td>VIBE 잔류 방지</td></tr>
+<tr><td><strong>TILT_Y</strong></td><td><code>STOP → MODE,0 → sleep 200 → MODE,6 → START</code></td><td>TILT_X 잔류 방지</td></tr>
+</table>
+
+<div class="warn">
+<strong>핵심 원칙:</strong> 스트리밍 모드 전환 전에는 반드시 <code>STOP → MODE,0 → sleep</code> 3단계를 거친다.
+<br>STOP만으로는 부족 (버퍼 잔류), MODE,0만으로는 부족 (활성 스트리밍 중 MODE 변경 불가).
+</div>
+</div>
+
+<!-- ───────────────── 검증 결과 ───────────────── -->
+<div class="section">
+<h2>검증 결과</h2>
+
+<h3>Debug 환경 (3회 연속)</h3>
+<table>
+<tr><th>회차</th><th>COMM</th><th>VIBE</th><th>TILT_X</th><th>TILT_Y</th><th>결과</th></tr>
+<tr><td>1</td><td class="pass">OK</td><td class="pass">OK</td><td class="pass">OK</td><td class="pass">OK</td><td class="pass">ALL PASS</td></tr>
+<tr><td>2</td><td class="pass">OK (STOP RV=1 무시)</td><td class="pass">OK</td><td class="pass">OK</td><td class="pass">OK</td><td class="pass">ALL PASS</td></tr>
+<tr><td>3</td><td class="pass">OK (STOP RV=1 무시)</td><td class="pass">OK</td><td class="pass">OK</td><td class="pass">OK</td><td class="pass">ALL PASS</td></tr>
+</table>
+
+<h3>Release 배포 폴더 (2회 연속)</h3>
+<table>
+<tr><th>회차</th><th>COMM</th><th>VIBE</th><th>TILT_X</th><th>TILT_Y</th><th>결과</th></tr>
+<tr><td>1</td><td class="pass">OK (STOP RV=1 무시)</td><td class="pass">OK</td><td class="pass">OK</td><td class="pass">OK</td><td class="pass">ALL PASS</td></tr>
+<tr><td>2</td><td class="pass">OK (STOP RV=1 무시)</td><td class="pass">OK</td><td class="pass">OK</td><td class="pass">OK</td><td class="pass">ALL PASS</td></tr>
+</table>
+
+<p>STOP RV=1 로그: <code>[VER] STOP RV=1 (이미 정지 상태, 무시)</code> → 정상 동작 확인</p>
+</div>
+
+<!-- ───────────────── 수정 파일 ───────────────── -->
+<div class="section">
+<h2>수정 파일</h2>
+<table>
+<tr><th>파일</th><th>변경 내용</th></tr>
+<tr><td><code>ff_vibetilt/VibeTilt.cs</code></td><td>VER_Internal: STOP RV=1 무시 로직 추가</td></tr>
+<tr><td><code>workspace_board_232_MP.json</code></td><td>COMM: STOP+MODE,0+sleep 추가 / TILT: STOP+MODE,0+sleep 추가</td></tr>
+<tr><td><code>workspace_board_232_TEST.json</code></td><td>COMM: sleep 200 통일 / TILT: STOP+MODE,0+sleep 추가</td></tr>
+<tr><td><code>workspace_board_485_MP.json</code></td><td>COMM: STOP+MODE,0+sleep 추가 / TILT: STOP+MODE,0+sleep 추가</td></tr>
+<tr><td><code>workspace_board_485_TEST.json</code></td><td>COMM: STOP 추가+sleep 200 / TILT: STOP+MODE,0+sleep 추가</td></tr>
+</table>
+<p><strong>커밋:</strong> <span class="commit">f5fcc4c</span> — COMM/TILT 스트리밍 잔류 방지: STOP→MODE,0→sleep 통일 + STOP RV=1 무시</p>
+</div>
+
+</body>
+</html>

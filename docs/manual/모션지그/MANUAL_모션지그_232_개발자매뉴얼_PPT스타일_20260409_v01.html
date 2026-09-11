@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>개발자 매뉴얼 v03 - 모션지그 232 (PPT 캡처 중심)</title>
+<style>
+  body { font-family: 'Malgun Gothic', sans-serif; margin: 20px; background: #fff; color: #333; max-width: 960px; }
+  .slide { border: 2px solid #2c3e50; border-radius: 8px; padding: 20px 25px; margin: 30px 0; page-break-inside: avoid; position: relative; }
+  .slide-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e67e22; padding-bottom: 8px; margin-bottom: 12px; }
+  .slide-section { font-size: 13px; color: #e67e22; }
+  .slide-title { font-size: 20px; font-weight: bold; color: #2c3e50; }
+  .slide-page { position: absolute; right: 25px; bottom: 10px; font-size: 12px; color: #aaa; }
+  .photo-large { background: #ecf0f1; border: 2px dashed #95a5a6; border-radius: 8px; padding: 60px 20px; text-align: center; color: #7f8c8d; font-size: 14px; margin: 10px 0; min-height: 200px; }
+  .photo-small { background: #ecf0f1; border: 2px dashed #95a5a6; border-radius: 8px; padding: 30px 15px; text-align: center; color: #7f8c8d; font-size: 13px; margin: 8px 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+  .desc-list { margin: 8px 0; padding-left: 5px; list-style: none; }
+  .desc-list li { margin-bottom: 5px; font-size: 14px; }
+  .desc-list li::before { content: "- "; font-weight: bold; color: #e67e22; }
+  .note { background: #fef9e7; border-left: 4px solid #f39c12; padding: 8px 12px; margin: 10px 0; font-size: 13px; }
+  .danger { background: #fdedec; border-left: 4px solid #e74c3c; padding: 8px 12px; margin: 10px 0; font-size: 13px; }
+  table { border-collapse: collapse; margin: 8px 0; width: 100%; font-size: 13px; }
+  th, td { border: 1px solid #bdc3c7; padding: 5px 8px; text-align: left; }
+  th { background: #2c3e50; color: white; }
+  code { background: #ecf0f1; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  pre { background: #2c3e50; color: #ecf0f1; padding: 12px; border-radius: 6px; font-size: 12px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- ===== 1: 표지 ===== -->
+<div class="slide" style="text-align:center; padding: 40px;">
+  <p style="font-size:12px; color:#888;">[회사 로고]</p>
+  <p style="font-size:28px; font-weight:bold; color:#2c3e50; margin:30px 0 10px;">모션지그 검사 (RS-232)</p>
+  <p style="font-size:22px; color:#34495e;">개발자 매뉴얼</p>
+  <p style="font-size:14px; color:#888; margin-top:30px;">2026. 04. 09.</p>
+  <p style="font-size:14px; color:#888;">(주)캔탑스</p>
+  <div class="slide-page">1</div>
+</div>
+
+<!-- ===== 2: 아키텍처 ===== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="slide-section">I. 아키텍처</span>
+    <span class="slide-title">시스템 아키텍처</span>
+  </div>
+  <pre>
+flexfab.exe (WinForms)
+  ├── workspace.json  → DLL 동적 로딩 + 검사 항목 정의
+  │
+  ├── ff_common.dll   (공통, 수정 금지)
+  │     ├── Uart      → RS-232/485 시리얼
+  │     ├── Tcp       → EMIO TCP
+  │     └── Ctsp      → CTSP 프로토콜 파싱
+  │
+  └── ff_vibetilt.dll (프로젝트 라이브러리)
+        ├── VibeTilt   → 보드레벨 검사 + 공통 메서드
+        └── MotionJig  → 모션지그 검사 (EMIO + 자이로)</pre>
+  <div class="danger"><strong>절대 규칙:</strong> ff_common 수정 금지 / 프로토콜 하드코딩 금지 / 아키텍처 변경 금지</div>
+  <div class="slide-page">2</div>
+</div>
+
+<!-- ===== 3: VibeTilt 모듈 ===== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="slide-section">II. 모듈 구성</span>
+    <span class="slide-title">VibeTilt.cs — 보드레벨 + 공통</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <div class="photo-large">[캡처] VibeTilt.cs 클래스 구조<br>(VS2022 코드맵 또는 메서드 목록)</div>
+    </div>
+    <div>
+      <table>
+        <tr><th>메서드</th><th>ID</th><th>역할</th></tr>
+        <tr><td>VER()</td><td>FWVER_*</td><td>FW 버전</td></tr>
+        <tr><td>UID()</td><td>UID_*</td><td>시리얼 설정</td></tr>
+        <tr><td>OFFSET_Internal()</td><td>OFFSET_*</td><td>Calibration</td></tr>
+        <tr><td>APPCFG_Internal()</td><td>APPCFG_SAVE_*</td><td>파라미터 저장</td></tr>
+        <tr><td>VIBE_Internal()</td><td>VIBE_*</td><td>진동 (보드레벨)</td></tr>
+        <tr><td>TILT_Internal()</td><td>TILT_X/Y_*</td><td>기울기 (보드레벨)</td></tr>
+      </table>
+      <div class="note">모션지그에서도 VER, OFFSET, APPCFG는 이 모듈 호출</div>
+    </div>
+  </div>
+  <div class="slide-page">3</div>
+</div>
+
+<!-- ===== 4: MotionJig 모듈 ===== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="slide-section">II. 모듈 구성</span>
+    <span class="slide-title">MotionJig.cs — 모션지그 전용</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <div class="photo-large">[캡처] MotionJig.cs 클래스 구조</div>
+    </div>
+    <div>
+      <table>
+        <tr><th>메서드</th><th>역할</th></tr>
+        <tr><td>MOTION_ZERO_*</td><td>영점 초기화 (홈→0도)</td></tr>
+        <tr><td>MOTION_TILT_X/Y_*</td><td>기울기 측정</td></tr>
+        <tr><td>MOTION_VIBE_X/Y/Z_*</td><td>진동 측정</td></tr>
+      </table>
+      <ul class="desc-list">
+        <li>내부 진입점: <code>MotionNewInternal()</code></li>
+        <li><code>isRs485</code> 플래그로 232/485 자동 분기</li>
+        <li>proc ID에 <code>_485</code> 포함 여부로 판별</li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-page">4</div>
+</div>
+
+<!-- ===== 5: JSON 구조 ===== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="slide-section">III. JSON 설정</span>
+    <span class="slide-title">워크스페이스 JSON 구조</span>
+  </div>
+  <pre>
+{
+  "log_level": "MP_LOG",         // MP_LOG(양산) | TEST_LOG(디버그)
+  "test_mode": "dual",           // single | dual
+  "fail_continue": true,         // FAIL 시 계속 여부
+  "libraries": [ ... ],          // DLL 동적 로딩
+  "projects": [{
+    "id": "prj-motion-232",
+    "repeat_all_count": 350,     // 전체 반복
+    "procs": [ ... ]             // 검사 항목 순서
+  }]
+}
+  </pre>
+  <div class="note">Debug에서 개발: <code>output\Debug\net8.0-windows\workspace.json</code> 수정 시 즉시 반영</div>
+  <div class="slide-page">5</div>
+</div>
+
+<!-- ===== 6: JSON — libraries ===== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="slide-section">III. JSON 설정</span>
+    <span class="slide-title">libraries 설정 (RS-232)</span>
+  </div>
+  <table>
+    <tr><th>id</th><th>클래스</th><th>설정</th></tr>
+    <tr><td>tcp_emio</td><td>Tcp</td><td>100.100.100.70:2233</td></tr>
+    <tr><td>uart_232</td><td>Uart</td><td>COM13, 115200</td></tr>
+    <tr><td>uart_232_y</td><td>Uart</td><td>COM14, 115200 (듀얼)</td></tr>
+    <tr><td>uart_gyro</td><td>Uart</td><td>COM15, 38400</td></tr>
+    <tr><td>ctsp</td><td>Ctsp</td><td>commlib: uart_232</td></tr>
+    <tr><td>vibetilt</td><td>VibeTilt</td><td>uart_232: uart_232</td></tr>
+    <tr><td>motionjig</td><td>MotionJig</td><td>(설정 없음)</td></tr>
+  </table>
+  <div class="note">485는 uart_232 → uart_485, uart_232_y 제거, baudrate 115200 동일</div>
+  <div class="slide-page">6</div>
+</div>
+
+<!-- ===== 7: JSON — proc 예시 ===== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="slide-section">III. JSON 설정</span>
+    <span class="slide-title">proc 항목 예시 — 기울기 / 진동</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <pre>
+// 기울기 측정
+"id": "MOTION_TILT_X_232"
+"param": {
+  "axis": "X",
+  "move_axis": "Y",
+  "gyro_dir": "setdir6",
+  "measure_type": "tilt",
+  "angles": [-20,-45,20,45],
+  "tilt_tolerance_20": 0.2,
+  "tilt_tolerance_45": 0.5
+}</pre>
+    </div>
+    <div>
+      <pre>
+// 진동 측정
+"id": "MOTION_VIBE_Y_232"
+"param": {
+  "measure_type": "vibe",
+  "target_angle": -90,
+  "check_axis_index": 1,
+  "vibe_min": 0.99,
+  "vibe_max": 1.01
+}
+
+
+</pre>
+    </div>
+  </div>
+  <div class="note">Spec 수치에 <code>_comment</code> 필드 필수: <code>"_tilt_tolerance_20_comment": "사양서 ±0.2"</code></div>
+  <div class="slide-page">7</div>
+</div>
+
+<!-- ===== 8: 검사 흐름 ===== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="slide-section">IV. 검사 흐름</span>
+    <span class="slide-title">영점 초기화 / 기울기 / 진동</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <pre>
+InitMotionZero()
+ ├── 자이로 방향 (setdir6/5)
+ ├── EMIO PMS 파라미터
+ ├── PMO011 홈 복귀
+ ├── 0도 이동 (1250 step)
+ ├── FineAdjust (0.00도)
+ └── 소프트 리밋 ±1600</pre>
+    </div>
+    <div>
+      <pre>
+RunTiltMeasure()
+ ├── angles[] 순회
+ │  ├── MoveToAngle
+ │  ├── FineAdjust
+ │  ├── VL AN 스트리밍
+ │  └── 오차 판정
+ └── 0도 복귀
+
+RunVibeMeasure()
+ ├── target 이동
+ ├── GAC 3회 폴링
+ └── 수평 복귀</pre>
+    </div>
+  </div>
+  <div class="slide-page">8</div>
+</div>
+
+<!-- ===== 9: VL 프로토콜 ===== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="slide-section">V. 프로토콜</span>
+    <span class="slide-title">VL 센서 명령 — RS-232 vs RS-485</span>
+  </div>
+  <table>
+    <tr><th>기능</th><th>RS-232</th><th>RS-485</th></tr>
+    <tr><td>FW 버전</td><td><code>&lt;VER&gt;</code></td><td><code>&lt;VER,1&gt;</code></td></tr>
+    <tr><td>OFFSET</td><td><code>&lt;OFFSET,1&gt;</code></td><td><code>&lt;OFFSET,1,1&gt;</code></td></tr>
+    <tr><td>SAVE</td><td><code>&lt;APPCFG,SAVE&gt;</code></td><td><code>&lt;APPCFG,1,SAVE&gt;</code></td></tr>
+    <tr><td>MODE</td><td><code>&lt;MODE,6&gt;</code></td><td><code>&lt;MODE,1,6&gt;</code></td></tr>
+    <tr><td>START/STOP</td><td><code>&lt;START&gt;</code> / <code>&lt;STOP&gt;</code></td><td><code>&lt;START,1&gt;</code> / <code>&lt;STOP,1&gt;</code></td></tr>
+    <tr><td>GAC</td><td><code>[GAC,X,Y,Z,RMS]</code></td><td><code>[GAC,0,1,X,Y,Z,RMS]</code></td></tr>
+    <tr><td>AN</td><td><code>[AN,X,Y]</code></td><td><code>[AN,0,1,X,Y]</code></td></tr>
+  </table>
+  <div class="note">485는 응답에 에러코드(0)와 ID(1) 필드가 추가됨 → offset 차이로 파싱</div>
+  <div class="slide-page">9</div>
+</div>
+
+<!-- ===== 10: EMIO / 자이로 ===== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="slide-section">V. 프로토콜</span>
+    <span class="slide-title">EMIO / 자이로 명령</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>EMIO 명령</th><th>설명</th></tr>
+        <tr><td><code>PPC00</code></td><td>상태 확인</td></tr>
+        <tr><td><code>PMO011</code></td><td>홈 복귀</td></tr>
+        <tr><td><code>PMD01x0800</code></td><td>상대 이동</td></tr>
+        <tr><td><code>PML011</code></td><td>위치 조회</td></tr>
+        <tr><td><code>PIN1</code></td><td>홈 센서</td></tr>
+        <tr><td><code>PIN2</code></td><td>과회전 센서</td></tr>
+      </table>
+    </div>
+    <div>
+      <table>
+        <tr><th>자이로 명령</th><th>설명</th></tr>
+        <tr><td><code>setdir5</code></td><td>Y축 방향</td></tr>
+        <tr><td><code>setdir6</code></td><td>X축 방향</td></tr>
+        <tr><td><code>angle</code></td><td>각도 조회</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="slide-page">10</div>
+</div>
+
+<!-- ===== 11: 232 vs 485 ===== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="slide-section">VI. 232 vs 485</span>
+    <span class="slide-title">RS-232 vs RS-485 차이 요약</span>
+  </div>
+  <table>
+    <tr><th>항목</th><th>RS-232 (VL10)</th><th>RS-485 (VL20)</th></tr>
+    <tr><td>baudrate</td><td>115200</td><td>115200</td></tr>
+    <tr><td>포트</td><td>COM13(X), COM14(Y)</td><td>단일 포트</td></tr>
+    <tr><td>명령 접미</td><td><code>&lt;VER&gt;</code></td><td><code>&lt;VER,1&gt;</code></td></tr>
+    <tr><td>AN 파싱</td><td>offset=1 (3필드)</td><td>offset=3 (5필드)</td></tr>
+    <tr><td>GAC 파싱</td><td>5필드</td><td>7필드</td></tr>
+    <tr><td>Y축 uart_id</td><td>uart_232_y 필요</td><td>불필요</td></tr>
+    <tr><td>코드 분기</td><td><code>isRs485=false</code></td><td><code>isRs485=true</code></td></tr>
+  </table>
+  <div class="slide-page">11</div>
+</div>
+
+<!-- ===== 12: 주요 파라미터 ===== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="slide-section">VII. 파라미터</span>
+    <span class="slide-title">주요 파라미터 (JSON 설정)</span>
+  </div>
+  <table>
+    <tr><th>구분</th><th>파라미터</th><th>기본값</th><th>설명</th></tr>
+    <tr><td rowspan="2">모터</td><td>step_resolution</td><td>0.1125</td><td>도/step</td></tr>
+    <tr><td>steps_to_zero</td><td>1250</td><td>원점→0도</td></tr>
+    <tr><td rowspan="3">Spec</td><td>tilt_tolerance_20</td><td>0.2</td><td>±20도 허용</td></tr>
+    <tr><td>tilt_tolerance_45</td><td>0.5</td><td>±45도 허용</td></tr>
+    <tr><td>vibe_min/max</td><td>0.99/1.01</td><td>GAC 범위</td></tr>
+    <tr><td rowspan="2">타이밍</td><td>home_timeout</td><td>15000</td><td>홈 복귀 ms</td></tr>
+    <tr><td>zero_settle_wait</td><td>1500</td><td>안정화 ms</td></tr>
+  </table>
+  <div class="slide-page">12</div>
+</div>
+
+<!-- ===== 13: 에러 + 코드 규칙 ===== -->
+<div class="slide">
+  <div class="slide-header">
+    <span class="slide-section">VIII. 에러 / 규칙</span>
+    <span class="slide-title">에러 테이블 + 코드 수정 규칙</span>
+  </div>
+  <div class="two-col">
+    <div>
+      <table>
+        <tr><th>에러 코드</th><th>설명</th></tr>
+        <tr><td>ZERO_HOME_FAIL</td><td>영점 초기화 실패</td></tr>
+        <tr><td>COMM_TCP</td><td>EMIO 연결 실패</td></tr>
+        <tr><td>COMM_UART</td><td>시리얼 없음</td></tr>
+        <tr><td>COMM_GYRO</td><td>자이로 실패</td></tr>
+        <tr><td>OVERROTATION</td><td>과회전 감지</td></tr>
+      </table>
+    </div>
+    <div>
+      <p style="font-weight:bold;">코드 수정 규칙</p>
+      <ul class="desc-list">
+        <li>ff_common 수정 금지</li>
+        <li>프로토콜 하드코딩 금지</li>
+        <li>아키텍처 변경 금지</li>
+        <li>리팩터링/최적화 금지</li>
+        <li>Spec에 _comment 필수</li>
+      </ul>
+      <table>
+        <tr><th>파일</th><th>역할</th></tr>
+        <tr><td><code>VibeTilt.cs</code></td><td>보드레벨+공통</td></tr>
+        <tr><td><code>MotionJig.cs</code></td><td>모션지그 전체</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="slide-page">13</div>
+</div>
+
+</body>
+</html>

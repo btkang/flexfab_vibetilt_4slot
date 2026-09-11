@@ -1,0 +1,47 @@
+{
+  "time": "2026-04-17T07:14:01.4808817Z",
+  "Ins": "홍길동",
+  "Proj": "VL10 모션검사 (RS-232)_TEST",
+  "project_type": "motion",
+  "comm_type": "RS-232",
+  "lib": [
+    "{ff_common.dll},{1.0}",
+    "{ff_vibetilt.dll},{0.3.0.60409}"
+  ],
+  "sn": "VL2-00006",
+  "mac": "Not Use",
+  "result": [
+    {
+      "Name": "통신검사 RS-232",
+      "id": "COMM_232",
+      "data": [
+        {
+          "item": "X축 VL",
+          "result": "OK"
+        },
+        {
+          "item": "Y축 VL",
+          "result": "OK"
+        },
+        {
+          "item": "자이로 통신검사",
+          "value": 2.064,
+          "result": "OK"
+        }
+      ],
+      "result": "PASS"
+    },
+    {
+      "Name": "#1-X FW 버전 확인",
+      "id": "FWVER_232",
+      "data": [
+        {
+          "command": "<VER>",
+          "value": "[VER,0,F/W ver.1.0.4]",
+          "result": "OK"
+        }
+      ],
+      "result": "OK"
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>CODE: 검사 시간 최적화 적용 결과 (2026-04-03)</title>
+<style>
+body { font-family: 'Malgun Gothic', sans-serif; max-width: 1200px; margin: 40px auto; padding: 0 20px; color: #333; line-height: 1.7; }
+h1 { border-bottom: 3px solid #2c3e50; padding-bottom: 10px; color: #2c3e50; font-size: 22px; }
+h2 { border-bottom: 1px solid #bdc3c7; padding-bottom: 6px; margin-top: 40px; color: #34495e; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+th, td { border: 1px solid #bdc3c7; padding: 8px 12px; text-align: center; }
+th { background: #2c3e50; color: #fff; }
+tr:nth-child(even) { background: #f8f9fa; }
+td.left { text-align: left; }
+.ok { background: #e0ffe0; color: #27ae60; font-weight: bold; }
+.fix { background: #fff3cd; color: #856404; font-weight: bold; }
+.success-box { background: #eafaf1; border-left: 4px solid #27ae60; padding: 12px 16px; margin: 16px 0; }
+.info-box { background: #eaf2f8; border-left: 4px solid #3498db; padding: 12px 16px; margin: 16px 0; }
+.meta { color: #95a5a6; font-size: 13px; }
+pre { background: #2c3e50; color: #ecf0f1; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+code { background: #ecf0f1; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1>CODE: 검사 시간 최적화 적용 결과</h1>
+<p class="meta">작성일: 2026-04-03 | 브랜치: step6-motion-jig-test | 대상: MotionJig.cs</p>
+
+<div class="success-box">
+<strong>결과:</strong> 13/13 ALL PASS (FW버전 포함)<br>
+S/N: 00625 | 소요시간: <strong>4분 21초 &rarr; 3분 23초 (22% 단축, -58초)</strong>
+</div>
+
+<h2>1. 적용 항목 및 효과</h2>
+
+<table>
+<tr><th>항목</th><th>변경 전</th><th>변경 후</th><th>위치</th><th>효과</th></tr>
+<tr>
+<td class="left">PMO011 후 대기</td>
+<td>고정 10초</td>
+<td class="fix">자이로 폴링 (안정시 즉시)</td>
+<td><code>MotionJig.cs:329</code></td>
+<td class="ok">X축 8초, Y축 8초 (자동 적응)</td>
+</tr>
+<tr>
+<td class="left">FineAdjust step 대기 (&gt;10step)</td>
+<td>1000ms</td>
+<td class="fix">500ms</td>
+<td><code>MotionJig.cs:711</code></td>
+<td class="ok">기울기 전체 ~15초 절감</td>
+</tr>
+<tr>
+<td class="left">FineAdjust step 대기 (&le;10step)</td>
+<td>500ms</td>
+<td class="fix">200ms</td>
+<td><code>MotionJig.cs:711</code></td>
+<td class="ok">미세조정 속도 향상</td>
+</tr>
+<tr>
+<td class="left">FineAdjust 수렴 확인</td>
+<td>1000ms</td>
+<td class="fix">500ms</td>
+<td><code>MotionJig.cs:671</code></td>
+<td class="ok">수렴 판정 0.5초 빠름</td>
+</tr>
+<tr>
+<td class="left">자이로 타임아웃</td>
+<td>2000ms</td>
+<td class="fix">800ms</td>
+<td><code>MotionJig.cs:1146</code></td>
+<td class="ok">3곳 공통 적용</td>
+</tr>
+<tr>
+<td class="left">자이로 Recv 타임아웃</td>
+<td>500ms</td>
+<td class="fix">300ms</td>
+<td><code>MotionJig.cs:1152</code></td>
+<td class="ok">3곳 공통 적용</td>
+</tr>
+<tr>
+<td class="left">AN 스트리밍 Stop 후</td>
+<td>200ms</td>
+<td class="fix">100ms</td>
+<td><code>MotionJig.cs:433</code></td>
+<td class="ok">기울기 8회 적용</td>
+</tr>
+<tr>
+<td class="left">AN 스트리밍 안정화</td>
+<td>500ms</td>
+<td class="fix">300ms</td>
+<td><code>MotionJig.cs:436</code></td>
+<td class="ok">기울기 8회 적용</td>
+</tr>
+<tr>
+<td class="left">AN 초기 데이터 버림</td>
+<td>200ms</td>
+<td class="fix">100ms</td>
+<td><code>MotionJig.cs:438</code></td>
+<td class="ok">기울기 8회 적용</td>
+</tr>
+</table>
+
+<h2>2. PMO011 자이로 폴링 방식</h2>
+
+<div class="info-box">
+기존: PMO011 응답 후 <strong>고정 10초</strong> 대기<br>
+변경: 500ms 간격 자이로 각도 폴링 &rarr; 연속 2회 변화 &lt;0.5도 시 <strong>즉시 진행</strong> (최대 20초 타임아웃)
+</div>
+
+<pre>
+// 원점복귀 완료 대기: 자이로 폴링으로 모터 정지 감지
+double prevAngle = double.NaN;
+int stableCount = 0;
+var waitDeadline = DateTime.UtcNow.AddMilliseconds(20000); // 최대 20초
+while (DateTime.UtcNow &lt; waitDeadline)
+{
+    Thread.Sleep(500);
+    if (GyroGetAngle(gyro, _ =&gt; { }, out double curAngle))
+    {
+        if (!double.IsNaN(prevAngle) &amp;&amp; Math.Abs(curAngle - prevAngle) &lt; 0.5)
+        {
+            stableCount++;
+            if (stableCount &gt;= 2) break; // 연속 2회 안정 → 정지 판정
+        }
+        else stableCount = 0;
+        prevAngle = curAngle;
+    }
+}
+</pre>
+
+<h2>3. 시간 비교 (기존 vs 최적화)</h2>
+
+<table>
+<tr><th>구간</th><th>항목</th><th>기존 (S/N:623)</th><th>최적화 (S/N:625)</th><th>절감</th></tr>
+<tr><td colspan="5" style="background:#34495e; color:#fff; text-align:left; font-weight:bold;">X축결합지그</td></tr>
+<tr><td>X</td><td class="left">#1 영점 초기화</td><td>26초</td><td>19초</td><td class="ok">-7초</td></tr>
+<tr><td>X</td><td class="left">#2 캘리브레이션</td><td>7초</td><td>7초</td><td>-</td></tr>
+<tr><td>X</td><td class="left">#3 파라미터 저장</td><td>1초</td><td>1초</td><td>-</td></tr>
+<tr><td>X</td><td class="left">#4 기울기 (4각도)</td><td>70초</td><td>54초</td><td class="ok">-16초</td></tr>
+<tr><td>X</td><td class="left">#5 Y축 진동</td><td>3초</td><td>3초</td><td>-</td></tr>
+<tr><td>X</td><td class="left">#6 Z축 진동</td><td>17초</td><td>15초</td><td class="ok">-2초</td></tr>
+<tr><td colspan="5" style="background:#95a5a6; color:#fff;">팝업 대기</td></tr>
+<tr><td colspan="5" style="background:#34495e; color:#fff; text-align:left; font-weight:bold;">Y축결합지그</td></tr>
+<tr><td>Y</td><td class="left">#7 영점 초기화</td><td>26초</td><td>17초</td><td class="ok">-9초</td></tr>
+<tr><td>Y</td><td class="left">#8 캘리브레이션</td><td>7초</td><td>7초</td><td>-</td></tr>
+<tr><td>Y</td><td class="left">#9 파라미터 저장</td><td>1초</td><td>1초</td><td>-</td></tr>
+<tr><td>Y</td><td class="left">#10 기울기 (4각도)</td><td>67초</td><td>53초</td><td class="ok">-14초</td></tr>
+<tr><td>Y</td><td class="left">#11 X축 진동</td><td>3초</td><td>3초</td><td>-</td></tr>
+<tr><td>Y</td><td class="left">#12 Z축 진동</td><td>15초</td><td>11초</td><td class="ok">-4초</td></tr>
+<tr style="background:#2c3e50; color:#fff; font-weight:bold;">
+<td colspan="2" style="color:#fff;">전체</td>
+<td>4분 21초</td>
+<td>3분 23초</td>
+<td style="color:#27ae60;">-58초 (22%)</td>
+</tr>
+</table>
+
+<h2>4. 검사 결과 (S/N: 00625)</h2>
+
+<table>
+<tr><th>#</th><th>항목</th><th>결과</th><th>측정값</th></tr>
+<tr><td>0</td><td class="left">FW 버전 확인</td><td class="ok">OK</td><td>F/W ver.1.0.4</td></tr>
+<tr><td>1</td><td class="left">X축 영점 초기화</td><td class="ok">OK</td><td>오차 0.004&deg;</td></tr>
+<tr><td>2</td><td class="left">X축 Calibration</td><td class="ok">OK</td><td>AN X=0.003</td></tr>
+<tr><td>3</td><td class="left">X축 파라미터 저장</td><td class="ok">OK</td><td>-</td></tr>
+<tr><td>4</td><td class="left">X축 기울기 (-20,-45,+20,+45)</td><td class="ok">OK</td><td>오차 +0.002~+0.077</td></tr>
+<tr><td>5</td><td class="left">Y축 진동</td><td class="ok">OK</td><td>GAC Y=1.00</td></tr>
+<tr><td>6</td><td class="left">Z축 진동</td><td class="ok">OK</td><td>GAC Z=1.00</td></tr>
+<tr><td>7</td><td class="left">Y축 영점 초기화</td><td class="ok">OK</td><td>오차 0.002&deg;</td></tr>
+<tr><td>8</td><td class="left">Y축 Calibration</td><td class="ok">OK</td><td>AN Y=0.000</td></tr>
+<tr><td>9</td><td class="left">Y축 파라미터 저장</td><td class="ok">OK</td><td>-</td></tr>
+<tr><td>10</td><td class="left">Y축 기울기 (+20,+45,-20,-45)</td><td class="ok">OK</td><td>오차 -0.130~-0.016</td></tr>
+<tr><td>11</td><td class="left">X축 진동</td><td class="ok">OK</td><td>GAC X=1.00</td></tr>
+<tr><td>12</td><td class="left">Z축 진동</td><td class="ok">OK</td><td>GAC Z=1.00</td></tr>
+</table>
+
+<h2>5. 추가 최적화 가능 항목 (미적용)</h2>
+
+<table>
+<tr><th>항목</th><th>현재</th><th>가능</th><th>비고</th></tr>
+<tr><td class="left">AN 스트리밍 수집 시간</td><td>1500ms (~157샘플)</td><td>1000ms (~100샘플)</td><td>50샘플이면 충분, 8회 적용 시 -4초</td></tr>
+<tr><td class="left">원판 홈 추가</td><td>1개</td><td>3~4개</td><td>하드웨어 변경, PMO011 시간 대폭 단축</td></tr>
+<tr><td class="left">EMIO 홈 센서 2개 사용</td><td>IN1만</td><td>IN1+IN2</td><td>하드웨어 연결 필요</td></tr>
+</table>
+
+</body>
+</html>
