@@ -161,7 +161,7 @@
                 {
                     "libid": "vibetilt",
                     "id": "FWVER_232",
-                    "name": "#1-X [X결합] FW 버전 확인",
+                    "name": "#1-X [X슬롯] FW 버전 확인",
                     "_comment": "VL10 펌웨어 버전 확인. RV=0 정상, 응답에 VER 포함 여부 판정",
                     "param": {
                         "slot_group": "X",
@@ -179,7 +179,7 @@
                 {
                     "libid": "motionjig",
                     "id": "MOTION_ZERO_232",
-                    "name": "#3 [X결합] X축 영점 초기화 (0도)",
+                    "name": "#3 [X슬롯] X축 영점 초기화 (0도)",
                     "_comment": "X축 지그 결합 후 영점. setdir6로 자이로 X축 방향 설정",
                     "param": {
                         "slot_group": "common",
@@ -210,7 +210,7 @@
                 {
                     "libid": "vibetilt",
                     "id": "OFFSET_232",
-                    "name": "#4 [X결합] X축 Calibration (0도)",
+                    "name": "#4 [X슬롯] X축 Calibration (0도)",
                     "_comment": "X축 영점(0도) 위치에서 VL 센서 캘리브레이션. OFFSET 후 AN 검증 포함",
                     "param": {
                         "slot_group": "X",
@@ -232,7 +232,7 @@
                 {
                     "libid": "vibetilt",
                     "id": "VIBE_STILL_232",
-                    "name": "#5-1 [X결합] X축 정지 검사(0도)",
+                    "name": "#5-1 [X슬롯] X축 정지 검사(0도)",
                     "_comment": "0도 정지 상태에서 전축(X·Y·Z) 변동폭(p2p) 노이즈 검출. 평균 아닌 p2p. 보드 VIBE_STILL 핸들러 재사용(코드변경 없음). X결합 uart_232 1회. 팝업 없음(0도 모터정지 자동측정). measure_only=false: 판정 ON (전축 p2p ≤still_p2p_max=0.05). 보드검사 232 동일센서 0.05 양산검증 + 485 모션 실측 p2p≈0.01 → 5배 마진. 232 시료 실기검증 시 0.01 확인 권장",
                     "param": {
                         "slot_group": "X",
@@ -263,7 +263,7 @@
                 {
                     "libid": "vibetilt",
                     "id": "FWVER_232",
-                    "name": "#8 [Y결합] FW 버전 확인 (Y축)",
+                    "name": "#8 [Y슬롯] FW 버전 확인 (Y축)",
                     "_comment": "Y축 제품(COM14) 펌웨어 버전 확인",
                     "param": {
                         "slot_group": "Y",
@@ -282,7 +282,7 @@
                 {
                     "libid": "vibetilt",
                     "id": "UID_232",
-                    "name": "#9 [Y결합] 시리얼번호 설정 (Y축)",
+                    "name": "#9 [Y슬롯] 시리얼번호 설정 (Y축)",
                     "_comment": "Y축 제품에 시리얼번호 쓰기. 232는 VL1- 접두사",
                     "param": {
                         "slot_group": "Y",
@@ -300,7 +300,7 @@
                 {
                     "libid": "vibetilt",
                     "id": "REFTEMP_232",
-                    "name": "#9-1 [Y결합] 센서 온도 저장 (Y축)",
+                    "name": "#9-1 [Y슬롯] 센서 온도 저장 (Y축)",
                     "_comment": "SENTEMP로 읽은 센서온도를 REFTEMP로 기준값 저장. 20~40 범위 밖이면 저장안함+FAIL(보정 baseline 오염 방지). echo 일치 PASS. Y결합 1회",
                     "param": {
                         "slot_group": "Y",
@@ -323,7 +323,7 @@
                 {
                     "libid": "vibetilt",
                     "id": "OFFSET_232",
-                    "name": "#11 [Y결합] Y축 Calibration (0도)",
+                    "name": "#11 [Y슬롯] Y축 Calibration (0도)",
                     "_comment": "Y축 영점(0도) 위치에서 VL 센서 캘리브레이션 (COM14). OFFSET 후 AN 검증 포함",
                     "param": {
                         "slot_group": "Y",
@@ -346,7 +346,7 @@
                 {
                     "libid": "vibetilt",
                     "id": "RCONF_232",
-                    "name": "#11-1 [Y결합] 출하 상태 설정 (Y축)",
+                    "name": "#11-1 [Y슬롯] 출하 상태 설정 (Y축)",
                     "_comment": "UID+센서온도+현재cal(양축 확정)을 출하상태값으로 저장. 응답 완전일치 PASS. OFFSET 직후/SAVE 직전(펌웨어 저장 의존성)",
                     "param": {
                         "slot_group": "Y",
@@ -364,7 +364,7 @@
                 {
                     "libid": "vibetilt",
                     "id": "APPCFG_SAVE_232",
-                    "name": "#12 [Y결합] Y축 파라미터 저장 (0도)",
+                    "name": "#12 [Y슬롯] Y축 파라미터 저장 (0도)",
                     "param": {
                         "slot_group": "Y",
                         "skip_coupling": "Y",
@@ -387,7 +387,7 @@
                 {
                     "libid": "motionjig",
                     "id": "MOTION_TILT_X_232",
-                    "name": "#6 [X결합] X축 기울기값 측정 (-20,-45,+20,+45)",
+                    "name": "#6 [X슬롯] X축 기울기값 측정 (-20,-45,+20,+45)",
                     "_comment": "X축 기울기 측정. AN 응답의 X값을 자이로와 비교 판정",
                     "param": {
                         "slot_group": "all",
@@ -429,7 +429,7 @@
                 {
                     "libid": "motionjig",
                     "id": "MOTION_VIBE_Y_232",
-                    "name": "#7 [X결합] Y축 진동값 측정 (+90도)",
+                    "name": "#7 [X슬롯] Y축 진동값 측정 (+90도)",
                     "_comment": "OFFSET 후 GAC 측정. 0도→+90도 이동 후 Y축 1G 확인",
                     "param": {
                         "slot_group": "all",
@@ -468,7 +468,7 @@
                 {
                     "libid": "motionjig",
                     "id": "MOTION_ZERO_232",
-                    "name": "#10 [Y결합] Y축 영점 초기화 (0도)",
+                    "name": "#10 [Y슬롯] Y축 영점 초기화 (0도)",
                     "_comment": "Y축 지그 결합 후 영점. setdir5로 자이로 Y축 방향 설정. single 시 코드에서 자동 팝업 추가",
                     "param": {
                         "slot_group": "common",
@@ -489,7 +489,7 @@
                 {
                     "libid": "motionjig",
                     "id": "MOTION_VIBE_Z_232",
-                    "name": "#13 [Y결합] Z축 진동값 측정 (0도) — CAL/저장 후 배치",
+                    "name": "#13 [Y슬롯] Z축 진동값 측정 (0도) — CAL/저장 후 배치",
                     "_comment": "영점 후 0도 상태에서 GAC Z 측정. CAL/저장 후 모터 안 움직였으므로 0도 유지",
                     "param": {
                         "slot_group": "Y",
@@ -528,7 +528,7 @@
                 {
                     "libid": "motionjig",
                     "id": "MOTION_TILT_Y_232",
-                    "name": "#14 [Y결합] Y축 기울기값 측정 (+20,+45,-20,-45)",
+                    "name": "#14 [Y슬롯] Y축 기울기값 측정 (+20,+45,-20,-45)",
                     "_comment": "Y축 기울기 측정 (COM14). AN 응답의 Y값을 자이로와 비교 판정",
                     "param": {
                         "slot_group": "Y",
@@ -572,7 +572,7 @@
                 {
                     "libid": "motionjig",
                     "id": "MOTION_VIBE_X_232",
-                    "name": "#15 [Y결합] X축 진동값 측정 (-90도)",
+                    "name": "#15 [Y슬롯] X축 진동값 측정 (-90도)",
                     "_comment": "OFFSET 후 GAC 측정 (COM14). 0도→-90도 이동 후 X축 1G 확인. 사양서: -90도 방향",
                     "param": {
                         "slot_group": "Y",
@@ -613,7 +613,7 @@
                 {
                     "libid": "vibetilt",
                     "id": "APPCFG_232",
-                    "name": "#16 [Y결합] Config 확인 Y축 (APPCFG)",
+                    "name": "#16 [Y슬롯] Config 확인 Y축 (APPCFG)",
                     "_comment": "Y축(COM14) 검사 완료 후 제품 설정값 확인. MODE=00 복귀 확인",
                     "param": {
                         "slot_group": "Y",

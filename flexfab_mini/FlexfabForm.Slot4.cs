@@ -13,7 +13,8 @@ namespace flexfab
     // 밀어내기 2레인: X1→Y1, X2→Y2. 슬롯 uart는 slot_uarts 표로 결정.
     public partial class MainForm
     {
-        internal static readonly string[] SLOT_NAMES = { "X1", "X2", "Y1", "Y2" };
+        internal static readonly string[] SLOT_NAMES = { "X1", "X2", "Y1", "Y2" };            // 내부 키 (slot_uarts 매칭, __slot)
+        internal static readonly string[] SLOT_LABELS = { "X1슬롯", "X2슬롯", "Y1슬롯", "Y2슬롯" }; // 표시명 (지그 표기와 동일: 그리드·로그·팝업·불량보기·결과 JSON)
         internal const int SLOT_X1 = 0, SLOT_X2 = 1, SLOT_Y1 = 2, SLOT_Y2 = 3;
 
         internal bool _slot4 = false;                       // slot_layout == "4"
@@ -70,11 +71,11 @@ namespace flexfab
                 dataGridView1.RowHeadersVisible = false;
                 dataGridView1.Columns["Number"].Width = 45;
                 dataGridView1.Columns["Name"].Width = 235;
-                dataGridView1.Columns["Result"].HeaderText = "X1";
+                dataGridView1.Columns["Result"].HeaderText = SLOT_LABELS[SLOT_X1];
                 dataGridView1.Columns["Result"].Width = slotW;
                 foreach (var nm in new[] { "X2", "Y1", "Y2" })
                 {
-                    var col = new DataGridViewTextBoxColumn { Name = "Slot_" + nm, HeaderText = nm, Width = slotW, SortMode = DataGridViewColumnSortMode.NotSortable };
+                    var col = new DataGridViewTextBoxColumn { Name = "Slot_" + nm, HeaderText = nm + "슬롯", Width = slotW, SortMode = DataGridViewColumnSortMode.NotSortable };
                     dataGridView1.Columns.Add(col);
                 }
             }
@@ -100,7 +101,7 @@ namespace flexfab
             {
                 var col = dataGridView1.Columns[2 + s];
                 string sn = _slotSerial[s];
-                col.HeaderText = string.IsNullOrEmpty(sn) ? SLOT_NAMES[s] : $"{SLOT_NAMES[s]}\n{sn}";
+                col.HeaderText = string.IsNullOrEmpty(sn) ? SLOT_LABELS[s] : $"{SLOT_LABELS[s]}\n{sn}";
             }
         }
 
@@ -214,7 +215,7 @@ namespace flexfab
             var midFont = new Font("맑은 고딕", 12);
             using var dlg = new Form
             {
-                Text = "시리얼 입력 (4슬롯 밀어내기: X1→Y1, X2→Y2)",
+                Text = "시리얼 입력 (4슬롯 밀어내기: X1슬롯→Y1슬롯, X2슬롯→Y2슬롯)",
                 Size = new Size(620, 560), StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false
             };
@@ -226,7 +227,7 @@ namespace flexfab
             };
             var txt = new TextBox[4];
             string[] defaults = { lastSerial, shift(lastSerial, 1), _lastSerialX, _lastSerialX2 };
-            string[] labels = { "X1 시리얼", "X2 시리얼 (X1 + 1)", "Y1 시리얼 (이전 X1)", "Y2 시리얼 (이전 X2)" };
+            string[] labels = { "X1슬롯 시리얼", "X2슬롯 시리얼 (X1 + 1)", "Y1슬롯 시리얼 (이전 X1슬롯)", "Y2슬롯 시리얼 (이전 X2슬롯)" };
             var ctrls = new List<Control> { lblGuide };
             for (int s = 0; s < 4; s++)
             {
@@ -266,7 +267,7 @@ namespace flexfab
             try { prefixCheck = (int)(workspace?.serial_prefix_check ?? 1); } catch { }
             if (!string.IsNullOrEmpty(expectedPrefix) && prefixCheck > 0)
             {
-                var bad = SLOT_NAMES.Where((n, i) => _slotSerial[i].Length > 0 && !_slotSerial[i].StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase)).ToList();
+                var bad = SLOT_LABELS.Where((n, i) => _slotSerial[i].Length > 0 && !_slotSerial[i].StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase)).ToList();
                 if (bad.Count > 0)
                 {
                     if (prefixCheck >= 2) { ShowLargeConfirmDialog($"시리얼 접두사를 확인하세요 ({string.Join(",", bad)})\n({expectedPrefix} 필요)"); return false; }
@@ -280,7 +281,7 @@ namespace flexfab
                 string num = _slotSerial[s]; int d = num.LastIndexOf('-');
                 if (d >= 0 && d < num.Length - 1) num = num.Substring(d + 1);
                 if (num.All(char.IsDigit) && long.TryParse(num, out long v) && (v < 1 || num.Length < 5))
-                { ShowLargeConfirmDialog($"시리얼 형식 오류 ({SLOT_NAMES[s]})\n• 숫자값 00001 이상\n• 5자리 이상 (예: VL2-00001)"); return false; }
+                { ShowLargeConfirmDialog($"시리얼 형식 오류 ({SLOT_LABELS[s]})\n• 숫자값 00001 이상\n• 5자리 이상 (예: VL2-00001)"); return false; }
             }
             // 전부 빈값 차단
             if (_slotSerial.All(string.IsNullOrEmpty)) { ShowLargeConfirmDialog("시리얼이 모두 비어있습니다.\n최소 한 슬롯에 시리얼을 입력하세요."); return false; }
@@ -288,7 +289,7 @@ namespace flexfab
             var dup = _slotSerial.Where(s => s.Length > 0).GroupBy(s => s.ToUpperInvariant()).FirstOrDefault(g => g.Count() > 1);
             if (dup != null) { ShowLargeConfirmDialog($"동일 시리얼이 두 슬롯에 입력되었습니다 ({dup.First()}).\n서로 다른 시리얼을 입력하세요."); return false; }
 
-            label_Serial.Text = string.Join("\n", SLOT_NAMES.Select((n, i) => $"{n}: {(_slotSerial[i].Length == 0 ? "없음" : _slotSerial[i])}"));
+            label_Serial.Text = string.Join("\n", SLOT_LABELS.Select((n, i) => $"{n}: {(_slotSerial[i].Length == 0 ? "없음" : _slotSerial[i])}"));
             label_mac.Text = "";
             SetSlotHeaders();
 
@@ -331,7 +332,7 @@ namespace flexfab
         // 슬롯별 첫 FAIL만 기록 (기존 '결합 그룹당 첫 FAIL'을 슬롯 단위로). Coupling 칸에 슬롯명
         internal void AddFailRecordSlot(dynamic proc, string retmsg, string errorMsg, int slotIdx)
         {
-            string slot = SLOT_NAMES[slotIdx];
+            string slot = SLOT_LABELS[slotIdx];
             if (_failRecords.Exists(fr => fr.Coupling == slot)) return;
             string item = ""; try { item = (string)(proc?.name ?? ""); } catch { }
             string failTag = "";
@@ -353,7 +354,7 @@ namespace flexfab
         // "X1 PASS · X2 PASS · Y1 PASS · Y2 FAIL" (빈 슬롯은 '-')
         internal string SlotSummaryText(bool commonFailed)
         {
-            return string.Join(" · ", SLOT_NAMES.Select((n, i) =>
+            return string.Join(" · ", SLOT_LABELS.Select((n, i) =>
                 _slotSerial[i].Length == 0 ? $"{n} -" : $"{n} {(commonFailed || _slotFailed[i] ? "FAIL" : "PASS")}"));
         }
     }

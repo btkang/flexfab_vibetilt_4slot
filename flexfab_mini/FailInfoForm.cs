@@ -212,8 +212,9 @@ namespace flexfab
         public static string ExtractCoupling(string name)
         {
             if (string.IsNullOrEmpty(name)) return "";
-            if (name.Contains("[X결합]")) return "X결합";
-            if (name.Contains("[Y결합]")) return "Y결합";
+            // 4슬롯 워크스페이스 태그 [X슬롯]/[Y슬롯]도 같은 그룹으로 취급 (single 모드 등 기존 경로 호환, 2026-09-18)
+            if (name.Contains("[X결합]") || name.Contains("[X슬롯]")) return "X결합";
+            if (name.Contains("[Y결합]") || name.Contains("[Y슬롯]")) return "Y결합";
             return "";
         }
 

@@ -2508,7 +2508,7 @@ namespace flexfab
 
                 var row = dataGridView1.Rows[e.RowIndex];
                 var name = row.Cells[1].Value?.ToString() ?? "세부 로그";
-                if (_slot4 && e.ColumnIndex - 2 < SLOT_NAMES.Length) name = $"[{SLOT_NAMES[e.ColumnIndex - 2]}] {name}";
+                if (_slot4 && e.ColumnIndex - 2 < SLOT_LABELS.Length) name = $"[{SLOT_LABELS[e.ColumnIndex - 2]}] {name}";
                 var msg = row.Cells[e.ColumnIndex].Tag as string; // SetResultMessage에서 저장한 값
 
                 if (string.IsNullOrWhiteSpace(msg))
@@ -2837,7 +2837,7 @@ namespace flexfab
                 bool anyFail = false, anyRun = false;
                 foreach (int s in slots)
                 {
-                    string slotName = MainForm.SLOT_NAMES[s];
+                    string slotName = MainForm.SLOT_LABELS[s];
                     if (mainForm._slotSerial[s].Length == 0 || (mainForm._slotFailed[s] && !mainForm.checkBox_Process.Checked))
                     {
                         mainForm.UpdateSlotCell(i, s, "Skip", Color.LightBlue, Color.Black);
@@ -2876,7 +2876,7 @@ namespace flexfab
                 {
                     int xs = lane == 0 ? MainForm.SLOT_X1 : MainForm.SLOT_X2;
                     int ys = lane == 0 ? MainForm.SLOT_Y1 : MainForm.SLOT_Y2;
-                    string xn = MainForm.SLOT_NAMES[xs], yn = MainForm.SLOT_NAMES[ys];
+                    string xn = MainForm.SLOT_LABELS[xs], yn = MainForm.SLOT_LABELS[ys];
                     string xSn = mainForm._slotSerial[xs], ySn = mainForm._slotSerial[ys];
                     string pendingPath = GetPendingSlotPath(lane);
                     bool xPass = xSn.Length > 0 && !mainForm._slotFailed[xs] && !slot4CommonFailed;

@@ -134,6 +134,8 @@ def convert(d, bus):
     order = [n for n in ORDER if n in by_no]
 
     for no, p in by_no.items():
+        # 항목명 태그: [X결합]/[Y결합] → [X슬롯]/[Y슬롯] (4슬롯 지그 표기 X1슬롯·X2슬롯·Y1슬롯·Y2슬롯에 맞춤, 2026-09-18)
+        p["name"] = p["name"].replace("[X결합]", "[X슬롯]").replace("[Y결합]", "[Y슬롯]")
         param = p.setdefault("param", OrderedDict())
         new = OrderedDict()
         new["slot_group"] = SLOT_GROUP[no]
