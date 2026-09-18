@@ -275,9 +275,19 @@ namespace Cantops.FlexFab
                 catch { /* ignore */ }
             }
 
+            // v05 F7(4슬롯): 호스트가 넘긴 __skip_uarts(시리얼 빈 슬롯의 포트)는 검사하지 않고 SKIP. 키 없으면 기존 동작(2슬롯 불변)
+            var skipUarts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (param.TryGetValue("__skip_uarts", out var suObj) && suObj is System.Collections.IEnumerable suList && suObj is not string)
+                foreach (var u in suList) { var us = u?.ToString(); if (!string.IsNullOrEmpty(us)) skipUarts.Add(us); }
+
             // 1) X축 VL 통신검사
-            var vlX = ResolveComm(libraries, vlKey, log);
-            if (vlX != null)
+            var vlX = skipUarts.Contains(vlKey) ? null : ResolveComm(libraries, vlKey, log);
+            if (skipUarts.Contains(vlKey))
+            {
+                log($"[COMM] X축({vlKey}): 빈 슬롯 — 스킵");
+                details.Add(new Dictionary<string, object?> { { "item", "X축 VL" }, { "result", "SKIP" } });
+            }
+            else if (vlX != null)
             {
                 bool xOk = CheckVlComm(vlX, verCmd, "X축", log);
                 details.Add(new Dictionary<string, object?> { { "item", "X축 VL" }, { "result", xOk ? "OK" : "NG" } });
@@ -295,6 +305,11 @@ namespace Cantops.FlexFab
             if (testMode == "single")
             {
                 log($"[COMM] Y축: 싱글모드 — 스킵");
+                details.Add(new Dictionary<string, object?> { { "item", "Y축 VL" }, { "result", "SKIP" } });
+            }
+            else if (skipUarts.Contains(vlKeyY))
+            {
+                log($"[COMM] Y축({vlKeyY}): 빈 슬롯 — 스킵");
                 details.Add(new Dictionary<string, object?> { { "item", "Y축 VL" }, { "result", "SKIP" } });
             }
             else

@@ -2840,7 +2840,17 @@ namespace flexfab
             //  단계1(현재): slot_group X/Y는 슬롯 순차 호출, all(#6/#7)은 X 슬롯 순차(기존 단일보드 측정).
             //  단계2: all → 모듈 4보드 동시측정 / 단계3: X/Y 그룹 Task 병렬 (PLAN §5)
             // ══════════════════════════════════════════════════════════════
-            bool slot4CommonFailed = false;   // 공통 항목(#0 통신·#3/#10 영점) FAIL → 4슬롯 전부 FAIL 취급
+            bool slot4CommonFailed = false;   // 공통 항목(#0 통신·#3/#10 영점)·비귀속 FAIL → 4슬롯 전부 FAIL 취급 (라운드 단위)
+            // ── v05 사이클 상태 (4슬롯) ──
+            bool commonFailedEver = false;                 // F5: 라운드 누적 공통 FAIL
+            bool[] slotEverFailed = new bool[4];           // F5: 라운드 누적 슬롯 FAIL (양성 증거 판정 결과)
+            string[] slotFailReason = new string[4];
+            string[] yBlockReason = new string[2];         // F2-4: 레인별 Y 차단 사유 (X 기록 없음)
+            JObject?[] lanePending = new JObject?[2];       // F2: 이번 사이클 유효 pending (메모리)
+            bool[] laneInuse = new bool[2];                 // F2: .inuse 로 잠근 파일 존재
+            bool[] laneConsumed = new bool[2];              // F2: Y 완성 저장 완료
+            bool[] laneNewWritten = new bool[2];            // F2: 새 X pending 기록 완료
+            bool slot4Finished = false;                     // F2-7: 정상 종료(FinishSlot4 완료) 여부
 
             object InvokeProc(object instance, MethodInfo method, object param, Action<string> log)
             {
@@ -2868,14 +2878,22 @@ namespace flexfab
             bool RunProcSlot4(int i, dynamic proc, object instance, MethodInfo method)
             {
                 string group = MainForm.GetSlotGroup(proc);
-                // 단계1: all(#6/#7)은 X 슬롯만 순차 측정 (Y 슬롯은 #14/#15에서 기존처럼 직접 측정)
-                int[] slots = MainForm.SlotsOfGroup(group == "all" ? "X" : group);
+                // 단계1: all(#6/#7)은 X 슬롯만 순차 측정 (Y 슬롯은 #14/#15에서 기존처럼 직접 측정) — v05 F1 공용 규칙
+                int[] slots = MainForm.SlotsForRun(group);
                 var swItem = System.Diagnostics.Stopwatch.StartNew();
                 logAction($"▶ TEST_BEGIN: {proc.name} (ID: {proc.id})");
                 if (proc.param != null)
                 {
                     UpsertParamMeta(proc.param, "proc_id", proc.id);
                     UpsertParamMeta(proc.param, "proc_name", proc.name);
+                    // v05 F7: #0 통신검사 — 시리얼 빈 슬롯의 포트는 SKIP (매 사이클 명시 설정, 빈 목록 포함 → 이전 값 잔존 방지)
+                    if (((string)proc.id ?? "").StartsWith("COMM_"))
+                    {
+                        var skipUarts = new List<string>();
+                        for (int s = 0; s < 4; s++)
+                            if (mainForm._slotSerial[s].Length == 0 && mainForm._slotUarts.TryGetValue(MainForm.SLOT_NAMES[s], out var u)) skipUarts.Add(u);
+                        UpsertParamMeta(proc.param, "__skip_uarts", skipUarts);
+                    }
                 }
 
                 if (slots.Length == 0)
@@ -2902,7 +2920,7 @@ namespace flexfab
                 foreach (int s in slots)
                 {
                     string slotName = MainForm.SLOT_LABELS[s];
-                    if (mainForm._slotSerial[s].Length == 0 || (mainForm._slotFailed[s] && !mainForm.checkBox_Process.Checked))
+                    if (mainForm._slotSerial[s].Length == 0 || mainForm._slotBlocked[s] || (mainForm._slotFailed[s] && !mainForm.checkBox_Process.Checked))
                     {
                         mainForm.UpdateSlotCell(i, s, "Skip", Color.LightBlue, Color.Black);
                         continue;
@@ -2927,76 +2945,142 @@ namespace flexfab
                 return false;
             }
 
-            // 4슬롯 사이클 종료: 레인별(X1→Y1, X2→Y2) pending 저장·완성 업로드, 슬롯별 PASS/FAIL 요약 팝업
+            // 라운드 끝 판정 누적 (v05 F1·F5) — 양성 증거 판정 결과를 라운드 간 AND 누적
+            void AccumulateSlot4Round()
+            {
+                if (slot4CommonFailed) commonFailedEver = true;
+                for (int s = 0; s < 4; s++)
+                {
+                    if (mainForm._slotSerial[s].Length == 0) continue;
+                    if (!mainForm.SlotVerdict(s, out string r))
+                    {
+                        slotEverFailed[s] = true;
+                        if (string.IsNullOrEmpty(slotFailReason[s])) slotFailReason[s] = r;
+                    }
+                }
+            }
+
+            // 4슬롯 사이클 정상 종료 (v05 F1~F4·F8): 판정 확정 → 레인별 Y 완성 → X pending 기록 → .inuse 정리 → 요약·팝업
             void FinishSlot4()
             {
-                string summary = mainForm.SlotSummaryText(slot4CommonFailed);
-                logAction($"슬롯 결과: {summary}");
-                mainForm.Invoke(() => mainForm.label_Serial.Text = summary.Replace(" · ", "\n"));
+                // ① 판정 확정 (X: 두 단계 중 X단 통과 = 대기 / Y: 완성 조건 = Y PASS + 유효 pending 일치)
+                var state = new string[4];
+                var fail = new bool[4];
+                for (int s = 0; s < 4; s++)
+                {
+                    if (mainForm._slotSerial[s].Length == 0) { state[s] = "-"; continue; }
+                    if (commonFailedEver) { fail[s] = true; state[s] = "FAIL(공통 항목)"; }
+                    else if (mainForm._slotBlocked[s]) { fail[s] = true; state[s] = $"FAIL(X 기록 없음: {yBlockReason[s == MainForm.SLOT_Y1 ? 0 : 1]})"; }
+                    else if (slotEverFailed[s]) { fail[s] = true; state[s] = $"FAIL({slotFailReason[s]})"; }
+                    else state[s] = s <= MainForm.SLOT_X2 ? "X통과(대기)" : "PASS";
+                }
 
                 var savedList = new List<string>();
-                bool anyXPass = false;
+                bool anyXPass = false, cleanupFailed = false;
+                int completed = 0, xWaiting = 0;
                 for (int lane = 0; lane < 2; lane++)
                 {
                     int xs = lane == 0 ? MainForm.SLOT_X1 : MainForm.SLOT_X2;
                     int ys = lane == 0 ? MainForm.SLOT_Y1 : MainForm.SLOT_Y2;
                     string xn = MainForm.SLOT_LABELS[xs], yn = MainForm.SLOT_LABELS[ys];
                     string xSn = mainForm._slotSerial[xs], ySn = mainForm._slotSerial[ys];
-                    string pendingPath = GetPendingSlotPath(lane);
-                    bool xPass = xSn.Length > 0 && !mainForm._slotFailed[xs] && !slot4CommonFailed;
-                    bool yPass = ySn.Length > 0 && !mainForm._slotFailed[ys] && !slot4CommonFailed;
-                    if (xPass) anyXPass = true;
+                    string pendingPath = MainForm.GetPendingSlotPath(lane, wsKey);
 
-                    // 1) X 결과 → 레인 pending (다음 사이클 Y와 합산)
-                    if (xPass)
+                    // ② Y 완성
+                    if (ySn.Length > 0 && !fail[ys])
                     {
-                        var xRet = new JArray();
-                        mainForm.Invoke(new Action(() => CollectRetmsgBySlot(mainForm, xs, xRet)));
-                        var pendingData = new JObject
+                        var prev = lanePending[lane];
+                        if (prev == null || (prev["serial"]?.ToString() ?? "") != ySn)
                         {
-                            ["serial"] = xSn,
-                            ["slot"] = xn,
-                            ["time"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                            ["retmsg"] = xRet
-                        };
-                        File.WriteAllText(pendingPath, pendingData.ToString(), new System.Text.UTF8Encoding(false));
-                        logAction($"[{xn}] X 결과 임시 저장: {xSn} ({xRet.Count}항목)");
-                    }
-
-                    // 2) Y 결과 + 이전 pending → 완성 저장
-                    if (yPass)
-                    {
-                        var prev = _previousPendingSlot[lane];
-                        string prevSn = prev?["serial"]?.ToString() ?? "";
-                        if (prev != null && prevSn == ySn)
-                        {
-                            var yRet = new JArray();
-                            mainForm.Invoke(new Action(() => CollectRetmsgBySlot(mainForm, ys, yRet)));
-                            var combined = new JArray();
-                            foreach (var it in prev["retmsg"] as JArray ?? new JArray()) combined.Add(it);
-                            foreach (var it in yRet) combined.Add(it);
-                            mainForm.SaveLogDirect(ySn, combined, logAction, $"{xn}->{yn}");
-                            savedList.Add(ySn);
-                            logAction($"[{yn}] 완성 업로드: {ySn} (X+Y {combined.Count}항목)");
+                            fail[ys] = true;
+                            state[ys] = $"FAIL(X 기록 없음: {yBlockReason[lane] ?? "pending 불일치"})";
+                            logAction($"[{yn}] 미완성 — X 기록 없음 ({yBlockReason[lane] ?? "pending 불일치"}) → FAIL, 결과 저장 안 함");
                         }
-                        else if (prev == null)
-                            logAction($"[{yn}] Y 결과 있으나 이전 pending 없음 (첫 사이클)");
                         else
-                            logAction($"[경고] [{yn}] pending 시리얼 불일치: pending={prevSn}, Y={ySn}");
-                        _previousPendingSlot[lane] = null;
+                        {
+                            string jsonPath = mainForm.ResultJsonPath(ySn);
+                            bool existedBefore = File.Exists(jsonPath);
+                            bool returned = false;
+                            try
+                            {
+                                var yRet = new JArray();
+                                mainForm.Invoke(new Action(() => CollectRetmsgBySlot(mainForm, ys, yRet)));
+                                var combined = new JArray();
+                                foreach (var it in prev["retmsg"] as JArray ?? new JArray()) combined.Add(it);
+                                foreach (var it in yRet) combined.Add(it);
+                                mainForm.SaveLogDirect(ySn, combined, logAction, $"{xn}->{yn}");
+                                returned = true;                       // F8: 반환 후에는 PASS 고정
+                                laneConsumed[lane] = true;
+                                state[ys] = "완성";
+                                completed++;
+                                savedList.Add(ySn);
+                                logAction($"[{yn}] 완성 업로드: {ySn} (X+Y {combined.Count}항목)");
+                            }
+                            catch (Exception ex)
+                            {
+                                if (!returned)
+                                {
+                                    fail[ys] = true;
+                                    state[ys] = "FAIL(저장 실패)";
+                                    logAction($"[{yn}] 결과 저장 실패: {ex.Message}");
+                                    try { if (!existedBefore && File.Exists(jsonPath)) File.Delete(jsonPath); } catch { }
+                                }
+                                else logAction($"[{yn}] 저장 후 처리 예외(판정 유지): {ex.Message}");
+                            }
+                        }
                     }
 
-                    // 3) 마감(X 빈칸): 레인 pending 삭제 → 재투입 중복 완성 차단
-                    if (xSn.Length == 0)
+                    // ③ X 기록 — X 단계 통과한 보드만 새 pending (소비 안 된 옛 pending은 폐기)
+                    if (xSn.Length > 0 && !fail[xs])
                     {
-                        try { if (File.Exists(pendingPath)) File.Delete(pendingPath); } catch { }
+                        try
+                        {
+                            var xRet = new JArray();
+                            mainForm.Invoke(new Action(() => CollectRetmsgBySlot(mainForm, xs, xRet)));
+                            var pendingData = new JObject
+                            {
+                                ["serial"] = xSn,
+                                ["slot"] = xn,
+                                ["ws"] = wsKey,
+                                ["x_result"] = "PASS",
+                                ["time"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                                ["retmsg"] = xRet
+                            };
+                            MainForm.WriteAllTextAtomic(pendingPath, pendingData.ToString());
+                            laneNewWritten[lane] = true;
+                            anyXPass = true;
+                            xWaiting++;
+                            logAction($"[{xn}] X 결과 임시 저장: {xSn} ({xRet.Count}항목)");
+                        }
+                        catch (Exception ex)
+                        {
+                            fail[xs] = true;
+                            state[xs] = "FAIL(pending 저장 실패)";
+                            logAction($"[{xn}] pending 저장 실패: {ex.Message}");
+                        }
+                    }
+                    else if (lanePending[lane] != null && !laneConsumed[lane])
+                        logAction($"[레인{lane + 1}] 소비되지 않은 pending 폐기: {lanePending[lane]?["serial"]}");
+
+                    // ④ .inuse 정리 (이번 사이클 소유분 삭제)
+                    if (laneInuse[lane])
+                    {
+                        try { File.Delete(pendingPath + ".inuse"); laneInuse[lane] = false; }
+                        catch (Exception ex) { cleanupFailed = true; logAction($"[레인{lane + 1}] pending 정리 실패: {ex.Message}"); }
                     }
                 }
+                slot4Finished = true;
+
                 if (savedList.Count > 0)
                     mainForm.Invoke(() => mainForm.label_passSaved.Text = "PASS SAVED: " + string.Join(", ", savedList));
 
-                string totals = $"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}\n{summary}";
-                if (failCount == 0)
+                string summary = MainForm.SlotSummaryText(state) + (cleanupFailed ? " · pending 정리 실패" : "");
+                logAction($"슬롯 결과: {summary}");
+                mainForm.Invoke(() => mainForm.label_Serial.Text = summary.Replace(" · ", "\n"));
+
+                bool anyFail = Enumerable.Range(0, 4).Any(s => fail[s]) || cleanupFailed;
+                string totals = $"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}\n완성 {completed}대 · X통과 {xWaiting}대 대기\n{summary}";
+                if (!anyFail)
                 {
                     mainForm.ShowPassForm(totals);   // C3(v05): 결과 문구를 표시되는 팝업에 직접 전달
                 }
@@ -3005,6 +3089,37 @@ namespace flexfab
                     // 시리얼 번호 롤백(재사용)은 X 슬롯이 하나도 통과 못했을 때만. 한 슬롯만 FAIL이면 번호 진행 유지(재검은 수동 입력)
                     if (!anyXPass) RollbackSerialAndMacIfFail(logAction);
                     mainForm.ShowFailForm(totals);   // C3(v05): 결과 문구를 표시되는 팝업에 직접 전달
+                }
+            }
+
+            // 4슬롯 사이클 비정상 종료 정리 (v05 F2-7): STOP·FAIL 중단·예외 — 새 pending 없음, .inuse는 안전 방향으로 정리
+            void CleanupSlot4Abnormal()
+            {
+                for (int lane = 0; lane < 2; lane++)
+                {
+                    try
+                    {
+                        string pendingPath = MainForm.GetPendingSlotPath(lane, wsKey);
+                        string inuse = pendingPath + ".inuse";
+                        if (!laneInuse[lane] || !File.Exists(inuse)) continue;
+                        string pSn = lanePending[lane]?["serial"]?.ToString() ?? "";
+                        string laneY = mainForm._slotSerial[lane == 0 ? MainForm.SLOT_Y1 : MainForm.SLOT_Y2];
+                        // 같은 보드가 이번 사이클 다른 슬롯(X 재투입·레인 교차)에 있었으면 최신 X 결과 불명 → 폐기
+                        bool reused = pSn.Length > 0 && mainForm._slotSerial.Any(sn => string.Equals(sn, pSn, StringComparison.OrdinalIgnoreCase))
+                                      && !string.Equals(laneY, pSn, StringComparison.OrdinalIgnoreCase);
+                        if (laneConsumed[lane] || laneNewWritten[lane] || reused || File.Exists(pendingPath))
+                        {
+                            File.Delete(inuse);
+                            logAction($"[레인{lane + 1}] 중단 — pending 폐기 ({(laneConsumed[lane] ? "완성됨" : laneNewWritten[lane] ? "새 X 기록됨" : reused ? "같은 보드 재투입" : "새 파일 존재")})");
+                        }
+                        else
+                        {
+                            File.Move(inuse, pendingPath);
+                            logAction($"[레인{lane + 1}] 중단 — pending 복원: {pSn} (Y 재검 가능)");
+                        }
+                        laneInuse[lane] = false;
+                    }
+                    catch (Exception ex) { logAction($"[레인{lane + 1}] pending 정리 실패: {ex.Message}"); }
                 }
             }
 
@@ -3034,19 +3149,52 @@ namespace flexfab
                 _previousPendingData = null;
                 if (slot4)
                 {
-                    // 4슬롯: 레인별 pending (X1→Y1, X2→Y2)
+                    // 4슬롯: 레인별 pending (X1→Y1, X2→Y2) — v05 F2 사이클 단위 소유
+                    string ts = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    for (int s = 0; s < 4; s++) mainForm._slotBlocked[s] = false;
                     for (int lane = 0; lane < 2; lane++)
                     {
-                        _previousPendingSlot[lane] = null;
-                        string pp = GetPendingSlotPath(lane);
-                        if (!File.Exists(pp)) continue;
+                        string pp = MainForm.GetPendingSlotPath(lane, wsKey);
+                        int ys = lane == 0 ? MainForm.SLOT_Y1 : MainForm.SLOT_Y2;
+                        string ySn = mainForm._slotSerial[ys];
                         try
                         {
-                            var loaded = JObject.Parse(File.ReadAllText(pp, new System.Text.UTF8Encoding(false)));
-                            _previousPendingSlot[lane] = loaded;
-                            logAction($"이전 pending 로드 (레인{lane + 1}): {loaded["serial"]} ({loaded["time"]})");
+                            // ① 남은 .inuse = 크래시 잔재 → 무조건 폐기(복원 금지)
+                            if (File.Exists(pp + ".inuse")) { File.Move(pp + ".inuse", $"{pp}.stale_{ts}"); logAction($"[레인{lane + 1}] 이전 비정상 종료 pending 폐기 → .stale_{ts}"); }
+                            // ② 구 형식 파일은 읽지 않고 .old
+                            string legacy = MainForm.GetLegacyPendingSlotPath(lane);
+                            if (File.Exists(legacy)) { File.Move(legacy, $"{legacy}.old_{ts}"); logAction($"[레인{lane + 1}] 구 형식 pending 사용 안 함 → .old_{ts}"); }
+                            // ③ 검증 후 메모리로, 파일은 .inuse로 잠금
+                            var loaded = mainForm.LoadValidPending(pp, wsKey, out string why);
+                            if (loaded != null)
+                            {
+                                string pSn = loaded["serial"]?.ToString() ?? "";
+                                // F2-5: 같은 보드가 이번 사이클 이 레인 Y가 아닌 슬롯에 있음(재투입·레인 교차) → 무효
+                                bool reused = mainForm._slotSerial.Any(sn => string.Equals(sn, pSn, StringComparison.OrdinalIgnoreCase))
+                                              && !string.Equals(ySn, pSn, StringComparison.OrdinalIgnoreCase);
+                                if (reused) { why = $"같은 보드({pSn}) 재투입"; loaded = null; }
+                            }
+                            if (File.Exists(pp))
+                            {
+                                if (loaded != null) { File.Move(pp, pp + ".inuse"); laneInuse[lane] = true; }
+                                else { File.Move(pp, $"{pp}.invalid_{ts}"); logAction($"[레인{lane + 1}] pending 무효({why}) → .invalid_{ts}"); }
+                            }
+                            lanePending[lane] = loaded;
+                            if (loaded != null) logAction($"이전 pending 로드 (레인{lane + 1}): {loaded["serial"]} ({loaded["time"]})");
+                            // F2-4: Y에 보드가 있는데 유효 X 기록이 없으면 Y 슬롯 실행 금지(쓰기 항목 포함) → 판정 FAIL
+                            if (ySn.Length > 0 && (loaded == null || !string.Equals(loaded["serial"]?.ToString(), ySn, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                yBlockReason[lane] = loaded == null ? why : $"pending 시리얼 {loaded["serial"]} ≠ {ySn}";
+                                mainForm._slotBlocked[ys] = true;
+                                logAction($"[{MainForm.SLOT_LABELS[ys]}] X 기록 없음({yBlockReason[lane]}) → 이번 사이클 실행 안 함, FAIL");
+                            }
                         }
-                        catch { logAction($"[경고] pending 파일 읽기 실패 (레인{lane + 1})"); }
+                        catch (Exception ex)
+                        {
+                            lanePending[lane] = null;
+                            if (ySn.Length > 0) { yBlockReason[lane] = "pending 처리 오류"; mainForm._slotBlocked[ys] = true; }
+                            logAction($"[경고] pending 처리 실패 (레인{lane + 1}): {ex.Message}");
+                        }
                     }
                 }
                 else if (!curSingleMode && File.Exists(pendingPathInit))
@@ -3077,8 +3225,12 @@ namespace flexfab
                 // 라운드마다 카운터 리셋 (마지막 라운드 값만 최종 사용)
                 if (repeatCount > 1 && round > 0)
                 {
-                    okCount = 0; failCount = 0; skipCount = 0;
-                    mainForm._failRecords.Clear();   // 불량보기: 라운드 초기화 시 함께 비움
+                    // v05 F5: 4슬롯은 FAIL 누적(카운트·불량보기 유지) — 한 라운드라도 FAIL이면 최종 FAIL. 2슬롯은 기존대로 초기화
+                    if (!slot4)
+                    {
+                        okCount = 0; failCount = 0; skipCount = 0;
+                        mainForm._failRecords.Clear();   // 불량보기: 라운드 초기화 시 함께 비움
+                    }
                     // DataGridView 결과 초기화
                     for (int ri = 0; ri < mainForm.dataGridView1.Rows.Count; ri++)
                     {
@@ -3227,6 +3379,14 @@ namespace flexfab
                     if (libraryDict == null)
                     {
                         logAction($"오류: 프로세스 '{proc.name}'의 libid '{proc.libid}'에 해당하는 라이브러리를 찾을 수 없습니다.");
+                        if (slot4)
+                        {
+                            // v05 F1: 4슬롯은 미검사 = FAIL (셀 FAIL + 전 슬롯 공통 FAIL). 2슬롯은 기존 동작(부록 B 역반영 대상)
+                            mainForm.UpdateDataGridView(i, "FAIL", Color.Red);
+                            failCount++;
+                            slot4CommonFailed = true;
+                            mainForm.AddFailRecord(proc, null, "라이브러리를 찾을 수 없습니다.");
+                        }
                         continue;
                     }
 
@@ -3353,6 +3513,7 @@ namespace flexfab
                             logAction($"오류: 메서드 {proc.id}를 {classtype.FullName}에서 찾을 수 없습니다.");
                             mainForm.UpdateDataGridView(i, "FAIL", Color.Red);
                             failCount++;
+                            if (slot4) slot4CommonFailed = true;   // v05 F1: 슬롯 비귀속 FAIL → 전 슬롯 FAIL
                             mainForm.AddFailRecord(proc, null, "메서드를 찾을 수 없습니다.");
                         }
                     }
@@ -3361,11 +3522,14 @@ namespace flexfab
                         logAction($"오류: 테스트 {proc.name}의 라이브러리 정보가 올바르지 않습니다.");
                         mainForm.UpdateDataGridView(i, "FAIL", Color.Red);
                         failCount++;
+                        if (slot4) slot4CommonFailed = true;   // v05 F1: 슬롯 비귀속 FAIL → 전 슬롯 FAIL
                         mainForm.AddFailRecord(proc, null, "라이브러리 정보 오류");
                     }
                 }
 
                 if (wasCanceled) break;
+
+                if (slot4) AccumulateSlot4Round();   // v05 F1·F5: 라운드 끝 양성 증거 판정 누적
 
                 // repeat_count 라운드 간 대기
                 if (repeatCount > 1 && round < repeatCount - 1)
@@ -3552,6 +3716,12 @@ namespace flexfab
             }
             finally
             {
+                // v05 F2-7: 4슬롯 비정상 종료(STOP·FAIL 중단·예외) — pending .inuse 안전 정리 (자체 try, Start 활성화보다 앞)
+                if (slot4 && !slot4Finished)
+                {
+                    try { CleanupSlot4Abnormal(); } catch (Exception ex) { try { logAction($"[경고] pending 정리 중 예외: {ex.Message}"); } catch { } }
+                }
+
                 // 모션지그 수평 복귀 (FAIL/예외 시 기울어진 상태 방지)
                 try
                 {

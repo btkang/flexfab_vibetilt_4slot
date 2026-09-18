@@ -20,7 +20,8 @@ namespace flexfab
         internal bool _slot4 = false;                       // slot_layout == "4"
         internal string[] _slotSerial = { "", "", "", "" }; // 슬롯별 시리얼 ("" = 빈 슬롯 → Skip)
         internal Dictionary<string, string> _slotUarts = new();   // "X1" → "uart_232" …
-        internal bool[] _slotFailed = { false, false, false, false }; // 슬롯 단위 FAIL 제외
+        internal bool[] _slotFailed = { false, false, false, false }; // 슬롯 단위 FAIL 제외 (라운드마다 리셋, 실행 제어용)
+        internal bool[] _slotBlocked = { false, false, false, false }; // v05 F2-4: 사이클 동안 실행 금지(유효 X 기록 없는 Y 등) — fail_continue와 무관하게 Skip
         private bool _clearLogOnRunStart = false;           // clear_log_on_run_start
         private static readonly JObject?[] _previousPendingSlot = { null, null }; // 레인별 pending (X1→Y1, X2→Y2)
         private static string _lastSerialX2 = "";           // X2 슬롯 이전 시리얼 (Y2 자동 채움)
@@ -176,7 +177,88 @@ namespace flexfab
         }
 
         private string GetLastSerialX2FileName() => GetLastSerialXFileName().Replace("last_serial_x_", "last_serial_x2_");
-        private string GetPendingSlotPath(int lane) => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"pending_x{lane + 1}_result.json");
+        // ── v05 F1: 실행·판정 공용 슬롯 규칙 (단일 규칙 — RunProcSlot4와 SlotVerdict가 같이 씀) ──
+        // common → [] (1회 실행, 판정 시 시리얼 있는 전 슬롯에 적용) / X → X1·X2 / Y → Y1·Y2 / all → 단계1: X1·X2 (단계2에서 4슬롯)
+        internal static int[] SlotsForRun(string group) => group switch
+        {
+            "X" => new[] { SLOT_X1, SLOT_X2 },
+            "Y" => new[] { SLOT_Y1, SLOT_Y2 },
+            "all" => new[] { SLOT_X1, SLOT_X2 },
+            _ => Array.Empty<int>(),
+        };
+
+        // v05 F1: 양성 증거 판정 — 슬롯에 해당하는 모든 항목 셀이 "OK"일 때만 PASS. Skip·"..."·빈칸·FAIL = FAIL(미검사 포함)
+        internal bool SlotVerdict(int s, out string reason)
+        {
+            bool ok = true; string r = "";
+            Action a = () =>
+            {
+                var procs = (IList<object>)((IDictionary<string, object>)((IList<object>)workspace.projects)[0])["procs"];
+                for (int i = 0; i < procs.Count && i < dataGridView1.Rows.Count; i++)
+                {
+                    dynamic proc = procs[i];
+                    string g = GetSlotGroup(proc);
+                    bool applies = g == "common" || Array.IndexOf(SlotsForRun(g), s) >= 0;
+                    if (!applies) continue;
+                    string v = dataGridView1.Rows[i].Cells[2 + s].Value?.ToString() ?? "";
+                    if (v == "OK") continue;
+                    string name = "";
+                    try { name = (string)(proc.name ?? ""); } catch { }
+                    string no = name.Split(' ')[0];
+                    r = (v == "FAIL" ? "FAIL " : v == "Skip" ? "Skip " : "미실행 ") + no;
+                    ok = false;
+                    break;
+                }
+            };
+            if (InvokeRequired) Invoke(a); else a();
+            reason = r;
+            return ok;
+        }
+
+        // ── v05 F2: 레인 pending — 워크스페이스별 파일, 검증 공용 함수 ──
+        internal string CurrentWsKey() => string.IsNullOrEmpty(_currentWorkspacePath) ? "unknown" : Path.GetFileNameWithoutExtension(_currentWorkspacePath);
+        internal static string GetPendingSlotPath(int lane, string wsKey) => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"pending_{wsKey}_x{lane + 1}.json");
+        internal static string GetLegacyPendingSlotPath(int lane) => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"pending_x{lane + 1}_result.json");
+
+        internal int PendingMaxAgeHours()
+        {
+            try { var d = (IDictionary<string, object>)workspace; if (d.TryGetValue("pending_max_age_h", out var v)) return Math.Max(1, Convert.ToInt32(v)); } catch { }
+            return 24;
+        }
+
+        // 유효 pending만 반환 — 읽기 실패·ws 불일치·x_result 없음(구 형식)·유효기간 초과 → null + 사유
+        internal JObject? LoadValidPending(string path, string wsKey, out string reason)
+        {
+            reason = "";
+            if (!File.Exists(path)) { reason = "pending 없음"; return null; }
+            JObject o;
+            try { o = JObject.Parse(File.ReadAllText(path, new System.Text.UTF8Encoding(false))); }
+            catch { reason = "pending 손상"; return null; }
+            if ((o["ws"]?.ToString() ?? "") != wsKey) { reason = $"워크스페이스 불일치({o["ws"]})"; return null; }
+            if ((o["x_result"]?.ToString() ?? "") != "PASS") { reason = "X 판정 기록 없음(구 형식)"; return null; }
+            if (!DateTime.TryParse(o["time"]?.ToString(), out var t) || (DateTime.Now - t).TotalHours > PendingMaxAgeHours())
+            { reason = $"유효기간 초과({PendingMaxAgeHours()}h)"; return null; }
+            if (string.IsNullOrWhiteSpace(o["serial"]?.ToString())) { reason = "시리얼 없음"; return null; }
+            return o;
+        }
+
+        // 결과 JSON 경로 (SaveLogDirect와 같은 규칙) — 저장 도중 예외 시 반쪽 파일 삭제용
+        internal string ResultJsonPath(string sn)
+        {
+            string projFolder = "";
+            try { projFolder = ((string)workspace.projects[0].name).Replace(" ", ""); } catch { }
+            if (string.IsNullOrWhiteSpace(projFolder)) projFolder = "unknown";
+            return Path.Combine(Directory.GetCurrentDirectory(), "Result", projFolder, DateTime.Now.ToString("yyyy-MM-dd"), $"{sn}.json");
+        }
+
+        // 원자적 쓰기: tmp 작성 → 대상 없으면 Move, 있으면 Replace
+        internal static void WriteAllTextAtomic(string path, string text)
+        {
+            string tmp = path + ".tmp";
+            File.WriteAllText(tmp, text, new System.Text.UTF8Encoding(false));
+            if (File.Exists(path)) File.Replace(tmp, path, null);
+            else File.Move(tmp, path);
+        }
 
         // 시리얼 입력 (4칸). X1·X2 신규 입력, Y1·Y2는 이전 사이클 X1·X2 자동 채움. 빈칸 = 그 슬롯 Skip
         private bool ShowQuadSerialDialog()
@@ -226,7 +308,11 @@ namespace flexfab
                 ForeColor = Color.DarkBlue, BorderStyle = BorderStyle.FixedSingle, BackColor = Color.AliceBlue,
             };
             var txt = new TextBox[4];
-            string[] defaults = { lastSerial, shift(lastSerial, 1), _lastSerialX, _lastSerialX2 };
+            // v05 F3: Y 기본값 = 유효 pending의 시리얼 (X FAIL 보드가 Y 칸에 자동으로 채워지지 않게). last_serial_x*는 X 자동증가 기준으로만
+            string wsKeyNow = CurrentWsKey();
+            string yDef1 = LoadValidPending(GetPendingSlotPath(0, wsKeyNow), wsKeyNow, out _)?["serial"]?.ToString() ?? "";
+            string yDef2 = LoadValidPending(GetPendingSlotPath(1, wsKeyNow), wsKeyNow, out _)?["serial"]?.ToString() ?? "";
+            string[] defaults = { lastSerial, shift(lastSerial, 1), yDef1, yDef2 };
             string[] labels = { "X1슬롯 시리얼", "X2슬롯 시리얼 (X1 + 1)", "Y1슬롯 시리얼 (이전 X1슬롯)", "Y2슬롯 시리얼 (이전 X2슬롯)" };
             var ctrls = new List<Control> { lblGuide };
             for (int s = 0; s < 4; s++)
@@ -236,7 +322,7 @@ namespace flexfab
                 var tb = new TextBox { Text = defaults[s], Location = new Point(20, y + 28), Width = 330, MaxLength = 11, Font = bigFont };
                 tb.SelectionStart = tb.Text.Length;
                 tb.GotFocus += (o, e) => { tb.SelectionStart = tb.Text.Length; };
-                if (s >= 2 && string.IsNullOrEmpty(defaults[s])) tb.PlaceholderText = "(없음 - 시작 사이클)";
+                if (s >= 2 && string.IsNullOrEmpty(defaults[s])) tb.PlaceholderText = "(X 기록 없음)";
                 var bm = new Button { Text = "-", Location = new Point(360, y + 26), Size = new Size(50, 40), Font = new Font("맑은 고딕", 16, FontStyle.Bold) };
                 var bp = new Button { Text = "+", Location = new Point(418, y + 26), Size = new Size(50, 40), Font = new Font("맑은 고딕", 16, FontStyle.Bold) };
                 bm.Click += (o, e) => { if (tb.Text.Trim().Length > 0) tb.Text = shift(tb.Text.Trim(), -1); };
@@ -352,10 +438,10 @@ namespace flexfab
         }
 
         // "X1 PASS · X2 PASS · Y1 PASS · Y2 FAIL" (빈 슬롯은 '-')
-        internal string SlotSummaryText(bool commonFailed)
+        // v05 F4: 판정 확정 후의 슬롯 상태 문자열로 요약 (예: "X1슬롯 X통과(대기) · Y2슬롯 FAIL(X 기록 없음)")
+        internal static string SlotSummaryText(string[] state)
         {
-            return string.Join(" · ", SLOT_LABELS.Select((n, i) =>
-                _slotSerial[i].Length == 0 ? $"{n} -" : $"{n} {(commonFailed || _slotFailed[i] ? "FAIL" : "PASS")}"));
+            return string.Join(" · ", SLOT_LABELS.Select((n, i) => $"{n} {state[i]}"));
         }
     }
 }
