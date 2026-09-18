@@ -108,6 +108,7 @@ def convert(d, bus):
     prj = d["projects"][0]
     prj["id"] = prj["id"] + "-4slot"
     prj["name"] = prj["name"] + "_4slot"
+    d["active_project"] = prj["id"]   # 실행 시 프로젝트 매칭 (id 변경에 맞춤)
     dep = list(prj.get("library_depencency", []))
     for k, v in ((ux, ux2), (uy, uy2)):
         if k in dep and v not in dep:

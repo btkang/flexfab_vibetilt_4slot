@@ -654,5 +654,5 @@
     "_serial_prefix_comment": "시리얼 접두사 검증. 232=VL1-, 485=VL2-",
     "serial_prefix_check": 2,
     "_serial_prefix_check_comment": "0: 안함 | 1: 경고팝업(진행가능) | 2: 차단(진행불가) | 양산 권장: 2",
-    "active_project": "prj-motion-485"
+    "active_project": "prj-motion-485-4slot"
 }
