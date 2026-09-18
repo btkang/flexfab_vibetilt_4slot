@@ -1080,7 +1080,7 @@ namespace flexfab
 
                 // DataGridView에서 행을 지우고, 필요한 만큼 행을 추가
                 dataGridView1.Rows.Clear();
-                ApplySlotLayout(); // 4슬롯: slot_layout 읽고 결과 열 1→4 구성 (2슬롯이면 원복)
+                ApplySlotLayout(workspace); // 4슬롯: 방금 로드한 객체(지역변수)로 slot_layout 읽고 결과 열 1→4 구성 (2슬롯이면 원복)
 
                 // 필요한 만큼 행 추가
                 for (int i = 0; i < rowCount; i++)

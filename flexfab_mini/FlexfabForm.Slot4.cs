@@ -34,13 +34,15 @@ namespace flexfab
         }
 
         // 워크스페이스 로드/재로드/설정 적용 시 호출 — slot_layout·slot_uarts·clear_log 읽고 그리드 열 구성
-        private void ApplySlotLayout()
+        // ws: 읽을 워크스페이스 객체. MainLoadWorkspace는 지역변수를 넘김(멤버 workspace는 반환 후에야 갱신됨), 그 외는 멤버 사용
+        private void ApplySlotLayout(dynamic ws = null)
         {
+            ws ??= workspace;
             _slot4 = false;
             _slotUarts = new Dictionary<string, string>();
             try
             {
-                var dict = (IDictionary<string, object>)workspace;
+                var dict = (IDictionary<string, object>)ws;
                 if (dict.TryGetValue("slot_layout", out var sl) && (sl?.ToString() ?? "") == "4") _slot4 = true;
                 if (dict.TryGetValue("slot_uarts", out var su) && su is IDictionary<string, object> sud)
                     foreach (var kv in sud) _slotUarts[kv.Key] = kv.Value?.ToString() ?? "";
