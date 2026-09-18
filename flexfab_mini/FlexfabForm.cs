@@ -733,7 +733,7 @@ namespace flexfab
             // 
             button_expand.Location = new Point(651, 33);
             button_expand.Name = "button_expand";
-            button_expand.Size = new Size(145, 46);
+            button_expand.Size = new Size(145, 26);   // 46→26: 아래 "Test : 프로젝트명" 라벨(y=63)과 겹침 방지 (4슬롯 이름 길어짐)
             button_expand.TabIndex = 27;
             button_expand.Text = "Log 표시/끄기";
             button_expand.UseVisualStyleBackColor = true;
