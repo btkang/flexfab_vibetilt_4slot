@@ -57,32 +57,36 @@ namespace flexfab
             ConfigureGridColumnsForSlots();
         }
 
-        // 결과 열: 2슬롯 = "결과" 1열(Cells[2]) / 4슬롯 = X1·X2·Y1·Y2 4열(Cells[2..5]). 폼 크기·다른 컨트롤 불변
+        // 결과 열: 2슬롯 = "결과" 1열(Cells[2]) / 4슬롯 = X1·X2·Y1·Y2 4열(Cells[2..5]).
+        // 그리드 폭(542)·위치·폼·오른쪽 컨트롤(검사자/시리얼/Mac/불량보기) 전부 불변 — 기존 폭 안에서 열만 재배분
+        //  (행 머리 ▸ 열 숨김 41px + 번호 60→45 + 항목 300→235 → 슬롯 4열 × 60)
         private void ConfigureGridColumnsForSlots()
         {
             if (InvokeRequired) { Invoke(new Action(ConfigureGridColumnsForSlots)); return; }
-            const int extraW = 70;
+            const int slotW = 60;
             bool hasExtra = dataGridView1.Columns.Contains("Slot_X2");
             if (_slot4 && !hasExtra)
             {
+                dataGridView1.RowHeadersVisible = false;
+                dataGridView1.Columns["Number"].Width = 45;
+                dataGridView1.Columns["Name"].Width = 235;
                 dataGridView1.Columns["Result"].HeaderText = "X1";
-                dataGridView1.Columns["Result"].Width = extraW;
+                dataGridView1.Columns["Result"].Width = slotW;
                 foreach (var nm in new[] { "X2", "Y1", "Y2" })
                 {
-                    var col = new DataGridViewTextBoxColumn { Name = "Slot_" + nm, HeaderText = nm, Width = extraW, SortMode = DataGridViewColumnSortMode.NotSortable };
+                    var col = new DataGridViewTextBoxColumn { Name = "Slot_" + nm, HeaderText = nm, Width = slotW, SortMode = DataGridViewColumnSortMode.NotSortable };
                     dataGridView1.Columns.Add(col);
                 }
-                dataGridView1.Columns["Name"].Width = 270;
-                dataGridView1.Width = 650;
             }
             else if (!_slot4 && hasExtra)
             {
                 foreach (var nm in new[] { "Slot_X2", "Slot_Y1", "Slot_Y2" })
                     if (dataGridView1.Columns.Contains(nm)) dataGridView1.Columns.Remove(nm);
+                dataGridView1.RowHeadersVisible = true;
+                dataGridView1.Columns["Number"].Width = 60;
+                dataGridView1.Columns["Name"].Width = 300;
                 dataGridView1.Columns["Result"].HeaderText = "결과";
                 dataGridView1.Columns["Result"].Width = 100;
-                dataGridView1.Columns["Name"].Width = 300;
-                dataGridView1.Width = 542;
             }
             if (_slot4) SetSlotHeaders();
         }
