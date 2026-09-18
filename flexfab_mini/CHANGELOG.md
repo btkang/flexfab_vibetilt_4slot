@@ -1,5 +1,23 @@
 # flexfab_mini CHANGELOG
 
+## 2026-09-18 (야간) — 잘못된 PASS 차단 결함 수정 (PLAN v05, GitLab `vibetilt-4slot`)
+- 근거: `02_분석_날짜/2026 0918-4슬롯_구현계획/PLAN_4슬롯_잘못된PASS차단_결함수정_20260918_v05.md`, 게이트 기록 `REVIEW_PLAN게이트_20260918_v01.md`
+- **전역(2슬롯에도 적용 — 안전·표시 결함):**
+  - 검사 중 번호셀·헤더 토글, 모든 그리드 더블클릭, 테스트설정·워크스페이스 재로드·열기 차단(`_isRunning`). 실행 중 항목명 더블클릭 단독실행이 UI 스레드에서 모터·포트를 이중 구동하던 경로 제거.
+  - 단독실행: `_isRunning`·Start 비활성, 번호셀 색 복원(1항목만 검사 후 PASS 방지), 이전 `__serial`·`__skip_uarts` 제거, 쓰기 항목(`UID_`·`RCONF_`·`APPCFG_SAVE_`) 차단(fail-closed, active_project 기준).
+  - PASS/FAIL 팝업에 결과 문구 표시(9곳, `ShowPassForm(msg)`) — 기존엔 표시 안 되는 인스턴스에 설정돼 안 보였음.
+  - Start Task try/finally — 예외여도 `_isRunning` 해제.
+- **4슬롯 전용(`slot_layout=4`, 사이클 스냅샷 `slot4`):**
+  - 양성 증거 판정 `SlotVerdict`: 슬롯 해당 항목 셀 전부 OK일 때만 PASS(`SlotsForRun` 공용 규칙). 라이브러리 미발견·메서드 없음·정보 오류 = 셀 FAIL + 전 슬롯 FAIL.
+  - pending: `pending_{워크스페이스}_x{n}.json`(`ws`·`x_result` 필드), 사이클 시작 시 검증 후 `.inuse` 잠금, 남은 `.inuse` → `.stale_*`, 구 형식 → `.old_*`, 무효 → `.invalid_*`, 재투입·레인 교차 무효, 유효 X 기록 없는 Y 슬롯은 실행 금지(쓰기 항목 보호). 정상 종료: Y 완성 → X 원자적 기록 → `.inuse` 삭제. 비정상 종료: 안전 방향 정리.
+  - Y 미완성 = FAIL, 시리얼 팝업 Y 기본값 = 유효 pending 시리얼.
+  - 요약 `X통과(대기)`·`완성`·`FAIL(사유)`, 팝업은 슬롯 FAIL 하나라도 있으면 FAIL.
+  - `repeat_all_count` 라운드 FAIL 누적(카운트·불량보기 유지), `fail_continue` 사이클 스냅샷.
+  - 4슬롯 + single 모드 Start 거부, 테스트설정 `test_mode=1` 적용 거부.
+  - #0 통신검사 빈 슬롯 포트 SKIP(`__skip_uarts`, ff_vibetilt MotionJig — 키 없으면 기존 동작).
+  - 저장 예외 격리(레인별), 저장 도중 예외 시 반쪽 결과 JSON 삭제.
+- 배포 전 4슬롯 지그 마감 사이클 실행 권장(구 pending 자동 `.old`).
+
 ## 2026-09-18 — 4슬롯 표시명 "X1슬롯" 통일, 겹침 수정
 - **FlexfabForm.Slot4.cs** — 표시명 `SLOT_LABELS = {X1슬롯, X2슬롯, Y1슬롯, Y2슬롯}` 신설(지그 표기와 동일). 그리드 헤더·시리얼 팝업·라벨·로그 접두어·불량보기 슬롯란·요약·결과 JSON `slot`에 사용. 내부 키 `SLOT_NAMES`(X1~Y2)는 `slot_uarts` 매칭·`__slot`용으로 유지.
 - **FailInfoForm.cs** — `ExtractCoupling`: `[X슬롯]`/`[Y슬롯]` 태그도 X/Y 그룹으로 인식 (4슬롯 워크스페이스를 single 모드로 쓸 때 기존 X그룹 스킵 로직 호환).
