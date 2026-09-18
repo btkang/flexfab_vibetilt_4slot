@@ -1,5 +1,22 @@
 # flexfab_mini CHANGELOG
 
+## 2026-09-18 — 4슬롯(X1·X2·Y1·Y2) 단계 1: UI 4열 + 슬롯별 순차 실행 (GitLab `vibetilt-4slot`)
+- 근거: `02_분석_날짜/2026 0918-4슬롯_구현계획/PLAN_4슬롯_메인폼_병렬측정_구현계획_20260918_v01.md` §3 H1~H14 (H4 병렬은 단계 3, 지금은 순차)
+- 게이트: 워크스페이스 최상위 `slot_layout: "4"` + `slot_uarts` + dual 모드일 때만 활성(`Slot4Run`). 2슬롯 워크스페이스는 코드 경로가 그대로라 **기존 동작 무변경**.
+- **FlexfabForm.Slot4.cs (신규 partial)** — 4슬롯 전용 헬퍼. 필드(`_slot4`, `_slotSerial[4]`, `_slotUarts`, `_slotFailed[4]`, 레인 pending 2건), `ApplySlotLayout`(slot_layout/slot_uarts/clear_log 읽기+열 구성), `ConfigureGridColumnsForSlots`(결과 열 "결과"→X1 + X2·Y1·Y2 3열 추가, 그리드 폭 542→650, 폼·로그창·버튼 불변), `SetSlotHeaders`(헤더에 슬롯명+시리얼), `UpdateSlotCell`/`MarkSlotCellNA`, `GetSlotGroup`/`SlotsOfGroup`(param.slot_group: common/X/Y/all, 없으면 skip_coupling), `CloneParamForSlot`(uart_id·__serial·__slot 치환, 원본 불변), `ShowQuadSerialDialog`(에디트 4개, X2 기본=X1+1, Y1/Y2=이전 X1/X2 자동, 시작/마감 프리셋, prefix·형식·전부빈값·4칸 상호중복 검사, 자동증가는 X 큰 번호+1 1줄 append), `CollectRetmsgBySlot`, `AddFailRecordSlot`(슬롯당 첫 FAIL, Coupling=슬롯명), `SlotSummaryText`.
+- **FlexfabForm.cs**
+  - `MainLoadWorkspace` 그리드 구성 시 `ApplySlotLayout()` 호출, `ApplyWorkspaceCachedUI`에서도 재적용(재로드·F2 적용).
+  - `UpdateDataGridView`: 4슬롯이면 결과 4칸 모두 갱신(초기화·공통 항목·작업자 제외 Skip). 2슬롯은 Cells[2]만(동일).
+  - 결과 셀 더블클릭: 열 2 → 열 ≥2(슬롯 열마다 retmsg), 제목에 `[X1]` 표기.
+  - `button_start_Click`: 4슬롯이면 `ShowQuadSerialDialog`, 시리얼 중복 체크를 X1·X2 각각, `clear_log_on_run_start`=1이면 시작 시 화면 로그 Clear(파일 로그는 append 그대로).
+  - `MainDoProject`: 결과 셀 초기화를 결과 열 전부로(중복 루프 1개로 정리). 레인별 pending(`pending_x1_result.json`/`pending_x2_result.json`) 로드. 라운드마다 `_slotFailed` 리셋. 빈 축 스킵 블록은 4슬롯에서 우회(슬롯별 처리).
+  - 로컬 함수 `RunProcSlot4`: common=1회 실행·4칸 동일(FAIL이면 `slot4CommonFailed`, fail_continue 아니면 중단) / X·Y=슬롯별 param 복제 후 **순차** 호출, 로그 `[X1]` 접두어, 빈 슬롯·FAIL 슬롯은 Skip, FAIL은 그 슬롯만 제외하고 계속 / all(#6/#7)=단계1에서는 X 슬롯 순차(기존 단일보드 측정).
+  - 로컬 함수 `FinishSlot4`: 레인별 X pending 저장 → Y+pending 합산 `SaveLogDirect(…, slotLane:"X1->Y1")` → 마감(X 빈칸) 시 레인 pending 삭제. 팝업에 슬롯 요약("X1 PASS · X2 PASS · Y1 PASS · Y2 FAIL"). 시리얼 번호 롤백은 X 슬롯이 하나도 통과 못했을 때만.
+  - `SaveLogDirect`: 선택 인자 `slotLane` → 결과 JSON `slot` 필드. `RollbackSerialAndMacIfFail`: X2 기억 파일도 롤백. 테스트 설정: `clear_log_on_run_start` 체크박스.
+- 유지: 검사 항목 18개·판정·`_comment`, prefix/중복/자동증가/MaxLength 11, 시작·마감 사이클, test_mode single(4슬롯 워크스페이스라도 single이면 기존 X1/Y1 경로), fail_continue/fail_detail, 불량보기, 로그 파일·색·단축키, F2, 포트 변경(Uart 라이브러리 순회라 4포트 자동 표시), repeat, MongoDB 게이트, 재로드.
+- 알려진 제한(단계 1): `#0 통신검사`는 모듈이 X1/Y1 포트만 확인(X2/Y2는 단계 2에서 `__slot_uarts`로 확장). `#6/#7`은 X 슬롯 순차 측정, `#14/#15`는 `judge_from` 무시하고 직접 측정(단계 2에서 동시측정 전환). 한 슬롯만 FAIL 시 시리얼 번호는 진행(재검은 수동 입력).
+- 동반 JSON: `MP/TEST_workspace_motion_232_VL10_4slot.json`, `…_485_VL20_4slot.json` (Debug/Release, 생성기 `tools/gen_workspace_4slot.py`). 2슬롯 JSON 무변경.
+
 ## 2026-06-12
 - **FlexfabForm.cs** — `TryUploadToMongo` 진입부에 공통 게이트 추가: `MongoDBUpload=False`면 **DB 연결 시도 자체를 건너뜀**(즉시 return false, 로컬 JSON만 저장).
   - 사유: 제조팀 DB 미연결(랜선 없음) 환경에서 매 검사마다 연결 타임아웃(serverSelectionTimeoutMS=4000) 4~5초 낭비. 보드검사(`SaveLog`)는 이미 wantMongo 체크가 있었으나 **모션 밀어내기(`SaveLogDirect`)는 체크 누락**으로 설정이 안 먹혔음.

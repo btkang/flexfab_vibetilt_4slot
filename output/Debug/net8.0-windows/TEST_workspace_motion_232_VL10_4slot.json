@@ -1,0 +1,631 @@
+{
+    "_검색어": "tilt_judge_mode | vibe_judge_mode | tilt_tolerance_20 | tilt_tolerance_45 | vibe_min | vibe_max | tilt_retry_count | vibe_retry_count | tilt_judge_tail_count | vibe_judge_tail_count | tilt_stream_duration | vibe_stream_duration | tilt_settle_wait | gac_settle_wait | expected_fw_version | operator_prompt | skip_home | retry | TIMEOUT",
+    "_작업자_변경가능": "log_level | show_log | serial_duplicate_check | serial_auto_increment | fail_continue | test_mode | repeat_all_count | expected_fw_version | clear_log_on_run_start",
+    "_판정모드_설명": "last=마지막1개(느슨) | average=평균 | median=중앙값 | trimmed_mean=상하10%제거평균 | all_in_spec=전부SPEC이내(엄격)",
+    "_현재_TILT": "mode=all_in_spec | tail=10 | retry=3 | stream=1000ms | settle=500ms | spec: ±20도=±0.2, ±45도=±0.5",
+    "_현재_VIBE": "mode=all_in_spec | tail=5 | retry=3 | stream=1000ms | settle=500ms | spec: 0.98~1.02",
+    "slot_layout": "4",
+    "_slot_layout_comment": "4=X1·X2·Y1·Y2 밀어내기 2레인(X1→Y1, X2→Y2), 사이클당 2대 완성. 2 또는 없음=기존 2슬롯. 호스트가 결과열·시리얼팝업·pending 개수 결정",
+    "slot_uarts": {
+        "X1": "uart_232",
+        "X2": "uart_232_x2",
+        "Y1": "uart_232_y",
+        "Y2": "uart_232_y2"
+    },
+    "_slot_uarts_comment": "슬롯→uart 라이브러리 id. X1/Y1은 기존 id 유지(호환). 호스트가 slot_group=X/Y 항목의 uart_id를 이 표로 치환해 슬롯별 호출",
+    "clear_log_on_run_start": 0,
+    "_clear_log_on_run_start_comment": "1=시작 시 화면 로그 지움(한 사이클분만 표시). 로그 파일 Log/{proj}/YYYY-MM-DD.log는 계속 append. 기본 0=기존 동작",
+    "log_level": "TEST_LOG",
+    "_log_level_comment": "MP_LOG: 양산용(핵심 로그만) | TEST_LOG: 테스트용(전체 로그 출력) | 양산 권장: MP_LOG",
+    "show_log": 1,
+    "_show_log_comment": "1: 로그창 표시 | 0: 로그창 숨김 | 양산 권장: 0",
+    "serial_duplicate_check": 0,
+    "_serial_duplicate_check_comment": "1: 중복 시 경고 팝업 | 2: 차단 | 0: 안 함 | 양산 권장: 2",
+    "fail_continue": 0,
+    "_fail_continue_comment": "1: 중간 FAIL 시 끝까지 진행 | 0: 중간 FAIL 시 중단 | 양산 권장: 0",
+    "fail_detail": 1,
+    "_fail_detail_comment": "1: FAIL 후 불량보기(불량내용) 자동표시 | 0: '불량보기' 버튼으로만 수동확인 | 빨강 FAIL 팝업은 이 값과 무관하게 항상 표시 | 양산 권장: 1",
+    "test_save_password": "0906",
+    "_test_save_password_comment": "테스트 설정 [저장] 버튼 패스워드 (파일 영구기록만 게이트, 적용/런타임 무관) | 기본 0906",
+    "serial_auto_increment": true,
+    "_serial_auto_increment_comment": "true: 시리얼 자동증가 (VL1-00001→VL1-00002) | false: 수동입력 | 양산 권장: true",
+    "test_mode": 0,
+    "_test_mode_comment": "0: dual (밀어내기식 2개 동시 검사, 시리얼 2개, COM13+COM14) | 1: single (1개 제품 검사, 시리얼 1개, COM13만, Y축 SKIP) | 양산 권장: 0 (dual)",
+    "libraries": [
+        {
+            "filename": "ff_common.dll",
+            "classname": "Cantops.FlexFab.Tcp",
+            "id": "tcp_emio",
+            "config": {
+                "ip": "100.100.100.70",
+                "port": 2233
+            }
+        },
+        {
+            "filename": "ff_common.dll",
+            "classname": "Cantops.FlexFab.Uart",
+            "id": "uart_232",
+            "config": {
+                "port": "COM13",
+                "baudrate": 115200,
+                "databits": 8,
+                "parity": "None",
+                "stopbits": "One"
+            }
+        },
+        {
+            "filename": "ff_common.dll",
+            "classname": "Cantops.FlexFab.Uart",
+            "id": "uart_232_x2",
+            "config": {
+                "port": "COM0",
+                "_port_comment": "TODO 4슬롯 지그 배선 확정 후 실제 COM 기입 (X2 슬롯). serial 채우면 [자동(FTDI)]로 매칭",
+                "serial": "",
+                "_serial_comment": "232 X2 컨버터 FTDI 고유시리얼 — 슬롯↔포트 고정 기준. TODO 실측 기입",
+                "baudrate": 115200,
+                "databits": 8,
+                "parity": "None",
+                "stopbits": "One"
+            }
+        },
+        {
+            "filename": "ff_common.dll",
+            "classname": "Cantops.FlexFab.Uart",
+            "id": "uart_232_y",
+            "config": {
+                "port": "COM14",
+                "baudrate": 115200,
+                "databits": 8,
+                "parity": "None",
+                "stopbits": "One"
+            }
+        },
+        {
+            "filename": "ff_common.dll",
+            "classname": "Cantops.FlexFab.Uart",
+            "id": "uart_232_y2",
+            "config": {
+                "port": "COM0",
+                "_port_comment": "TODO 4슬롯 지그 배선 확정 후 실제 COM 기입 (Y2 슬롯). serial 채우면 [자동(FTDI)]로 매칭",
+                "serial": "",
+                "_serial_comment": "232 Y2 컨버터 FTDI 고유시리얼 — 슬롯↔포트 고정 기준. TODO 실측 기입",
+                "baudrate": 115200,
+                "databits": 8,
+                "parity": "None",
+                "stopbits": "One"
+            }
+        },
+        {
+            "filename": "ff_common.dll",
+            "classname": "Cantops.FlexFab.Uart",
+            "id": "uart_gyro",
+            "config": {
+                "port": "COM15",
+                "baudrate": 38400,
+                "databits": 8,
+                "parity": "None",
+                "stopbits": "One"
+            }
+        },
+        {
+            "filename": "ff_common.dll",
+            "classname": "Cantops.FlexFab.Ctsp",
+            "id": "ctsp",
+            "config": {
+                "commlib": "uart_232"
+            }
+        },
+        {
+            "filename": "ff_vibetilt.dll",
+            "classname": "Cantops.FlexFab.VibeTilt",
+            "id": "vibetilt",
+            "config": {
+                "uart_232": "uart_232"
+            }
+        },
+        {
+            "filename": "ff_vibetilt.dll",
+            "classname": "Cantops.FlexFab.MotionJig",
+            "id": "motionjig",
+            "config": {}
+        }
+    ],
+    "projects": [
+        {
+            "id": "prj-motion-232-4slot",
+            "name": "VL10 모션검사 (RS-232)_TEST_4slot",
+            "repeat_all_count": 1,
+            "_repeat_all_count_comment": "전체 검사 반복 횟수 (롱런 테스트용)",
+            "library_depencency": [
+                "tcp_emio",
+                "uart_232",
+                "uart_232_x2",
+                "uart_232_y",
+                "uart_232_y2",
+                "uart_gyro",
+                "ctsp",
+                "vibetilt",
+                "motionjig"
+            ],
+            "_proc_order": "4슬롯 밀어내기 2레인. 순서(R1 합의): X준비(#0 #1-X #3 #4 #5-1, X1‖X2) → Y준비(#8 #9 #9-1 #11 #11-1 #12, Y1‖Y2) → 동시측정(#6 #7: 모터 1회 이동 → X1·X2·Y1·Y2 동시 수신) → #10 → #13 → #14/#15(#6/#7 측정값 판정만) → #16",
+            "procs": [
+                {
+                    "libid": "motionjig",
+                    "id": "COMM_232",
+                    "name": "#0 통신검사 RS-232",
+                    "_comment": "X축(COM13) + Y축(COM14) VER 응답 + 자이로(COM15) get---x 응답 확인. 포트 설정 오류 조기 검출용",
+                    "param": {
+                        "slot_group": "common"
+                    }
+                },
+                {
+                    "libid": "vibetilt",
+                    "id": "FWVER_232",
+                    "name": "#1-X FW 버전 확인",
+                    "_comment": "VL10 펌웨어 버전 확인. RV=0 정상, 응답에 VER 포함 여부 판정",
+                    "param": {
+                        "slot_group": "X",
+                        "TIMEOUT": 5000,
+                        "tests": [
+                            {
+                                "command": "<VER>",
+                                "expected_response": "VER",
+                                "expected_fw_version": "F/W ver.1.0.4"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "libid": "vibetilt",
+                    "id": "UID_232",
+                    "name": "#2 시리얼번호 설정 (X축)",
+                    "_comment": "X축 제품에 시리얼번호 쓰기. 232는 VL1- 접두사",
+                    "param": {
+                        "slot_group": "X",
+                        "TIMEOUT": 5000,
+                        "tests": [
+                            {
+                                "command": "<UID,{serial}>",
+                                "expected_response": "{serial}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "libid": "motionjig",
+                    "id": "MOTION_ZERO_232",
+                    "name": "#3 X축 영점 초기화 (0도)",
+                    "_comment": "X축 지그 결합 후 영점. setdir6로 자이로 X축 방향 설정",
+                    "param": {
+                        "slot_group": "common",
+                        "gyro_dir": "setdir6",
+                        "_gyro_dir_comment": "setdir6=X축, setdir5=Y축",
+                        "home_sensor": "in1",
+                        "_home_sensor_comment": "in1: IN1만 | in2: IN2만 | auto: 교대 자동 선택 | 양산 권장: auto",
+                        "steps_to_zero_in2": 200,
+                        "_steps_to_zero_in2_comment": "IN2 홈에서 0도까지 step 수 (실측: 22/0.1125≈196, 200으로 설정)",
+                        "gyro_setzcur": false,
+                        "_gyro_setzcur_comment": "레퍼런스(자이로) 영점 tare 실행 여부. 지그요청서에 없는 BG01 이식 잔재라 기본 제거(false)=공장영점 유지 | true=기존동작(매 사이클 tare) 복원 | 적용 전 센서 setzfac 1회 선행 필수 (R1b1, 2026-07-20)",
+                        "jig_health_check": true,
+                        "jig_health_baseline": -6.0,
+                        "jig_health_warn": 0.6,
+                        "jig_health_ng": 1.0,
+                        "jig_health_abs_limit": 15.0,
+                        "jig_health_ng_streak": 2,
+                        "_jig_health_comment": "지그 수평 감시(정기점검): 홈 수행 영점 사이클의 경사계 첫 판독(r_pre, 홈+1250스텝 도착각, 미세조정 전)을 baseline 대비 변화량(dev)으로 감시. 홈 도착각 실측(20260721, 10점): 중앙값 -6.004 / p2p 0.553 / σ 0.17 — 홈 자석 감지 반복산포가 지배해 1스텝(0.1125도) 감지는 불가, 분해능 0.5~1도. warn 0.6=3.5σ(오탐 억제), ng 1.0=6σ(연속 ng_streak회 시 팝업, FineAdjust 보정으로 제품 영향 없음), abs_limit 15=센서이상 가드(즉시 팝업). 홈 생략 사이클 판정 제외. 양산 판정 불개입(팝업 취소 시만 FAIL: 지그점검 취소). X(#3)만 감시",
+                        "_jig_health_baseline_comment": "★지그별 고유값 — baseline -6.0은 10층 지그 20260721 홈수행 10점 중앙값. 다른 지그 설치 시 반드시 재수집: 임시 home_every_n=1 + ng_streak=999 → #3 반복 10회 → [JIG] read= 중앙값 기입 → 원복. 지그 재조립/경사계 재장착/setzfac 재실행/steps_to_zero 변경 시에도 재측정",
+                        "TIMEOUT": 60000
+                    }
+                },
+                {
+                    "libid": "vibetilt",
+                    "id": "OFFSET_232",
+                    "name": "#4 X축 Calibration (0도)",
+                    "_comment": "X축 영점(0도) 위치에서 VL 센서 캘리브레이션. OFFSET 후 AN 검증 포함",
+                    "param": {
+                        "slot_group": "X",
+                        "TIMEOUT": 5000,
+                        "tests": [
+                            {
+                                "command": "<OFFSET,1>",
+                                "expected_response": "[OFFSET,0,1]"
+                            }
+                        ],
+                        "verify_an": true,
+                        "verify_an_axis": "X",
+                        "verify_an_min": -0.05,
+                        "verify_an_max": 0.05,
+                        "_verify_an_comment": "OFFSET 후 상용센서 기준 0도에서 AN X값 ±0.05 이내 확인"
+                    }
+                },
+                {
+                    "libid": "vibetilt",
+                    "id": "APPCFG_SAVE_232",
+                    "name": "#5 X축 파라미터 저장 (0도)",
+                    "param": {
+                        "slot_group": "X",
+                        "TIMEOUT": 5000,
+                        "retry": 1,
+                        "retry_delay_ms": 500,
+                        "_retry_comment": "Flash 쓰기 타이밍 이슈 대비 1회 재시도 (500ms 대기)",
+                        "tests": [
+                            {
+                                "sleep": 100
+                            },
+                            {
+                                "command": "<APPCFG,SAVE>",
+                                "expected_response": "[APPCFG,0,SAVE]"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "libid": "vibetilt",
+                    "id": "FWVER_232",
+                    "name": "#8 FW 버전 확인 (Y축)",
+                    "_comment": "Y축 제품(COM14) 펌웨어 버전 확인",
+                    "param": {
+                        "slot_group": "Y",
+                        "uart_id": "uart_232_y",
+                        "TIMEOUT": 5000,
+                        "tests": [
+                            {
+                                "command": "<VER>",
+                                "expected_response": "VER",
+                                "expected_fw_version": "F/W ver.1.0.4"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "libid": "vibetilt",
+                    "id": "UID_232",
+                    "name": "#9 시리얼번호 설정 (Y축)",
+                    "_comment": "Y축 제품에 시리얼번호 쓰기. 232는 VL1- 접두사",
+                    "param": {
+                        "slot_group": "Y",
+                        "uart_id": "uart_232_y",
+                        "TIMEOUT": 5000,
+                        "tests": [
+                            {
+                                "command": "<UID,{serial}>",
+                                "expected_response": "{serial}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "libid": "vibetilt",
+                    "id": "REFTEMP_232",
+                    "name": "#9-1 센서 온도 저장 (Y축)",
+                    "_comment": "SENTEMP로 읽은 센서온도를 REFTEMP로 기준값 저장. 20~40 범위 밖이면 저장안함+FAIL(보정 baseline 오염 방지). echo 일치 PASS. Y결합 1회",
+                    "param": {
+                        "slot_group": "Y",
+                        "uart_id": "uart_232_y",
+                        "TIMEOUT": 5000,
+                        "min": 20,
+                        "max": 40,
+                        "_minmax_comment": "센서온도 정상범위(보수적). 범위 밖=저장 차단+FAIL. 범위판정 본체는 보드검사 SENTEMP 담당",
+                        "tests": [
+                            {
+                                "command": "<SENTEMP>"
+                            },
+                            {
+                                "command": "<REFTEMP,{temp}>"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "libid": "vibetilt",
+                    "id": "OFFSET_232",
+                    "name": "#11 Y축 Calibration (0도)",
+                    "_comment": "Y축 영점(0도) 위치에서 VL 센서 캘리브레이션 (COM14). OFFSET 후 AN 검증 포함",
+                    "param": {
+                        "slot_group": "Y",
+                        "uart_id": "uart_232_y",
+                        "TIMEOUT": 5000,
+                        "tests": [
+                            {
+                                "command": "<OFFSET,1>",
+                                "expected_response": "[OFFSET,0,1]"
+                            }
+                        ],
+                        "verify_an": true,
+                        "verify_an_axis": "Y",
+                        "verify_an_min": -0.05,
+                        "verify_an_max": 0.05,
+                        "_verify_an_comment": "OFFSET 후 상용센서 기준 0도에서 AN값 ±0.05 이내 확인"
+                    }
+                },
+                {
+                    "libid": "vibetilt",
+                    "id": "RCONF_232",
+                    "name": "#11-1 출하 상태 설정 (Y축)",
+                    "_comment": "UID+센서온도+현재cal(양축 확정)을 출하상태값으로 저장. 응답 완전일치 PASS. OFFSET 직후/SAVE 직전(펌웨어 저장 의존성)",
+                    "param": {
+                        "slot_group": "Y",
+                        "uart_id": "uart_232_y",
+                        "TIMEOUT": 5000,
+                        "tests": [
+                            {
+                                "command": "<RCONF,1>",
+                                "expected_response": "[RCONF,0,1]"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "libid": "vibetilt",
+                    "id": "APPCFG_SAVE_232",
+                    "name": "#12 Y축 파라미터 저장 (0도)",
+                    "param": {
+                        "slot_group": "Y",
+                        "uart_id": "uart_232_y",
+                        "TIMEOUT": 5000,
+                        "retry": 1,
+                        "retry_delay_ms": 500,
+                        "_retry_comment": "Flash 쓰기 타이밍 이슈 대비 1회 재시도 (500ms 대기)",
+                        "tests": [
+                            {
+                                "sleep": 100
+                            },
+                            {
+                                "command": "<APPCFG,SAVE>",
+                                "expected_response": "[APPCFG,0,SAVE]"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "libid": "motionjig",
+                    "id": "MOTION_TILT_X_232",
+                    "name": "#6 X축 기울기값 측정 (-20도, -45도, +20도, +45도)",
+                    "_comment": "X축 기울기 측정. AN 응답의 X값을 자이로와 비교 판정",
+                    "param": {
+                        "slot_group": "all",
+                        "_slot_all_comment": "동시측정: 모터 1회 이동·수렴 → 경사계 g 1회 → X1·X2·Y1·Y2 동시 수신·판정. X슬롯 기준 g, Y슬롯 기준 -g(setdir6/setdir5 부호 반대, V1 실측 확인). Y슬롯 측정값은 #14/#15 판정용으로 저장. __slot_uarts 없으면 기존 단일보드 동작",
+                        "axis": "X",
+                        "move_axis": "Y",
+                        "_move_axis_comment": "X축 지그에서의 물리적 이동 방향",
+                        "gyro_dir": "setdir6",
+                        "_gyro_dir_comment": "X축 지그이므로 setdir6. FAIL 재영점 시 사용",
+                        "measure_type": "tilt",
+                        "angles": [
+                            -20,
+                            -45,
+                            20,
+                            45
+                        ],
+                        "_angles_comment": "사양서 순서: +20→+45→-20→-45",
+                        "tilt_tolerance_20": 0.2,
+                        "_tilt_tolerance_20_comment": "±20도 허용 오차 (사양서 ±0.2)",
+                        "tilt_tolerance_45": 0.5,
+                        "_tilt_tolerance_45_comment": "±45도 허용 오차 (사양서 ±0.5)",
+                        "TIMEOUT": 60000,
+                        "sensor_diff_error": 10,
+                        "fine_adjust_strict_tolerance": 0.05,
+                        "fine_adjust_relaxed_tolerance": 0.05,
+                        "fine_adjust_max_steps": 250,
+                        "tilt_settle_wait": 500,
+                        "tilt_stream_duration": 1000,
+                        "_tilt_stream_duration_comment": "AN 스트리밍 수집 시간(ms). SAM=10ms 기준 약 100샘플",
+                        "tilt_judge_tail_count": 10,
+                        "_tilt_judge_tail_count_comment": "판정에 사용할 마지막 N개 샘플. 전부 SPEC 이내 = PASS",
+                        "tilt_retry_count": 3,
+                        "_tilt_retry_count_comment": "FAIL 시 재측정 횟수. 총 시도 = 1 + retry. 전부 FAIL → 최종 FAIL",
+                        "tilt_judge_mode": "all_in_spec",
+                        "_tilt_judge_mode_comment": "판정 모드: last=마지막1개(느슨) | average=평균(중간) | median=중앙값(중간) | trimmed_mean=상하10%제거평균(중상) | all_in_spec=N개전부SPEC이내(엄격)"
+                    }
+                },
+                {
+                    "libid": "motionjig",
+                    "id": "MOTION_VIBE_Y_232",
+                    "name": "#7 Y축 진동값 측정 (+90도)",
+                    "_comment": "OFFSET 후 GAC 측정. 0도→+90도 이동 후 Y축 1G 확인",
+                    "param": {
+                        "slot_group": "all",
+                        "_slot_all_comment": "동시측정: 모터 1회 이동·수렴 → 경사계 g 1회 → X1·X2·Y1·Y2 동시 수신·판정. X슬롯 기준 g, Y슬롯 기준 -g(setdir6/setdir5 부호 반대, V1 실측 확인). Y슬롯 측정값은 #14/#15 판정용으로 저장. __slot_uarts 없으면 기존 단일보드 동작",
+                        "axis": "Y",
+                        "move_axis": "Y",
+                        "gyro_dir": "setdir6",
+                        "_gyro_dir_comment": "X축 지그이므로 setdir6. FAIL 재영점 시 사용",
+                        "measure_type": "vibe",
+                        "target_angle": -90,
+                        "_target_angle_comment": "0도에서 +90도 이동 (-800step/오른쪽/시계). X축 결합 +방향=시계. move_axis=Y이므로 target=-90 → step=-800",
+                        "check_axis_index": 1,
+                        "_check_axis_index_comment": "GAC [X,Y,Z,RMS] 중 Y=index 1",
+                        "vibe_min": 0.98,
+                        "vibe_max": 1.02,
+                        "_vibe_comment": "Y축 SPEC 완화 (0.98~1.02), 개발팀 협의 2026-04-14",
+                        "TIMEOUT": 10000,
+                        "sensor_diff_error": 10,
+                        "fine_adjust_strict_tolerance": 0.05,
+                        "fine_adjust_relaxed_tolerance": 0.05,
+                        "fine_adjust_max_steps": 250,
+                        "gac_settle_wait": 500,
+                        "vibe_stream_duration": 1000,
+                        "_vibe_stream_duration_comment": "GAC 스트리밍 수집 시간(ms). SAM=10ms 기준 약 100샘플",
+                        "vibe_judge_tail_count": 5,
+                        "_vibe_judge_tail_count_comment": "판정에 사용할 마지막 N개 샘플",
+                        "vibe_retry_count": 3,
+                        "_vibe_retry_count_comment": "FAIL 시 재측정 횟수. 총 시도 = 1 + retry",
+                        "vibe_judge_mode": "all_in_spec",
+                        "_vibe_judge_mode_comment": "판정 모드: last=마지막1개(느슨) | average=평균(중간) | median=중앙값(중간) | trimmed_mean=상하10%제거평균(중상) | all_in_spec=N개전부SPEC이내(엄격)",
+                        "rollback_mode0": true,
+                        "_rollback_mode0_comment": "검사 완료 후 MODE 0으로 복귀"
+                    }
+                },
+                {
+                    "libid": "motionjig",
+                    "id": "MOTION_ZERO_232",
+                    "name": "#10 Y축 영점 초기화 (0도)",
+                    "_comment": "Y축 지그 결합 후 영점. setdir5로 자이로 Y축 방향 설정. single 시 코드에서 자동 팝업 추가",
+                    "param": {
+                        "slot_group": "common",
+                        "gyro_dir": "setdir5",
+                        "_gyro_dir_comment": "setdir6=X축, setdir5=Y축",
+                        "skip_home": true,
+                        "_skip_home_comment": "true: 홈 센서 생략(FineAdjust만, ~17초 절감) | false: 홈 센서 사용(기존)",
+                        "home_sensor": "in1",
+                        "_home_sensor_comment": "in1: IN1만 | in2: IN2만 | auto: 교대 자동 선택 | skip_home=true 시 무시",
+                        "steps_to_zero_in2": 200,
+                        "_steps_to_zero_in2_comment": "IN2 홈에서 0도까지 step 수 (실측: 22/0.1125≈196, 200으로 설정)",
+                        "gyro_setzcur": false,
+                        "_gyro_setzcur_comment": "레퍼런스(자이로) 영점 tare 실행 여부. 지그요청서에 없는 BG01 이식 잔재라 기본 제거(false)=공장영점 유지 | true=기존동작(매 사이클 tare) 복원 | 적용 전 센서 setzfac 1회 선행 필수 (R1b1, 2026-07-20)",
+                        "TIMEOUT": 60000
+                    }
+                },
+                {
+                    "libid": "motionjig",
+                    "id": "MOTION_VIBE_Z_232",
+                    "name": "#13 Z축 진동값 측정 (0도) — CAL/저장 후 배치",
+                    "_comment": "영점 후 0도 상태에서 GAC Z 측정. CAL/저장 후 모터 안 움직였으므로 0도 유지",
+                    "param": {
+                        "slot_group": "Y",
+                        "uart_id": "uart_232_y",
+                        "axis": "Z",
+                        "move_axis": "Y",
+                        "gyro_dir": "setdir5",
+                        "_gyro_dir_comment": "Y축 지그이므로 setdir5",
+                        "measure_type": "vibe",
+                        "target_angle": 0,
+                        "_target_angle_comment": "0도 상태 유지. 이동 없이 측정",
+                        "check_axis_index": 2,
+                        "_check_axis_index_comment": "GAC [X,Y,Z,RMS] 중 Z=index 2",
+                        "vibe_min": 0.98,
+                        "vibe_max": 1.02,
+                        "_vibe_comment": "사양서 SPEC (0.98~1.02), 개발팀 확인 2026-04-16",
+                        "TIMEOUT": 10000,
+                        "sensor_diff_error": 10,
+                        "fine_adjust_strict_tolerance": 0.05,
+                        "fine_adjust_relaxed_tolerance": 0.05,
+                        "fine_adjust_max_steps": 250,
+                        "gac_settle_wait": 500,
+                        "vibe_stream_duration": 1000,
+                        "_vibe_stream_duration_comment": "GAC 스트리밍 수집 시간(ms). SAM=10ms 기준 약 100샘플",
+                        "vibe_judge_tail_count": 5,
+                        "_vibe_judge_tail_count_comment": "판정에 사용할 마지막 N개 샘플",
+                        "vibe_retry_count": 3,
+                        "_vibe_retry_count_comment": "FAIL 시 재측정 횟수. 총 시도 = 1 + retry",
+                        "vibe_judge_mode": "all_in_spec",
+                        "_vibe_judge_mode_comment": "판정 모드: last=마지막1개(느슨) | average=평균(중간) | median=중앙값(중간) | trimmed_mean=상하10%제거평균(중상) | all_in_spec=N개전부SPEC이내(엄격)",
+                        "rollback_mode0": true,
+                        "_rollback_mode0_comment": "검사 완료 후 MODE 0으로 복귀"
+                    }
+                },
+                {
+                    "libid": "motionjig",
+                    "id": "MOTION_TILT_Y_232",
+                    "name": "#14 Y축 기울기값 측정 (+20도, +45도, -20도, -45도)",
+                    "_comment": "Y축 기울기 측정 (COM14). AN 응답의 Y값을 자이로와 비교 판정",
+                    "param": {
+                        "slot_group": "Y",
+                        "judge_from": "#6",
+                        "_judge_from_comment": "#6 동시측정에서 저장한 Y슬롯 값으로 판정만 수행(모터 이동 없음). 저장값 없으면(중단·재검 등) 기존처럼 직접 이동·측정. 판정 기준 동일",
+                        "uart_id": "uart_232_y",
+                        "axis": "Y",
+                        "move_axis": "X",
+                        "_move_axis_comment": "물리적 이동은 X축 지그 기준, axis는 AN 체크용 (Y값)",
+                        "gyro_dir": "setdir5",
+                        "_gyro_dir_comment": "Y축 지그이므로 setdir5. FAIL 재영점 시 사용",
+                        "measure_type": "tilt",
+                        "angles": [
+                            20,
+                            45,
+                            -20,
+                            -45
+                        ],
+                        "_angles_comment": "사양서 순서: +20→+45→-20→-45",
+                        "tilt_tolerance_20": 0.2,
+                        "_tilt_tolerance_20_comment": "±20도 허용 오차 (사양서 ±0.2)",
+                        "tilt_tolerance_45": 0.5,
+                        "_tilt_tolerance_45_comment": "±45도 허용 오차 (사양서 ±0.5)",
+                        "TIMEOUT": 60000,
+                        "sensor_diff_error": 10,
+                        "fine_adjust_strict_tolerance": 0.05,
+                        "fine_adjust_relaxed_tolerance": 0.05,
+                        "fine_adjust_max_steps": 250,
+                        "tilt_settle_wait": 500,
+                        "tilt_stream_duration": 1000,
+                        "_tilt_stream_duration_comment": "AN 스트리밍 수집 시간(ms). SAM=10ms 기준 약 100샘플",
+                        "tilt_judge_tail_count": 10,
+                        "_tilt_judge_tail_count_comment": "판정에 사용할 마지막 N개 샘플. 전부 SPEC 이내 = PASS",
+                        "tilt_retry_count": 3,
+                        "_tilt_retry_count_comment": "FAIL 시 재측정 횟수. 총 시도 = 1 + retry. 전부 FAIL → 최종 FAIL",
+                        "tilt_judge_mode": "all_in_spec",
+                        "_tilt_judge_mode_comment": "판정 모드: last=마지막1개(느슨) | average=평균(중간) | median=중앙값(중간) | trimmed_mean=상하10%제거평균(중상) | all_in_spec=N개전부SPEC이내(엄격)"
+                    }
+                },
+                {
+                    "libid": "motionjig",
+                    "id": "MOTION_VIBE_X_232",
+                    "name": "#15 X축 진동값 측정 (-90도)",
+                    "_comment": "OFFSET 후 GAC 측정 (COM14). 0도→-90도 이동 후 X축 1G 확인. 사양서: -90도 방향",
+                    "param": {
+                        "slot_group": "Y",
+                        "judge_from": "#7",
+                        "_judge_from_comment": "#7 동시측정에서 저장한 Y슬롯 값으로 판정만 수행(모터 이동 없음). 저장값 없으면(중단·재검 등) 기존처럼 직접 이동·측정. 판정 기준 동일",
+                        "uart_id": "uart_232_y",
+                        "axis": "X",
+                        "move_axis": "Y",
+                        "gyro_dir": "setdir5",
+                        "_gyro_dir_comment": "Y축 지그이므로 setdir5. FAIL 재영점 시 사용",
+                        "measure_type": "vibe",
+                        "target_angle": -90,
+                        "_target_angle_comment": "0도에서 -90도 이동 (-800step). 사양서: -90도 방향 이동 후 진행",
+                        "check_axis_index": 0,
+                        "_check_axis_index_comment": "GAC [X,Y,Z,RMS] 중 X=index 0",
+                        "vibe_min": 0.98,
+                        "vibe_max": 1.02,
+                        "_vibe_comment": "사양서 SPEC (0.98~1.02), 개발팀 확인 2026-04-16",
+                        "TIMEOUT": 10000,
+                        "sensor_diff_error": 10,
+                        "fine_adjust_strict_tolerance": 0.05,
+                        "fine_adjust_relaxed_tolerance": 0.05,
+                        "fine_adjust_max_steps": 250,
+                        "gac_settle_wait": 500,
+                        "vibe_stream_duration": 1000,
+                        "_vibe_stream_duration_comment": "GAC 스트리밍 수집 시간(ms). SAM=10ms 기준 약 100샘플",
+                        "vibe_judge_tail_count": 5,
+                        "_vibe_judge_tail_count_comment": "판정에 사용할 마지막 N개 샘플",
+                        "vibe_retry_count": 3,
+                        "_vibe_retry_count_comment": "FAIL 시 재측정 횟수. 총 시도 = 1 + retry",
+                        "vibe_judge_mode": "all_in_spec",
+                        "_vibe_judge_mode_comment": "판정 모드: last=마지막1개(느슨) | average=평균(중간) | median=중앙값(중간) | trimmed_mean=상하10%제거평균(중상) | all_in_spec=N개전부SPEC이내(엄격)",
+                        "rollback_mode0": true,
+                        "_rollback_mode0_comment": "검사 완료 후 MODE 0으로 복귀"
+                    }
+                },
+                {
+                    "libid": "vibetilt",
+                    "id": "APPCFG_232",
+                    "name": "#16 Config 확인 Y축 (APPCFG)",
+                    "_comment": "Y축(COM14) 검사 완료 후 제품 설정값 확인. MODE=00 복귀 확인",
+                    "param": {
+                        "slot_group": "Y",
+                        "uart_id": "uart_232_y",
+                        "TIMEOUT": 5000,
+                        "tests": [
+                            {
+                                "command": "<MODE,0>",
+                                "expected_response": "[MODE,0,00]"
+                            },
+                            {
+                                "command": "<APPCFG>",
+                                "expected_response": "[APPCFG,0,00/10/1/115200]"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "_slot_group_comment": "slot_group: common=모터·경사계 공통 1회 | X=X1‖X2 동시 호출 | Y=Y1‖Y2 동시 호출 | all=1회 호출, 모듈이 4보드 동시 수신. 호스트가 X/Y 항목의 param을 슬롯별로 복제(uart_id·__serial 치환)해 호출. 없으면 2슬롯 기존 동작"
+        }
+    ],
+    "mongodb_uri": "mongodb://192.168.10.10:45029/?serverSelectionTimeoutMS=4000&connectTimeoutMS=4000&socketTimeoutMS=4000&directConnection=true",
+    "serial_prefix": "VL1-",
+    "_serial_prefix_comment": "시리얼 접두사 검증. 232=VL1-, 485=VL2-",
+    "serial_prefix_check": 1,
+    "_serial_prefix_check_comment": "0: 안함 | 1: 경고팝업(진행가능) | 2: 차단(진행불가) | 양산 권장: 2",
+    "active_project": "prj-motion-232"
+}

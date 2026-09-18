@@ -1080,6 +1080,7 @@ namespace flexfab
 
                 // DataGridView에서 행을 지우고, 필요한 만큼 행을 추가
                 dataGridView1.Rows.Clear();
+                ApplySlotLayout(); // 4슬롯: slot_layout 읽고 결과 열 1→4 구성 (2슬롯이면 원복)
 
                 // 필요한 만큼 행 추가
                 for (int i = 0; i < rowCount; i++)
@@ -1164,21 +1165,26 @@ namespace flexfab
             }
 
             var numberCell = dataGridView1.Rows[rowIndex].Cells[0]; // 번호(1열)
-            var resultCell = dataGridView1.Rows[rowIndex].Cells[2]; // 결과(3열)
-
-            // 빨간색(불량) 행이면 Skip 처리
-            if (numberCell.Style.BackColor == Color.Red)
+            // 4슬롯: 결과 열이 X1..Y2(Cells[2..5]) → 행 단위 갱신은 4칸 모두 (공통 항목·초기화·Skip). 2슬롯: Cells[2]만
+            int lastCol = (_slot4 && dataGridView1.Columns.Contains("Slot_X2")) ? 5 : 2;
+            for (int c = 2; c <= lastCol; c++)
             {
-                resultCell.Value = "Skip";
-                resultCell.Style.BackColor = Color.LightBlue;
-                resultCell.Style.ForeColor = Color.Black;
-                return;
-            }
+                var resultCell = dataGridView1.Rows[rowIndex].Cells[c];
 
-            // 정상 처리
-            resultCell.Value = resultText;
-            resultCell.Style.BackColor = bgColor;
-            resultCell.Style.ForeColor = fgColor ?? Color.White;   // 값 없으면 흰색
+                // 빨간색(불량) 행이면 Skip 처리
+                if (numberCell.Style.BackColor == Color.Red)
+                {
+                    resultCell.Value = "Skip";
+                    resultCell.Style.BackColor = Color.LightBlue;
+                    resultCell.Style.ForeColor = Color.Black;
+                    continue;
+                }
+
+                // 정상 처리
+                resultCell.Value = resultText;
+                resultCell.Style.BackColor = bgColor;
+                resultCell.Style.ForeColor = fgColor ?? Color.White;   // 값 없으면 흰색
+            }
         }
 
 
@@ -1494,7 +1500,7 @@ namespace flexfab
         }
 
         // 합산 저장용 (DataGridView 대신 retmsg 직접 전달)
-        public void SaveLogDirect(string sn, JArray resultArr, Action<string> logAction)
+        public void SaveLogDirect(string sn, JArray resultArr, Action<string> logAction, string slotLane = null)
         {
             string projFolder = "";
             try { projFolder = ((string)workspace.projects[0].name).Replace(" ", ""); } catch { }
@@ -1543,6 +1549,7 @@ namespace flexfab
                 ["mac"] = "Not Use",
                 ["result"] = resultArr
             };
+            if (!string.IsNullOrEmpty(slotLane)) root["slot"] = slotLane;   // 4슬롯: 검사 레인 (예: "X1->Y1") — 슬롯 편중 불량 추적용
 
             File.WriteAllText(filePath, root.ToString(), new System.Text.UTF8Encoding(false));
             logAction($"결과 파일 저장: {filePath}");
@@ -2304,8 +2311,9 @@ namespace flexfab
 
             if (isMotionProject && !isSingleMode)
             {
-                // dual 모드: 밀어내기식 2개 시리얼 입력
-                if (!ShowDualSerialDialog()) return;
+                // dual 모드: 밀어내기식 시리얼 입력 — 4슬롯(slot_layout=4)은 4칸, 아니면 기존 2칸
+                if (_slot4) { if (!ShowQuadSerialDialog()) return; }
+                else if (!ShowDualSerialDialog()) return;
             }
             else
             {
@@ -2338,10 +2346,15 @@ namespace flexfab
             }
 
             // 시리얼 중복 체크: Result/{프로젝트폴더} 내에서 동일 시리얼 파일 검색
+            // 4슬롯(dual)은 X1·X2 각각 검사, 그 외는 기존대로 serialNumber 1개
             int dupCheck = 0;
             try { dupCheck = Convert.ToInt32(workspace.serial_duplicate_check); } catch { }
-            if (dupCheck > 0 && !string.IsNullOrWhiteSpace(serialNumber))
+            var dupTargets = (isMotionProject && !isSingleMode && _slot4)
+                ? new[] { _slotSerial[SLOT_X1], _slotSerial[SLOT_X2] }.Where(s => !string.IsNullOrWhiteSpace(s)).ToList()
+                : new List<string> { serialNumber };
+            foreach (var dupSn in dupTargets)
             {
+                if (dupCheck <= 0 || string.IsNullOrWhiteSpace(dupSn) || dupSn == "Null") continue;
                 string projFolder = "";
                 try { projFolder = ((string)workspace.projects[0].name).Replace(" ", ""); } catch { }
                 if (string.IsNullOrWhiteSpace(projFolder)) projFolder = "unknown";
@@ -2350,7 +2363,7 @@ namespace flexfab
                 try
                 {
                     if (Directory.Exists(resultBase))
-                        found = Directory.GetFiles(resultBase, $"{serialNumber}.json", SearchOption.AllDirectories).Length > 0;
+                        found = Directory.GetFiles(resultBase, $"{dupSn}.json", SearchOption.AllDirectories).Length > 0;
                 }
                 catch { }
 
@@ -2359,22 +2372,25 @@ namespace flexfab
                     if (dupCheck == 2)
                     {
                         // 옵션 2: 무조건 차단
-                        ShowLargeConfirmDialog($"시리얼 [{serialNumber}]은\n이미 검사 완료된 항목입니다.");
-                        Log($"시리얼 중복 — 검사 차단: {serialNumber}");
+                        ShowLargeConfirmDialog($"시리얼 [{dupSn}]은\n이미 검사 완료된 항목입니다.");
+                        Log($"시리얼 중복 — 검사 차단: {dupSn}");
                         return;
                     }
                     else
                     {
                         // 옵션 1: 경고 팝업 (덮어쓰기/취소 선택)
-                        var answer = ShowLargeYesNoDialog($"시리얼 [{serialNumber}]은\n이미 검사 완료된 항목입니다.\n덮어쓰시겠습니까?");
+                        var answer = ShowLargeYesNoDialog($"시리얼 [{dupSn}]은\n이미 검사 완료된 항목입니다.\n덮어쓰시겠습니까?");
                         if (answer == DialogResult.No)
                         {
-                            Log($"시리얼 중복 — 검사 취소: {serialNumber}");
+                            Log($"시리얼 중복 — 검사 취소: {dupSn}");
                             return;
                         }
                     }
                 }
             }
+
+            // clear_log_on_run_start: 시작 시 화면 로그 비움 (파일 로그는 계속 append)
+            if (_clearLogOnRunStart) listBox_Log.Items.Clear();
 
             _isRunning = true;
 
@@ -2485,14 +2501,15 @@ namespace flexfab
                 return;
             }
 
-            // 3열(결과) 더블클릭: ret message 표시 (실행 중에는 무시)
-            if (e.ColumnIndex == 2)
+            // 3열(결과) 더블클릭: ret message 표시 (실행 중에는 무시). 4슬롯은 X1..Y2 열(2..5) 각각
+            if (e.ColumnIndex >= 2)
             {
                 if (_isRunning) return; // 실행 중이면 열지 않음
 
                 var row = dataGridView1.Rows[e.RowIndex];
                 var name = row.Cells[1].Value?.ToString() ?? "세부 로그";
-                var msg = row.Cells[2].Tag as string; // SetResultMessage에서 저장한 값
+                if (_slot4 && e.ColumnIndex - 2 < SLOT_NAMES.Length) name = $"[{SLOT_NAMES[e.ColumnIndex - 2]}] {name}";
+                var msg = row.Cells[e.ColumnIndex].Tag as string; // SetResultMessage에서 저장한 값
 
                 if (string.IsNullOrWhiteSpace(msg))
                 {
@@ -2608,24 +2625,17 @@ namespace flexfab
 
         public async Task MainDoProject(dynamic workspace, string project_id, Action<string> logAction, MainForm mainForm, CancellationToken token)
         {
-            // 결과 셀 초기화
+            // 결과 셀 초기화 + 이전 run의 return message(Tag) 비우기 — 결과 열 전부(2슬롯 1열 / 4슬롯 4열)
             for (int i = 0; i < mainForm.dataGridView1.Rows.Count; i++)
             {
-                var resultCell = mainForm.dataGridView1.Rows[i].Cells[2];
-                resultCell.Value = "";
-                resultCell.Style.BackColor = Color.White;
-                resultCell.Style.ForeColor = Color.Black;
-                resultCell.Tag = null; // 이전 retmsg 비움
-            }
-
-            // 이전 검사에서 했던 return message 모두 비우기
-            for (int i = 0; i < mainForm.dataGridView1.Rows.Count; i++)
-            {
-                var resultCell = mainForm.dataGridView1.Rows[i].Cells[2];
-                resultCell.Value = "";
-                resultCell.Style.BackColor = Color.White;
-                resultCell.Style.ForeColor = Color.Black;
-                resultCell.Tag = null;            // ★ 이전 run의 return message 비우기
+                for (int c = 2; c < mainForm.dataGridView1.Columns.Count; c++)
+                {
+                    var resultCell = mainForm.dataGridView1.Rows[i].Cells[c];
+                    resultCell.Value = "";
+                    resultCell.Style.BackColor = Color.White;
+                    resultCell.Style.ForeColor = Color.Black;
+                    resultCell.Tag = null;
+                }
             }
 
 
@@ -2761,6 +2771,181 @@ namespace flexfab
                 }
             }
 
+            // ══════════════════════════════════════════════════════════════
+            //  4슬롯(X1·X2·Y1·Y2) 실행 — slot_layout=4 + dual 모드에서만. 기존 2슬롯 경로는 그대로.
+            //  단계1(현재): slot_group X/Y는 슬롯 순차 호출, all(#6/#7)은 X 슬롯 순차(기존 단일보드 측정).
+            //  단계2: all → 모듈 4보드 동시측정 / 단계3: X/Y 그룹 Task 병렬 (PLAN §5)
+            // ══════════════════════════════════════════════════════════════
+            bool slot4CommonFailed = false;   // 공통 항목(#0 통신·#3/#10 영점) FAIL → 4슬롯 전부 FAIL 취급
+
+            object InvokeProc(object instance, MethodInfo method, object param, Action<string> log)
+            {
+                var ps = method.GetParameters();
+                if (ps.Length == 3) return method.Invoke(instance, new object[] { libraries, param, log });
+                if (ps.Length == 4) return method.Invoke(instance, new object[] { libraries, param, log, new Func<string, bool>(mainForm.ShowKeyboardConfirmationForm) });
+                throw new InvalidOperationException($"지원되지 않는 메서드 시그니처: {method.Name} (파라미터 수: {ps.Length})");
+            }
+            bool IsProcSuccess(object res, out string retmsg)
+            {
+                retmsg = "";
+                if (res is IDictionary<string, object> d)
+                {
+                    if (d.TryGetValue("retmsg", out var rm)) retmsg = rm?.ToString() ?? "";
+                    return d.ContainsKey("success") && Convert.ToBoolean(d["success"]);
+                }
+                return false;
+            }
+            void SetSlotCellTag(int row, int slot, string rm)
+            {
+                try { mainForm.Invoke(new Action(() => mainForm.dataGridView1.Rows[row].Cells[2 + slot].Tag = rm)); } catch { }
+            }
+
+            // 반환 true = 검사 중단 (공통 항목 FAIL + fail_continue 아님)
+            bool RunProcSlot4(int i, dynamic proc, object instance, MethodInfo method)
+            {
+                string group = MainForm.GetSlotGroup(proc);
+                // 단계1: all(#6/#7)은 X 슬롯만 순차 측정 (Y 슬롯은 #14/#15에서 기존처럼 직접 측정)
+                int[] slots = MainForm.SlotsOfGroup(group == "all" ? "X" : group);
+                var swItem = System.Diagnostics.Stopwatch.StartNew();
+                logAction($"▶ TEST_BEGIN: {proc.name} (ID: {proc.id})");
+                if (proc.param != null)
+                {
+                    UpsertParamMeta(proc.param, "proc_id", proc.id);
+                    UpsertParamMeta(proc.param, "proc_name", proc.name);
+                }
+
+                if (slots.Length == 0)
+                {
+                    // common: 모터·경사계 항목 1회 실행, 4칸 동일 표시
+                    bool ok = false; string rm = ""; bool exc = false;
+                    try { ok = IsProcSuccess(InvokeProc(instance, method, proc.param, logAction), out rm); }
+                    catch (Exception ex) { exc = true; logAction($"실행 중 오류 발생: {ex.Message}"); mainForm.AddFailRecord(proc, null, $"예외: {ex.Message}"); }
+                    for (int s = 0; s < 4; s++) { mainForm.UpdateSlotCell(i, s, ok ? "OK" : "FAIL", ok ? Color.Green : Color.Red); SetSlotCellTag(i, s, rm); }
+                    logAction($"◀ TEST_FINISH: {proc.name} -> {(ok ? "OK" : "FAIL")} ({swItem.Elapsed.TotalSeconds:0.00}초)");
+                    if (ok) { okCount++; return false; }
+                    failCount++;
+                    slot4CommonFailed = true;
+                    if (!exc) mainForm.AddFailRecord(proc, rm, null);
+                    // 공통 항목 FAIL = 지그/통신 문제 → fail_continue 아니면 중단 (기존 Y결합·무태그 FAIL 규칙과 동일)
+                    if (!mainForm.checkBox_Process.Checked) { logAction($"테스트 {proc.name}에서 실패했습니다. 검사 종료."); return true; }
+                    return false;
+                }
+
+                // 해당 없는 슬롯 열은 "—"
+                for (int s = 0; s < 4; s++) if (Array.IndexOf(slots, s) < 0) mainForm.MarkSlotCellNA(i, s);
+
+                bool anyFail = false, anyRun = false;
+                foreach (int s in slots)
+                {
+                    string slotName = MainForm.SLOT_NAMES[s];
+                    if (mainForm._slotSerial[s].Length == 0 || (mainForm._slotFailed[s] && !mainForm.checkBox_Process.Checked))
+                    {
+                        mainForm.UpdateSlotCell(i, s, "Skip", Color.LightBlue, Color.Black);
+                        continue;
+                    }
+                    anyRun = true;
+                    mainForm.UpdateSlotCell(i, s, "...", Color.Yellow, Color.Black);
+                    var p = mainForm.CloneParamForSlot(proc, s);
+                    Action<string> slog = m => logAction($"[{slotName}] {m}");
+                    bool ok = false; string rm = ""; bool exc = false;
+                    try { ok = IsProcSuccess(InvokeProc(instance, method, p, slog), out rm); }
+                    catch (Exception ex) { exc = true; slog($"실행 중 오류 발생: {ex.Message}"); mainForm.AddFailRecordSlot(proc, null, $"예외: {ex.Message}", s); }
+                    mainForm.UpdateSlotCell(i, s, ok ? "OK" : "FAIL", ok ? Color.Green : Color.Red);
+                    SetSlotCellTag(i, s, rm);
+                    if (ok) { okCount++; continue; }
+                    failCount++; anyFail = true;
+                    mainForm._slotFailed[s] = true;
+                    if (!exc) mainForm.AddFailRecordSlot(proc, rm, null, s);
+                    slog($"{proc.name} -> FAIL (슬롯 제외, 나머지 슬롯 진행)");
+                }
+                if (!anyRun) { skipCount++; logAction($"테스트 {proc.name} 스킵 (실행할 슬롯 없음)"); }
+                logAction($"◀ TEST_FINISH: {proc.name} -> {(anyFail ? "FAIL" : (anyRun ? "OK" : "SKIP"))} ({swItem.Elapsed.TotalSeconds:0.00}초)");
+                return false;
+            }
+
+            // 4슬롯 사이클 종료: 레인별(X1→Y1, X2→Y2) pending 저장·완성 업로드, 슬롯별 PASS/FAIL 요약 팝업
+            void FinishSlot4()
+            {
+                string summary = mainForm.SlotSummaryText(slot4CommonFailed);
+                logAction($"슬롯 결과: {summary}");
+                mainForm.Invoke(() => mainForm.label_Serial.Text = summary.Replace(" · ", "\n"));
+
+                var savedList = new List<string>();
+                bool anyXPass = false;
+                for (int lane = 0; lane < 2; lane++)
+                {
+                    int xs = lane == 0 ? MainForm.SLOT_X1 : MainForm.SLOT_X2;
+                    int ys = lane == 0 ? MainForm.SLOT_Y1 : MainForm.SLOT_Y2;
+                    string xn = MainForm.SLOT_NAMES[xs], yn = MainForm.SLOT_NAMES[ys];
+                    string xSn = mainForm._slotSerial[xs], ySn = mainForm._slotSerial[ys];
+                    string pendingPath = GetPendingSlotPath(lane);
+                    bool xPass = xSn.Length > 0 && !mainForm._slotFailed[xs] && !slot4CommonFailed;
+                    bool yPass = ySn.Length > 0 && !mainForm._slotFailed[ys] && !slot4CommonFailed;
+                    if (xPass) anyXPass = true;
+
+                    // 1) X 결과 → 레인 pending (다음 사이클 Y와 합산)
+                    if (xPass)
+                    {
+                        var xRet = new JArray();
+                        mainForm.Invoke(new Action(() => CollectRetmsgBySlot(mainForm, xs, xRet)));
+                        var pendingData = new JObject
+                        {
+                            ["serial"] = xSn,
+                            ["slot"] = xn,
+                            ["time"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                            ["retmsg"] = xRet
+                        };
+                        File.WriteAllText(pendingPath, pendingData.ToString(), new System.Text.UTF8Encoding(false));
+                        logAction($"[{xn}] X 결과 임시 저장: {xSn} ({xRet.Count}항목)");
+                    }
+
+                    // 2) Y 결과 + 이전 pending → 완성 저장
+                    if (yPass)
+                    {
+                        var prev = _previousPendingSlot[lane];
+                        string prevSn = prev?["serial"]?.ToString() ?? "";
+                        if (prev != null && prevSn == ySn)
+                        {
+                            var yRet = new JArray();
+                            mainForm.Invoke(new Action(() => CollectRetmsgBySlot(mainForm, ys, yRet)));
+                            var combined = new JArray();
+                            foreach (var it in prev["retmsg"] as JArray ?? new JArray()) combined.Add(it);
+                            foreach (var it in yRet) combined.Add(it);
+                            mainForm.SaveLogDirect(ySn, combined, logAction, $"{xn}->{yn}");
+                            savedList.Add(ySn);
+                            logAction($"[{yn}] 완성 업로드: {ySn} (X+Y {combined.Count}항목)");
+                        }
+                        else if (prev == null)
+                            logAction($"[{yn}] Y 결과 있으나 이전 pending 없음 (첫 사이클)");
+                        else
+                            logAction($"[경고] [{yn}] pending 시리얼 불일치: pending={prevSn}, Y={ySn}");
+                        _previousPendingSlot[lane] = null;
+                    }
+
+                    // 3) 마감(X 빈칸): 레인 pending 삭제 → 재투입 중복 완성 차단
+                    if (xSn.Length == 0)
+                    {
+                        try { if (File.Exists(pendingPath)) File.Delete(pendingPath); } catch { }
+                    }
+                }
+                if (savedList.Count > 0)
+                    mainForm.Invoke(() => mainForm.label_passSaved.Text = "PASS SAVED: " + string.Join(", ", savedList));
+
+                string totals = $"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}\n{summary}";
+                if (failCount == 0)
+                {
+                    mainForm.ShowPassForm();
+                    mainForm.passForm.SetResult(totals);
+                }
+                else
+                {
+                    // 시리얼 번호 롤백(재사용)은 X 슬롯이 하나도 통과 못했을 때만. 한 슬롯만 FAIL이면 번호 진행 유지(재검은 수동 입력)
+                    if (!anyXPass) RollbackSerialAndMacIfFail(logAction);
+                    mainForm.ShowFailForm();
+                    mainForm.failForm.SetResult(totals);
+                }
+            }
+
             // repeat_all_count: 전체 항목 반복 횟수 (기본값 1)
             int repeatCount = 1;
             try { repeatCount = Math.Max(1, Convert.ToInt32(((IDictionary<string, object>)project).TryGetValue("repeat_all_count", out var _rc) ? _rc : 1)); } catch { }
@@ -2785,7 +2970,24 @@ namespace flexfab
                 // 밀어내기식: 이전 pending 파일 읽기 (single 모드에서는 pending 사용 안 함)
                 string pendingPathInit = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pending_x_result.json");
                 _previousPendingData = null;
-                if (!curSingleMode && File.Exists(pendingPathInit))
+                if (mainForm.Slot4Run)
+                {
+                    // 4슬롯: 레인별 pending (X1→Y1, X2→Y2)
+                    for (int lane = 0; lane < 2; lane++)
+                    {
+                        _previousPendingSlot[lane] = null;
+                        string pp = GetPendingSlotPath(lane);
+                        if (!File.Exists(pp)) continue;
+                        try
+                        {
+                            var loaded = JObject.Parse(File.ReadAllText(pp, new System.Text.UTF8Encoding(false)));
+                            _previousPendingSlot[lane] = loaded;
+                            logAction($"이전 pending 로드 (레인{lane + 1}): {loaded["serial"]} ({loaded["time"]})");
+                        }
+                        catch { logAction($"[경고] pending 파일 읽기 실패 (레인{lane + 1})"); }
+                    }
+                }
+                else if (!curSingleMode && File.Exists(pendingPathInit))
                 {
                     try
                     {
@@ -2823,6 +3025,8 @@ namespace flexfab
                 }
 
                 bool xGroupFailed = false;   // X결합 그룹 FAIL 시 남은 X 항목 스킵 (라운드마다 리셋)
+                for (int s = 0; s < 4; s++) mainForm._slotFailed[s] = false;   // 4슬롯: 슬롯 단위 FAIL 제외 (라운드마다 리셋)
+                slot4CommonFailed = false;
                 for (int i = 0; i < project.procs.Count; i++)
                 {
                     if (token.IsCancellationRequested)
@@ -2914,8 +3118,8 @@ namespace flexfab
                         catch { }
                     }
 
-                    // 빈 축 시리얼 스킵: Y빈칸→Y축 proc 스킵, X빈칸→X축 proc 스킵 (밀어내기 모드 한정)
-                    if (!curSingleMode)
+                    // 빈 축 시리얼 스킵: Y빈칸→Y축 proc 스킵, X빈칸→X축 proc 스킵 (밀어내기 모드 한정, 4슬롯은 RunProcSlot4에서 슬롯별 처리)
+                    if (!curSingleMode && !mainForm.Slot4Run)
                     {
                         string procUartId2 = "";
                         string procName2 = (string)proc.name ?? "";
@@ -2975,6 +3179,13 @@ namespace flexfab
                         var method = classtype.GetMethod(proc.id);
                         if (method != null)
                         {
+                            // ── 4슬롯: slot_group별 슬롯 실행 (기존 경로와 분리) ──
+                            if (mainForm.Slot4Run)
+                            {
+                                if (RunProcSlot4(i, proc, libraryDictFinal2["instance"], method)) { wasCanceled = true; break; }
+                                continue;
+                            }
+
                             var swItem = System.Diagnostics.Stopwatch.StartNew();   // 항목별 걸린시간
                             try
                             {
@@ -3155,6 +3366,10 @@ namespace flexfab
                     RollbackSerialAndMacIfFail(logAction);
                     mainForm.ShowFailForm();
                     mainForm.failForm.SetResult($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");
+                }
+                else if (isMotion && mainForm.Slot4Run)
+                {
+                    FinishSlot4();
                 }
                 else if (isMotion && failCount == 0)
                 {
@@ -3643,6 +3858,13 @@ namespace flexfab
             _lastSerialX = _prevLastSerialX;
             if (!string.IsNullOrEmpty(_lastSerialX))
                 try { File.WriteAllText(Path.Combine(baseDir, GetLastSerialXFileName()), _lastSerialX, new System.Text.UTF8Encoding(false)); } catch { }
+            // 4슬롯: X2 슬롯 기억값도 롤백
+            if (_slot4)
+            {
+                _lastSerialX2 = _prevLastSerialX2;
+                if (!string.IsNullOrEmpty(_lastSerialX2))
+                    try { File.WriteAllText(Path.Combine(baseDir, GetLastSerialX2FileName()), _lastSerialX2, new System.Text.UTF8Encoding(false)); } catch { }
+            }
         }
 
         private bool IsMacWriteEnabledFromConfig()
@@ -3937,6 +4159,7 @@ namespace flexfab
                     case "fail_continue":
                     case "show_log":
                     case "fail_detail":
+                    case "clear_log_on_run_start":
                         {
                             var chk = new CheckBox { Location = new Point(230, y), AutoSize = true, Checked = ToIntSafe(cur) != 0 };
                             dlg.Controls.Add(chk); editors[name] = () => (object)(chk.Checked ? 1 : 0);
@@ -4017,6 +4240,7 @@ namespace flexfab
             try { string ll = (string)(workspace.log_level ?? ""); if (!string.IsNullOrEmpty(ll)) Cantops.FlexFab.LogConfig.LogLevel = ll; } catch { }
             try { _failDetailPopup = Convert.ToInt32(workspace.fail_detail) != 0; } catch { }
             try { _serialAutoIncrement = (bool)(workspace?.serial_auto_increment ?? false); } catch { }
+            ApplySlotLayout(); // 4슬롯: slot_layout / slot_uarts / clear_log_on_run_start 재적용
 
             // show_log → 창 크기/로그창 (VibeTilt 값 1541/941 × 819)
             bool showLog = false;

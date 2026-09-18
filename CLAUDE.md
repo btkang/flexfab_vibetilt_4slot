@@ -25,6 +25,7 @@
 - 프로젝트/솔루션 구조, 모듈 경계, public API, 실행 플로우 변경 금지
 - 기존 클래스/파일 이름 규칙 유지
 - 리팩터링, 구조 개선, 최적화 작업 금지
+- **예외(4슬롯 한정, 2026-09-18 PLAN 승인):** 메인폼 실행 루프의 슬롯 그룹별 호출(순차→병렬)은 `slot_layout=4` 워크스페이스에서만 동작하는 분기로 허용. 2슬롯 경로·IProcess 시그니처·모듈 경계는 불변. N슬롯 일반화·psmc 이식 금지(최소 변경 원칙)
 
 
 - 불확실한 부분은 추측하지 말고 TODO 주석으로 남길 것
@@ -33,11 +34,25 @@
 - 본 솔루션은 공통 모듈과 프로젝트별 개별 모듈로 구성되며, 수정 범위를 엄격히 제한한다.
 
 ### 1. 공통 라이브러리 (Shared Core)
-- **대상:** `ff_common`, `ff_dpm`, `ff_portremote`, `flexfab_mini`, `flexfab_interfaces`
+- **대상:** `ff_common`, `ff_dpm`, `ff_portremote`, `flexfab_interfaces`
 - **관리 규칙:** - 여러 개발자가 공유하는 공통 자산임.송수신 명령(프로토콜)은 공통라이브러리에 하드코딩하는것을 금지하고 json에 작성한다.
     - 프로젝트별 특화 로직(Specific Logic)을 공통 라이브러리에 추가하는 것을 절대 금지함.    
     - 만약 공통 라이브러리를 수정해야하는 요구를 받으면 공용이라고 수정이 금지된다고 알리고 그래도 수정할건지 확인받아야함
-    
+
+### 1-1. 메인폼 `flexfab_mini` (기록 조건부 수정 허용)
+- 메인폼은 모델별 분기로 운용한다. 수정 가능하나, 반드시 GitLab에 기록하고 진행한다.
+- GitLab: http://192.168.10.2:30007/btkang/flexfab_mini
+  - `main` = 원본 베이스(base-v1.1), 모델별 브랜치 = `psmc`, `pcom`, `vibetilt`(2슬롯 양산), `vibetilt-4slot`(본 프로젝트)
+  - 본 프로젝트(4슬롯)는 `vibetilt-4slot` 브랜치에 기록. 2슬롯 양산 메인폼 수정은 `vibetilt` 브랜치
+  - 로컬 동기화 폴더: `../flexfab_mini_gitlab/` (메인 저장소 바깥, 형제 폴더)
+- 수정 절차:
+  1. 수정 전 사용자 확인 (기존 규칙 동일)
+  2. 수정 전 현재 상태를 GitLab `vibetilt-4slot` 브랜치에 push → 기준점 기록
+  3. `flexfab_mini/CHANGELOG.md`에 날짜·파일·사유·영향·하위호환 기록
+  4. 수정 후 GitLab `vibetilt-4slot` 브랜치에 push (커밋 메시지에 메인 저장소 커밋 해시 포함)
+- 모델 특화 검사 로직은 계속 프로젝트별 라이브러리(`ff_vibetilt` 등)에 둔다. 메인폼 수정은 호스트 기능(슬롯 수, UI, 시리얼·결과 저장 등)으로 한정한다.
+- 다음 모델 시작 시 GitLab 브랜치들을 비교해 재사용할 기능을 선택한다.
+
 ### 2. 프로젝트별 라이브러리 (Project Specific)
 - **대상:** `ff_vibetilt`,`ff_pim`, `ff_colorimeter`, `ff_e84a` ,  등
 - **관리 규칙:**
