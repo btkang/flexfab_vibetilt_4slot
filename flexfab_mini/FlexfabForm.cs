@@ -2998,15 +2998,13 @@ namespace flexfab
                 string totals = $"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}\n{summary}";
                 if (failCount == 0)
                 {
-                    mainForm.ShowPassForm();
-                    mainForm.passForm.SetResult(totals);
+                    mainForm.ShowPassForm(totals);   // C3(v05): 결과 문구를 표시되는 팝업에 직접 전달
                 }
                 else
                 {
                     // 시리얼 번호 롤백(재사용)은 X 슬롯이 하나도 통과 못했을 때만. 한 슬롯만 FAIL이면 번호 진행 유지(재검은 수동 입력)
                     if (!anyXPass) RollbackSerialAndMacIfFail(logAction);
-                    mainForm.ShowFailForm();
-                    mainForm.failForm.SetResult(totals);
+                    mainForm.ShowFailForm(totals);   // C3(v05): 결과 문구를 표시되는 팝업에 직접 전달
                 }
             }
 
@@ -3384,8 +3382,7 @@ namespace flexfab
                     RollbackSerialAndMacIfFail(logAction);
                     if (failCount > 0)
                     {
-                        mainForm.ShowFailForm();
-                        mainForm.failForm.SetResult($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");
+                        mainForm.ShowFailForm($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");   // C3(v05): 결과 문구를 표시되는 팝업에 직접 전달
                     }
                     return;
                 }
@@ -3422,14 +3419,12 @@ namespace flexfab
                     mainForm.SaveLog(mainForm.serialNumber, mainForm.macAddress ?? "Not Use", null);
                     logAction($"단독 검사 저장: {mainForm.serialNumber}");
                     mainForm.Invoke(() => mainForm.label_passSaved.Text = $"PASS SAVED: {mainForm.serialNumber}");
-                    mainForm.ShowPassForm();
-                    mainForm.passForm.SetResult($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");
+                    mainForm.ShowPassForm($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");   // C3(v05): 결과 문구를 표시되는 팝업에 직접 전달
                 }
                 else if (isMotion && curSingleMode && failCount > 0)
                 {
                     RollbackSerialAndMacIfFail(logAction);
-                    mainForm.ShowFailForm();
-                    mainForm.failForm.SetResult($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");
+                    mainForm.ShowFailForm($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");   // C3(v05): 결과 문구를 표시되는 팝업에 직접 전달
                 }
                 else if (isMotion && slot4)
                 {
@@ -3523,14 +3518,12 @@ namespace flexfab
                         logAction("[INFO] 마감 사이클: pending 파일 삭제 (재투입 중복 차단)");
                     }
 
-                    mainForm.ShowPassForm();
-                    mainForm.passForm.SetResult($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");
+                    mainForm.ShowPassForm($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");   // C3(v05): 결과 문구를 표시되는 팝업에 직접 전달
                 }
                 else if (isMotion && failCount > 0)
                 {
                     RollbackSerialAndMacIfFail(logAction);
-                    mainForm.ShowFailForm();
-                    mainForm.failForm.SetResult($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");
+                    mainForm.ShowFailForm($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");   // C3(v05): 결과 문구를 표시되는 팝업에 직접 전달
                 }
                 else if (failCount == 0)
                 {
@@ -3545,14 +3538,12 @@ namespace flexfab
                     }
                     mainForm.SaveLog(serialNumber, macAddress, result);
                     mainForm.Invoke(() => mainForm.label_passSaved.Text = $"PASS SAVED: {mainForm.serialNumber}");
-                    mainForm.ShowPassForm();
-                    mainForm.passForm.SetResult($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");
+                    mainForm.ShowPassForm($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");   // C3(v05): 결과 문구를 표시되는 팝업에 직접 전달
                 }
                 else
                 {
                     RollbackSerialAndMacIfFail(logAction);
-                    mainForm.ShowFailForm();
-                    mainForm.failForm.SetResult($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");
+                    mainForm.ShowFailForm($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");   // C3(v05): 결과 문구를 표시되는 팝업에 직접 전달
                 }
             }
             catch (Exception ex)
