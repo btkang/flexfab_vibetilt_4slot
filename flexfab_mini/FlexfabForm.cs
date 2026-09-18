@@ -1699,17 +1699,27 @@ namespace flexfab
 
             var textBoxes = new List<(string id, TextBox txt)>();
             int tabIdx = 0;
+            int portDx = _slot4 ? 50 : 0;   // 4슬롯: 라벨 "X1슬롯 (UART_232)"이 길어 입력칸 이하 오른쪽으로 이동
             for (int i = 0; i < ports.Count; i++)
             {
                 int rowY = rowsTop + i * 40;
                 // 2026-06-11: 표시 라벨만 X 명시(uart_485 → UART_485_X). 실제 id는 불변(통신/저장은 ports[i].id 사용)
                 string dispName = string.Equals(ports[i].id, "uart_485", StringComparison.OrdinalIgnoreCase) ? "uart_485_x" : ports[i].id;
-                var lbl = new Label { Text = dispName.ToUpper(), Location = new Point(20, rowY), AutoSize = true, Font = new Font("맑은 고딕", 10) };
-                var txt = new TextBox { Text = ports[i].port, Location = new Point(160, rowY - 3), Width = 90, Font = new Font("맑은 고딕", 10), TabIndex = tabIdx++ };
-                var btnMinus = new Button { Text = "−", Location = new Point(258, rowY - 5), Size = new Size(40, 28), Font = new Font("맑은 고딕", 11, FontStyle.Bold), TabIndex = tabIdx++ };
-                var btnPlus  = new Button { Text = "+", Location = new Point(302, rowY - 5), Size = new Size(40, 28), Font = new Font("맑은 고딕", 11, FontStyle.Bold), TabIndex = tabIdx++ };
+                string lblText = dispName.ToUpper();
+                float lblFont = 10;
+                // 4슬롯: 지그 표기(X1슬롯 등)를 앞에, 라이브러리 id를 괄호로 (id·통신·저장은 그대로 ports[i].id)
+                if (_slot4)
+                {
+                    int si = Array.FindIndex(SLOT_NAMES, n => _slotUarts.TryGetValue(n, out var u) && string.Equals(u, ports[i].id, StringComparison.OrdinalIgnoreCase));
+                    if (si >= 0) { lblText = $"{SLOT_LABELS[si]} ({ports[i].id.ToUpper()})"; lblFont = 9; }
+                    else if (string.Equals(ports[i].id, "uart_gyro", StringComparison.OrdinalIgnoreCase)) { lblText = "경사계 (UART_GYRO)"; lblFont = 9; }
+                }
+                var lbl = new Label { Text = lblText, Location = new Point(20, rowY), AutoSize = true, Font = new Font("맑은 고딕", lblFont) };
+                var txt = new TextBox { Text = ports[i].port, Location = new Point(160 + portDx, rowY - 3), Width = 90, Font = new Font("맑은 고딕", 10), TabIndex = tabIdx++ };
+                var btnMinus = new Button { Text = "−", Location = new Point(258 + portDx, rowY - 5), Size = new Size(40, 28), Font = new Font("맑은 고딕", 11, FontStyle.Bold), TabIndex = tabIdx++ };
+                var btnPlus  = new Button { Text = "+", Location = new Point(302 + portDx, rowY - 5), Size = new Size(40, 28), Font = new Font("맑은 고딕", 11, FontStyle.Bold), TabIndex = tabIdx++ };
                 // 2026-06-11: 입력된 COM이 실제 어떤 장치인지 즉시 표시 (장치관리자 대조 불필요)
-                var lblInfo = new Label { Text = describeCom(ports[i].port), Location = new Point(350, rowY), AutoSize = false, Width = 280, Height = 24, Font = new Font("맑은 고딕", 9), TextAlign = ContentAlignment.MiddleLeft };
+                var lblInfo = new Label { Text = describeCom(ports[i].port), Location = new Point(350 + portDx, rowY), AutoSize = false, Width = 280, Height = 24, Font = new Font("맑은 고딕", 9), TextAlign = ContentAlignment.MiddleLeft };
 
                 // 클로저 캡처 안전 (for 루프 내부에 txt 변수가 매 반복마다 새로 선언됨)
                 btnMinus.Click += (s, e) => adjustPort(txt, -1);
@@ -1749,11 +1759,11 @@ namespace flexfab
                     miss.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
             };
 
-            var btnOk = new Button { Text = "적용", DialogResult = DialogResult.OK, Location = new Point(380, btnY), Width = 80, TabIndex = tabIdx++ };
-            var btnCancel = new Button { Text = "취소", DialogResult = DialogResult.Cancel, Location = new Point(470, btnY), Width = 80, TabIndex = tabIdx++ };
+            var btnOk = new Button { Text = "적용", DialogResult = DialogResult.OK, Location = new Point(380 + portDx, btnY), Width = 80, TabIndex = tabIdx++ };
+            var btnCancel = new Button { Text = "취소", DialogResult = DialogResult.Cancel, Location = new Point(470 + portDx, btnY), Width = 80, TabIndex = tabIdx++ };
             dlg.AcceptButton = btnOk;
             dlg.CancelButton = btnCancel;
-            dlg.ClientSize = new Size(640, btnY + 45);
+            dlg.ClientSize = new Size(640 + portDx, btnY + 45);
             dlg.Controls.AddRange(new Control[] { btnAuto, btnOk, btnCancel });
 
             if (dlg.ShowDialog(this) != DialogResult.OK) return;
