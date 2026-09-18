@@ -67,7 +67,7 @@ namespace flexfab
 
         private bool _isRunning;
         private Button button_OpenWorkspace;
-        private string _currentWorkspacePath; //어느 workspace를 열었는지 저장
+        internal string _currentWorkspacePath; //어느 workspace를 열었는지 저장
         private string _logProjFolder = "";  // 로그 프로젝트 폴더명 (공백제거)
 
         // ── 불량보기(FailInfoForm) 이식 (pSMC) : 회차 단위 누적 불량 목록 ──
@@ -2319,6 +2319,14 @@ namespace flexfab
             try { int tmVal = Convert.ToInt32(workspace?.test_mode ?? 0); testMode = tmVal == 1 ? "single" : "dual"; } catch { }
             bool isSingleMode = testMode == "single";
 
+            // F0(v05): 4슬롯 워크스페이스는 dual 전용 — single은 X1 한 번으로 Y 단계 없이 완성 PASS가 되므로 거부
+            if (_slot4 && isSingleMode)
+            {
+                ShowLargeConfirmDialog("4슬롯 지그는 dual 전용입니다.\ntest_mode를 0(dual)으로 두고 검사하세요.");
+                Log("[4슬롯] single 모드 Start 거부 (dual 전용)");
+                return;
+            }
+
             if (isMotionProject && !isSingleMode)
             {
                 // dual 모드: 밀어내기식 시리얼 입력 — 4슬롯(slot_layout=4)은 4칸, 아니면 기존 2칸
@@ -2442,6 +2450,7 @@ namespace flexfab
 
         private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
         {
+            if (_isRunning) return; // F6(v05): 검사 중 항목 제외 토글 금지 (실행 중 빨강 → Skip → 부분 검사 PASS 방지)
             // 클릭된 셀이 첫 번째 열(번호)인지 확인
             if (e.ColumnIndex == 0 && e.RowIndex >= 0)  // 0번 열(번호), 헤더 클릭 방지
             {
@@ -2461,6 +2470,7 @@ namespace flexfab
 
         private void dataGridView1_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
+            if (_isRunning) return; // F6(v05): 검사 중 전체 토글 금지
             // '번호' 컬럼(0번) 헤더 클릭 → 전체 행 스킵 토글
             if (e.ColumnIndex != 0) return;
 
@@ -2489,25 +2499,65 @@ namespace flexfab
         private void dataGridView1_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0) return;
+            // F6(v05): 검사 중 더블클릭 전부 무시 — 항목명 단독실행이 UI 스레드에서 모터·포트를 이중 구동하던 경로 차단
+            if (_isRunning) return;
 
-            // 2열(테스트 이름) 더블클릭: 기존 동작 유지
+            // 2열(테스트 이름) 더블클릭: 단독실행
             if (e.ColumnIndex == 1)
             {
-                foreach (DataGridViewRow row in dataGridView1.Rows)
-                    row.Cells[0].Style.BackColor = Color.Red; // 전부 Skip
-
-                dataGridView1.Rows[e.RowIndex].Cells[0].Style.BackColor = Color.White; // 선택 행만 실행 허용
-
                 if (workspace == null)
                 {
                     Log("워크스페이스가 로드되지 않았습니다.");
                     return;
                 }
 
+                // F6(v05): 쓰기 항목(시리얼·출하상태·파라미터 저장)은 단독실행 차단 — 이전 보드 시리얼로 UID 기록되는 오염 방지
+                string pickedId = "";
+                try
+                {
+                    var procList = (IList<object>)((IDictionary<string, object>)((IList<object>)workspace.projects)[0])["procs"];
+                    if (e.RowIndex < procList.Count) pickedId = ((IDictionary<string, object>)procList[e.RowIndex])["id"]?.ToString() ?? "";
+                }
+                catch { }
+                if (pickedId.StartsWith("UID_") || pickedId.StartsWith("RCONF_") || pickedId.StartsWith("APPCFG_SAVE_"))
+                {
+                    Log($"[단독실행] 쓰기 항목 차단: {pickedId} (시리얼·출하상태·저장은 전체 검사에서만)");
+                    return;
+                }
+
+                // 단독실행 전 번호셀 색 저장 → 끝나면 복원 (빨강 잔존 시 다음 Start가 1항목만 검사하던 문제)
+                var savedColors = new List<Color>();
+                foreach (DataGridViewRow row in dataGridView1.Rows) savedColors.Add(row.Cells[0].Style.BackColor);
+
+                foreach (DataGridViewRow row in dataGridView1.Rows)
+                    row.Cells[0].Style.BackColor = Color.Red; // 전부 Skip
+                dataGridView1.Rows[e.RowIndex].Cells[0].Style.BackColor = Color.White; // 선택 행만 실행 허용
+
+                // 이전 런의 __serial 메타 제거 — 단독실행에 남은 시리얼이 치환되지 않게
+                try
+                {
+                    foreach (var p in (IList<object>)((IDictionary<string, object>)((IList<object>)workspace.projects)[0])["procs"])
+                        if (((IDictionary<string, object>)p).TryGetValue("param", out var pr) && pr is IDictionary<string, object> pd)
+                            pd.Remove("__serial");
+                }
+                catch { }
+
                 string project_id = workspace.active_project;
                 Log($"프로젝트 '{project_id}' 실행 시작...");
 
-                app.DoProject(workspace, project_id, new Action<string>(Log), this);
+                _isRunning = true;
+                button_start.Enabled = false;
+                try
+                {
+                    app.DoProject(workspace, project_id, new Action<string>(Log), this);
+                }
+                finally
+                {
+                    for (int r = 0; r < dataGridView1.Rows.Count && r < savedColors.Count; r++)
+                        dataGridView1.Rows[r].Cells[0].Style.BackColor = savedColors[r];
+                    _isRunning = false;
+                    button_start.Enabled = true;
+                }
                 return;
             }
 
@@ -2635,6 +2685,10 @@ namespace flexfab
 
         public async Task MainDoProject(dynamic workspace, string project_id, Action<string> logAction, MainForm mainForm, CancellationToken token)
         {
+            // F0(v05): 사이클 스냅샷 — 4슬롯 여부·워크스페이스 키는 시작 시 고정, 실행 중 재계산 금지
+            bool slot4 = mainForm.Slot4Run;
+            string wsKey = string.IsNullOrEmpty(mainForm._currentWorkspacePath) ? "unknown" : Path.GetFileNameWithoutExtension(mainForm._currentWorkspacePath);
+
             // 결과 셀 초기화 + 이전 run의 return message(Tag) 비우기 — 결과 열 전부(2슬롯 1열 / 4슬롯 4열)
             for (int i = 0; i < mainForm.dataGridView1.Rows.Count; i++)
             {
@@ -2980,7 +3034,7 @@ namespace flexfab
                 // 밀어내기식: 이전 pending 파일 읽기 (single 모드에서는 pending 사용 안 함)
                 string pendingPathInit = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pending_x_result.json");
                 _previousPendingData = null;
-                if (mainForm.Slot4Run)
+                if (slot4)
                 {
                     // 4슬롯: 레인별 pending (X1→Y1, X2→Y2)
                     for (int lane = 0; lane < 2; lane++)
@@ -3129,7 +3183,7 @@ namespace flexfab
                     }
 
                     // 빈 축 시리얼 스킵: Y빈칸→Y축 proc 스킵, X빈칸→X축 proc 스킵 (밀어내기 모드 한정, 4슬롯은 RunProcSlot4에서 슬롯별 처리)
-                    if (!curSingleMode && !mainForm.Slot4Run)
+                    if (!curSingleMode && !slot4)
                     {
                         string procUartId2 = "";
                         string procName2 = (string)proc.name ?? "";
@@ -3190,7 +3244,7 @@ namespace flexfab
                         if (method != null)
                         {
                             // ── 4슬롯: slot_group별 슬롯 실행 (기존 경로와 분리) ──
-                            if (mainForm.Slot4Run)
+                            if (slot4)
                             {
                                 if (RunProcSlot4(i, proc, libraryDictFinal2["instance"], method)) { wasCanceled = true; break; }
                                 continue;
@@ -3377,7 +3431,7 @@ namespace flexfab
                     mainForm.ShowFailForm();
                     mainForm.failForm.SetResult($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");
                 }
-                else if (isMotion && mainForm.Slot4Run)
+                else if (isMotion && slot4)
                 {
                     FinishSlot4();
                 }
@@ -3922,6 +3976,7 @@ namespace flexfab
 
         private void button_OpenWorkspace_Click(object sender, EventArgs e)
         {
+            if (_isRunning) { Log("[INFO] 검사 중에는 워크스페이스를 열 수 없습니다."); return; } // F0(v05)
             using (var ofd = new OpenFileDialog())
             {
                 ofd.Title = "워크스페이스 열기";
@@ -3980,6 +4035,7 @@ namespace flexfab
         // v0.6.9: 우클릭 메뉴에서 호출 — 현재 워크스페이스 파일을 다이얼로그 없이 재로드
         private void ReloadCurrentWorkspace()
         {
+            if (_isRunning) { Log("[INFO] 검사 중에는 워크스페이스를 재로드할 수 없습니다."); return; } // F0(v05)
             if (string.IsNullOrEmpty(_currentWorkspacePath) || !File.Exists(_currentWorkspacePath))
             {
                 MessageBox.Show("재로드할 워크스페이스가 없습니다.\nOpen Workspace로 먼저 파일을 열어주세요.",
@@ -4063,6 +4119,8 @@ namespace flexfab
         // 진입 게이트: 검사 동작 SETTING이라 여기서 후속 패스워드 확인을 추가할 예정.
         private void OpenTestSettings()
         {
+            // F0(v05): 검사 중 설정 변경 금지 — 실행 중 test_mode 등이 바뀌면 판정 경로가 바뀜
+            if (_isRunning) { Log("[INFO] 검사 중에는 테스트 설정을 열 수 없습니다."); return; }
             // 다이얼로그 진입은 자유(적용=런타임). 파일 [저장]만 패스워드 확인(ShowTestSettingsDialog 내부).
             ShowTestSettingsDialog();
         }
@@ -4226,6 +4284,13 @@ namespace flexfab
                 {
                     var val = kv.Value();
                     if (val is string s && string.IsNullOrWhiteSpace(s)) continue;
+                    // F0(v05): 4슬롯 워크스페이스는 dual 전용 — test_mode=1 적용 거부
+                    if (_slot4 && kv.Key == "test_mode" && ToIntSafe(val) == 1)
+                    {
+                        MessageBox.Show("4슬롯 지그는 dual 전용입니다.\ntest_mode=1(single)은 적용하지 않습니다.", "테스트 설정",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        continue;
+                    }
                     SetSettingValue(kv.Key, val);
                     applied[kv.Key] = val;
                 }
