@@ -2426,15 +2426,25 @@ namespace flexfab
             // DoProject 실행
             Task.Run(async () =>
             {
-                await MainDoProject(workspace, project_id, new Action<string>(Log), this, token);
-
-                // UI 스레드에서 버튼 복원
-                this.Invoke(new Action(() =>
+                try
                 {
-                    button_start.Enabled = true;
-                    buttonStop.Enabled = false;
-                    _isRunning = false;
-                }));
+                    await MainDoProject(workspace, project_id, new Action<string>(Log), this, token);
+                }
+                catch (Exception ex) { try { Log($"실행 중 오류 발생: {ex.Message}"); } catch { } }
+                finally
+                {
+                    // UI 스레드에서 버튼 복원 — 코드 게이트 #8: 예외여도 _isRunning 해제(F0·F6 가드 영구 잠김 방지)
+                    try
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            button_start.Enabled = true;
+                            buttonStop.Enabled = false;
+                            _isRunning = false;
+                        }));
+                    }
+                    catch { _isRunning = false; }
+                }
             });
         }
 
@@ -2512,13 +2522,24 @@ namespace flexfab
                 }
 
                 // F6(v05): 쓰기 항목(시리얼·출하상태·파라미터 저장)은 단독실행 차단 — 이전 보드 시리얼로 UID 기록되는 오염 방지
+                // 코드 게이트 #2: active_project로 proc을 찾고(Program.DoProject와 같은 기준), id를 못 얻으면 차단(fail-closed)
                 string pickedId = "";
+                IList<object>? procList = null;
                 try
                 {
-                    var procList = (IList<object>)((IDictionary<string, object>)((IList<object>)workspace.projects)[0])["procs"];
-                    if (e.RowIndex < procList.Count) pickedId = ((IDictionary<string, object>)procList[e.RowIndex])["id"]?.ToString() ?? "";
+                    string ap = workspace.active_project;
+                    foreach (var pj in (IList<object>)workspace.projects)
+                        if (pj is IDictionary<string, object> pjd && (pjd.TryGetValue("id", out var pid) ? pid?.ToString() : "") == ap)
+                        { procList = (IList<object>)pjd["procs"]; break; }
+                    if (procList != null && e.RowIndex < procList.Count)
+                        pickedId = ((IDictionary<string, object>)procList[e.RowIndex])["id"]?.ToString() ?? "";
                 }
                 catch { }
+                if (string.IsNullOrEmpty(pickedId))
+                {
+                    Log("[단독실행] 항목을 확인할 수 없어 실행하지 않습니다.");
+                    return;
+                }
                 if (pickedId.StartsWith("UID_") || pickedId.StartsWith("RCONF_") || pickedId.StartsWith("APPCFG_SAVE_"))
                 {
                     Log($"[단독실행] 쓰기 항목 차단: {pickedId} (시리얼·출하상태·저장은 전체 검사에서만)");
@@ -2533,12 +2554,12 @@ namespace flexfab
                     row.Cells[0].Style.BackColor = Color.Red; // 전부 Skip
                 dataGridView1.Rows[e.RowIndex].Cells[0].Style.BackColor = Color.White; // 선택 행만 실행 허용
 
-                // 이전 런의 __serial 메타 제거 — 단독실행에 남은 시리얼이 치환되지 않게
+                // 이전 런의 메타 제거 — 단독실행에 남은 시리얼(__serial)·빈 슬롯 포트 스킵(__skip_uarts, 코드 게이트 #9)이 적용되지 않게
                 try
                 {
-                    foreach (var p in (IList<object>)((IDictionary<string, object>)((IList<object>)workspace.projects)[0])["procs"])
+                    foreach (var p in procList!)
                         if (((IDictionary<string, object>)p).TryGetValue("param", out var pr) && pr is IDictionary<string, object> pd)
-                            pd.Remove("__serial");
+                        { pd.Remove("__serial"); pd.Remove("__skip_uarts"); }
                 }
                 catch { }
 
@@ -2851,6 +2872,9 @@ namespace flexfab
             bool[] laneConsumed = new bool[2];              // F2: Y 완성 저장 완료
             bool[] laneNewWritten = new bool[2];            // F2: 새 X pending 기록 완료
             bool slot4Finished = false;                     // F2-7: 정상 종료(FinishSlot4 완료) 여부
+            bool[] laneDiscardAtEnd = new bool[2];          // 코드 게이트 #1: 시작 시 폐기 실패한 .json → 종료 때 재삭제
+            bool[] laneCleanupWarn = new bool[2];           // F2-8: pending 정리 실패 → 요약 표시
+            bool failContinue = mainForm.checkBox_Process.Checked;   // F0 스냅샷(코드 게이트 #3): 4슬롯 경로는 실행 중 체크박스 변경 무시
 
             object InvokeProc(object instance, MethodInfo method, object param, Action<string> log)
             {
@@ -2909,7 +2933,7 @@ namespace flexfab
                     slot4CommonFailed = true;
                     if (!exc) mainForm.AddFailRecord(proc, rm, null);
                     // 공통 항목 FAIL = 지그/통신 문제 → fail_continue 아니면 중단 (기존 Y결합·무태그 FAIL 규칙과 동일)
-                    if (!mainForm.checkBox_Process.Checked) { logAction($"테스트 {proc.name}에서 실패했습니다. 검사 종료."); return true; }
+                    if (!failContinue) { logAction($"테스트 {proc.name}에서 실패했습니다. 검사 종료."); return true; }
                     return false;
                 }
 
@@ -2920,7 +2944,7 @@ namespace flexfab
                 foreach (int s in slots)
                 {
                     string slotName = MainForm.SLOT_LABELS[s];
-                    if (mainForm._slotSerial[s].Length == 0 || mainForm._slotBlocked[s] || (mainForm._slotFailed[s] && !mainForm.checkBox_Process.Checked))
+                    if (mainForm._slotSerial[s].Length == 0 || mainForm._slotBlocked[s] || (mainForm._slotFailed[s] && !failContinue))
                     {
                         mainForm.UpdateSlotCell(i, s, "Skip", Color.LightBlue, Color.Black);
                         continue;
@@ -2990,7 +3014,7 @@ namespace flexfab
                     if (ySn.Length > 0 && !fail[ys])
                     {
                         var prev = lanePending[lane];
-                        if (prev == null || (prev["serial"]?.ToString() ?? "") != ySn)
+                        if (prev == null || !string.Equals(prev["serial"]?.ToString() ?? "", ySn, StringComparison.OrdinalIgnoreCase))
                         {
                             fail[ys] = true;
                             state[ys] = $"FAIL(X 기록 없음: {yBlockReason[lane] ?? "pending 불일치"})";
@@ -3068,6 +3092,13 @@ namespace flexfab
                         try { File.Delete(pendingPath + ".inuse"); laneInuse[lane] = false; }
                         catch (Exception ex) { cleanupFailed = true; logAction($"[레인{lane + 1}] pending 정리 실패: {ex.Message}"); }
                     }
+                    // 코드 게이트 #1: 시작 때 폐기 못 한 파일 재삭제 (이번에 새 X를 쓴 경우는 새 파일이므로 제외)
+                    if (laneDiscardAtEnd[lane] && !laneNewWritten[lane])
+                    {
+                        try { if (File.Exists(pendingPath)) File.Delete(pendingPath); laneDiscardAtEnd[lane] = false; }
+                        catch (Exception ex) { cleanupFailed = true; logAction($"[레인{lane + 1}] 무효 pending 삭제 실패: {ex.Message}"); }
+                    }
+                    if (laneCleanupWarn[lane]) cleanupFailed = true;
                 }
                 slot4Finished = true;
 
@@ -3078,7 +3109,8 @@ namespace flexfab
                 logAction($"슬롯 결과: {summary}");
                 mainForm.Invoke(() => mainForm.label_Serial.Text = summary.Replace(" · ", "\n"));
 
-                bool anyFail = Enumerable.Range(0, 4).Any(s => fail[s]) || cleanupFailed;
+                // 코드 게이트 #5: pending 정리 실패는 요약 표시만 (판정·롤백에 영향 없음 — 남은 .inuse는 다음 시작 때 .stale 폐기)
+                bool anyFail = Enumerable.Range(0, 4).Any(s => fail[s]);
                 string totals = $"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}\n완성 {completed}대 · X통과 {xWaiting}대 대기\n{summary}";
                 if (!anyFail)
                 {
@@ -3103,14 +3135,17 @@ namespace flexfab
                         string inuse = pendingPath + ".inuse";
                         if (!laneInuse[lane] || !File.Exists(inuse)) continue;
                         string pSn = lanePending[lane]?["serial"]?.ToString() ?? "";
-                        string laneY = mainForm._slotSerial[lane == 0 ? MainForm.SLOT_Y1 : MainForm.SLOT_Y2];
+                        int laneYs = lane == 0 ? MainForm.SLOT_Y1 : MainForm.SLOT_Y2;
+                        string laneY = mainForm._slotSerial[laneYs];
                         // 같은 보드가 이번 사이클 다른 슬롯(X 재투입·레인 교차)에 있었으면 최신 X 결과 불명 → 폐기
                         bool reused = pSn.Length > 0 && mainForm._slotSerial.Any(sn => string.Equals(sn, pSn, StringComparison.OrdinalIgnoreCase))
                                       && !string.Equals(laneY, pSn, StringComparison.OrdinalIgnoreCase);
-                        if (laneConsumed[lane] || laneNewWritten[lane] || reused || File.Exists(pendingPath))
+                        // 코드 게이트 F2-7: 이 레인 Y가 이미 FAIL한 뒤 중단이면 정상 종료와 같이 폐기(Y 재검은 X부터)
+                        bool yFailed = mainForm._slotFailed[laneYs] || slotEverFailed[laneYs];
+                        if (laneConsumed[lane] || laneNewWritten[lane] || reused || yFailed || File.Exists(pendingPath))
                         {
                             File.Delete(inuse);
-                            logAction($"[레인{lane + 1}] 중단 — pending 폐기 ({(laneConsumed[lane] ? "완성됨" : laneNewWritten[lane] ? "새 X 기록됨" : reused ? "같은 보드 재투입" : "새 파일 존재")})");
+                            logAction($"[레인{lane + 1}] 중단 — pending 폐기 ({(laneConsumed[lane] ? "완성됨" : laneNewWritten[lane] ? "새 X 기록됨" : reused ? "같은 보드 재투입" : yFailed ? "Y FAIL" : "새 파일 존재")})");
                         }
                         else
                         {
@@ -3120,6 +3155,12 @@ namespace flexfab
                         laneInuse[lane] = false;
                     }
                     catch (Exception ex) { logAction($"[레인{lane + 1}] pending 정리 실패: {ex.Message}"); }
+                    // 코드 게이트 #1: 시작 때 폐기 못 한 무효 .json 재삭제
+                    if (laneDiscardAtEnd[lane])
+                    {
+                        try { string pp2 = MainForm.GetPendingSlotPath(lane, wsKey); if (File.Exists(pp2)) File.Delete(pp2); }
+                        catch (Exception ex) { logAction($"[레인{lane + 1}] 무효 pending 삭제 실패: {ex.Message} — 다음 시작 때 무효 처리"); }
+                    }
                 }
             }
 
@@ -3194,6 +3235,10 @@ namespace flexfab
                             lanePending[lane] = null;
                             if (ySn.Length > 0) { yBlockReason[lane] = "pending 처리 오류"; mainForm._slotBlocked[ys] = true; }
                             logAction($"[경고] pending 처리 실패 (레인{lane + 1}): {ex.Message}");
+                            // 코드 게이트 #1: 남은 .json이 다음 사이클에 옛 X PASS로 살아나지 않게 폐기 시도, 실패 시 종료 때 재시도
+                            try { if (File.Exists(pp)) File.Move(pp, $"{pp}.invalid_{ts}_{lane}"); }
+                            catch { laneDiscardAtEnd[lane] = true; }
+                            laneCleanupWarn[lane] = true;
                         }
                     }
                 }
@@ -3577,8 +3622,13 @@ namespace flexfab
                     ((string)(workspace?.active_project ?? "")).Contains("motion", StringComparison.OrdinalIgnoreCase);
                 string pendingPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pending_x_result.json");
 
+                // 코드 게이트 #7: 4슬롯은 isMotion 판단과 무관하게 먼저 분기 (2슬롯 SaveLog PASS로 빠지지 않게)
+                if (slot4)
+                {
+                    FinishSlot4();
+                }
                 // single 모드: pending 없이 기존 SaveLog로 바로 저장/업로드
-                if (isMotion && curSingleMode && failCount == 0)
+                else if (isMotion && curSingleMode && failCount == 0)
                 {
                     mainForm.SaveLog(mainForm.serialNumber, mainForm.macAddress ?? "Not Use", null);
                     logAction($"단독 검사 저장: {mainForm.serialNumber}");
@@ -3589,10 +3639,6 @@ namespace flexfab
                 {
                     RollbackSerialAndMacIfFail(logAction);
                     mainForm.ShowFailForm($"총 결과: OK = {okCount}, FAIL = {failCount}, SKIP = {skipCount}");   // C3(v05): 결과 문구를 표시되는 팝업에 직접 전달
-                }
-                else if (isMotion && slot4)
-                {
-                    FinishSlot4();
                 }
                 else if (isMotion && failCount == 0)
                 {
