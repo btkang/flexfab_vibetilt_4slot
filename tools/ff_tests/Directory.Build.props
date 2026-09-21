@@ -1,0 +1,4 @@
+<Project>
+  <!-- 루트 Directory.Build.props(출력 경로 output\$(Configuration)\) 상속을 끊는다.
+       테스트 산출물은 tools/ff_tests/bin 에만 생긴다(.gitignore bin/). -->
+</Project>

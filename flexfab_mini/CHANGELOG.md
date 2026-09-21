@@ -1,5 +1,14 @@
 # flexfab_mini CHANGELOG
 
+## 2026-09-21 (2) — D3 보정: `param` 없는 proc 하위호환 + 단위 테스트 도입
+- **사유:** 단위 테스트(`tools/ff_tests`)가 D3 커밋(`2e7d580`)의 회귀를 검출. `param` 멤버가 없는 proc는 ExpandoObject 접근 시 예외가 나는데, D3에서 예외를 fail-closed(`SLOT_GROUP_INVALID`)로 바꾸면서 **기존 `common` 동작이 Start 거부로 바뀌었다**. CHANGELOG의 "키 자체가 없으면 기존 동작 유지" 서술과 불일치.
+- **FlexfabForm.Slot4.cs** `GetSlotGroup` — `param` 접근 예외는 "키 없음"으로 보고 `common` 반환(기존 동작). 그 외 예외는 여전히 `SLOT_GROUP_INVALID`.
+- **영향:** 현재 4슬롯 워크스페이스 4종은 19항목 전부 `param`이 있어 실사용 영향 없었음(잠재 회귀).
+- **단위 테스트 신설:** `tools/ff_tests/` (xUnit, **`flexfab.sln` 밖** — 솔루션 구조 불변). 검사 대상 코드는 수정하지 않고 리플렉션으로 internal/private 멤버 호출. 실행 `dotnet test tools/ff_tests`. 52건(통과 51 / 건너뜀 1 = 알려진 제한 "미래 time pending 무기한 유효").
+  - `SlotGroupTests` — D3 정규화·허용값·하위호환·`ValidateSlotGroups`·`SlotsForRun` 단계1 규칙
+  - `SerialRollbackTests` — D2 마감 사이클 롤백 스킵·정상 사이클 1줄 롤백·중복 호출·기준선 미설정 기존 동작
+  - `PendingTests` — `LoadValidPending` 6조건·`pending_max_age_h`·파일명 규칙·원자적 쓰기·요약 문구
+
 ## 2026-09-21 — 적대적 검증 지적 결함 수정 D2·D3·D4·D5 (GitLab `vibetilt-4slot`)
 - 근거: `02_분석_날짜/2026 0921-4슬롯_결함수정_psmc수평전개/PLAN_4슬롯_결함수정_psmc수평전개_20260921_v01.md` §2, 결함 목록은 같은 폴더 `REVIEW_적대적검증결과_20260921_v01.md`
 - 검증 방식: Fable 에이전트 3개 병렬 적대적 검증(명세 정확성 / 잘못된 PASS 공격 / 시뮬 계획 타당성) — 3건 모두 REJECT 판정에서 도출

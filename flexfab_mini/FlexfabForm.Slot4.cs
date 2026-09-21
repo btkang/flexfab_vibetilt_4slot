@@ -146,10 +146,12 @@ namespace flexfab
         // 값이 있으면 공백 제거 + 대소문자 무시로 정규화("x"→"X"). 허용값이 아니면 SLOT_GROUP_INVALID
         internal static string GetSlotGroup(dynamic proc)
         {
+            // param 멤버가 없는 proc(ExpandoObject)는 접근 시 예외 → "키 없음"으로 보고 기존 동작(common) 유지
+            IDictionary<string, object> pd = null;
+            try { pd = proc?.param as IDictionary<string, object>; } catch { pd = null; }
             string raw = null;
             try
             {
-                var pd = proc?.param as IDictionary<string, object>;
                 if (pd != null)
                 {
                     if (pd.TryGetValue("slot_group", out var sg) && sg != null) raw = sg.ToString();
