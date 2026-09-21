@@ -1,5 +1,39 @@
 # flexfab_mini CHANGELOG
 
+## 2026-09-21 — 적대적 검증 지적 결함 수정 D2·D3·D4·D5 (GitLab `vibetilt-4slot`)
+- 근거: `02_분석_날짜/2026 0921-4슬롯_결함수정_psmc수평전개/PLAN_4슬롯_결함수정_psmc수평전개_20260921_v01.md` §2, 결함 목록은 같은 폴더 `REVIEW_적대적검증결과_20260921_v01.md`
+- 검증 방식: Fable 에이전트 3개 병렬 적대적 검증(명세 정확성 / 잘못된 PASS 공격 / 시뮬 계획 타당성) — 3건 모두 REJECT 판정에서 도출
+- 빌드: `dotnet build flexfab.sln` 오류 0
+
+### D2 — 마감 사이클·STOP 시 시리얼 무조건 롤백 (치명, **전역**)
+- **사유:** 마감 사이클(X1·X2 빈칸)·STOP은 serial 파일에 append하지 않는데, `RollbackSerialAndMacIfFail`이 "이번 사이클이 번호를 소모했는지" 가드 없이 마지막 줄을 지웠다. 채번이 역행해 **이미 검사한 번호가 다음 사이클 기본값으로 제시**되고(결과 JSON 덮어쓰기), 반복되면 pending이 `같은 보드 재투입`으로 무효화되어 **양품의 X 기록이 파괴**된다. `serial_auto_increment=0`에서도 동일.
+- **FlexfabForm.cs** — `CountNonEmptyLines`·`CaptureSerialBaselines` 신설, 필드 `_serialLinesBaseline`·`_macLinesBaseline`(-1 = 미설정). `button_start_Click`의 시리얼 입력 직전에 줄 수 기준선 기록. `RemoveLastLineFromFile(path, log, baseline)` — 기준선보다 줄이 늘지 않았으면 `롤백 스킵: … 이번 사이클은 번호를 소모하지 않았습니다` 로그 후 반환. MAC 파일도 동일.
+- **영향:** 4슬롯·2슬롯 **양쪽 경로**(공유 함수). 롤백 호출 10곳 전부에 적용. 번호를 실제로 소모한 사이클의 롤백 동작은 기존과 동일.
+- **하위호환:** 깨짐 없음(되돌릴 것이 없을 때 되돌리지 않는 방향). 파일 읽기 실패 시 기준선 -1로 기존 동작 유지.
+
+### D3 — `slot_group` 값 미검증 (중대, 4슬롯 전용)
+- **사유:** `GetSlotGroup`이 값을 검증 없이 반환해 오타(`"y"`)·공백(`"Y "`)·미지원 값이면 `SlotsForRun`이 빈 배열을 돌려주고 `RunProcSlot4`가 **common으로 취급** → 1회 실행 결과를 **4칸 모두에 OK로 기록**. 실행되지 않은 3개 슬롯이 PASS 증거를 얻었다. `#9 UID` 같은 쓰기 항목이면 한 보드에만 시리얼이 기록되고 나머지는 미기록 상태로 PASS.
+- **FlexfabForm.Slot4.cs** — `SLOT_GROUP_INVALID`(`__invalid`)·`SLOT_GROUPS`(common/X/Y/all) 신설. `GetSlotGroup`은 trim + 대소문자 무시로 **정규화**(`"x"`→`"X"`) 후 허용값이 아니면 `SLOT_GROUP_INVALID` 반환(예외 시에도 동일, fail-closed). `slot_group` 키 자체가 없으면 기존 동작 유지(`skip_coupling` → 없으면 `common`). `ValidateSlotGroups(out msg)` 신설. `SlotVerdict`는 `SLOT_GROUP_INVALID`를 전 슬롯 판정 대상으로 취급.
+- **FlexfabForm.cs** — `button_start_Click`에서 4슬롯 실행 전 `ValidateSlotGroups` 호출 → 위반 시 팝업·로그·**Start 거부**(하드웨어 동작 전 차단). `RunProcSlot4`에 2차 방어선(실행 안 하고 4칸 FAIL + 중단).
+- **영향:** 워크스페이스 4종(Debug/Release 합 8파일) 모두 정상값이라 **동작 변화 없음**. 2슬롯 경로는 `Slot4Run` 밖이라 무영향.
+- **하위호환:** 깨짐 없음. 대소문자 변형(`"x"`)은 기존에 잘못된 PASS를 내던 것이 정상 인식으로 개선.
+
+### D4 — 공통 항목 FAIL 시 `fail_continue` 설정에 따른 비대칭 (중대, 4슬롯 전용)
+- **사유:** `#10` 같은 공통 항목이 지그 글리치로 1회 FAIL할 때, `fail_continue` **켜짐**이면 `FinishSlot4`가 양 레인 pending을 폐기하고 **꺼짐**이면 중단 경로에서 복원했다. 설정값 하나로 **양품 2대의 X 기록 보존 여부**가 갈렸다. 공통 항목 FAIL은 지그·통신 문제이지 보드 결함이 아니므로 폐기는 과잉.
+- **FlexfabForm.cs** `FinishSlot4` ③④ — `commonFailedEver`면 `.inuse`를 삭제하지 않고 **원래 이름으로 복원**(`공통 항목 FAIL — 대기 보드 기록 복원: … (다음 사이클 Y 재검 가능)`). 새 X를 기록했거나 이미 소비한 레인은 제외. ③의 `소비되지 않은 pending 폐기` 로그도 공통 FAIL일 때는 출력하지 않음.
+- **영향:** 슬롯 개별 FAIL 시의 폐기 규칙은 **변경 없음**. `pending_max_age_h`(기본 24h)와 재투입 무효 규칙이 기존대로 방어.
+
+### D5 — Y칸을 비우면 대기 보드 기록이 무음 소멸 (중대, 4슬롯 전용)
+- **사유:** 사이클 시작 시 유효 pending은 **Y칸이 비어 있어도** `.inuse`로 잠그고 종료 때 무조건 삭제했다. 같은 레인 X칸을 채우면 새 pending 기록 분기로 빠져 폐기 로그도 남지 않아 **경고 없이 소멸**했다(시료 투입 조합 `X1,X2,Y1,·` / `X1,X2,·,Y2`).
+- **FlexfabForm.Slot4.cs** `ShowQuadSerialDialog` — 4칸 중복 검사 직후, 레인별로 **유효 pending 있음 + Y칸 비어 있음**을 검사해 해당하면 예/아니오 확인(`… X 검사 기록이 삭제되어 X 단계부터 다시 검사해야 합니다. 계속하시겠습니까?`). **아니오** → Start 취소(기존 접두사 검증과 동일한 UX). 진행 시 로그 `대기 보드 폐기 예정 (작업자 확인)`.
+- **FlexfabForm.cs** `FinishSlot4` ③ — 새 X pending 기록 후에도 옛 대기 보드가 남아 있으면 `대기 보드 폐기 (Y 미투입): {sn}` 로그 출력(무음 제거).
+- **영향:** 의도적 폐기(보드 분실·불량)는 확인 후 그대로 진행 가능 — 차단이 아니라 경고.
+
+### 미해결 (본 커밋 범위 밖)
+- **D1(치명)** 레인 교차 배치 — 작업자가 X FAIL 보드를 다른 레인 Y에 꽂으면 pending 시리얼 자동 채움 때문에 **불량 보드가 다른 시리얼로 완성 출하**될 수 있다. 소프트웨어만으로 차단 불가 → Y단계 UID 읽기 대조 등 **검사 항목 변경 안건**으로 분리(제조팀·개발팀 협의).
+- D6 경미 7건(공통 항목 retmsg 2회 수록, 비숫자 시리얼 우회, 단독실행 `OFFSET_`·`REFTEMP_` 미차단, 2인스턴스 `.inuse` 오폐기, `wsKey` 파일명 한정 등)은 백로그.
+- **2슬롯 양산 브랜치(`vibetilt`)에는 본 수정 미반영** — 2026-09-21 사용자 결정(2슬롯 동결). D2는 2슬롯 경로에도 존재하는 결함이므로 배포본 `ff_vl_R1b3`에 남아 있다.
+
 ## 2026-09-18 (야간) — 잘못된 PASS 차단 결함 수정 (PLAN v05, GitLab `vibetilt-4slot`)
 - 근거: `02_분석_날짜/2026 0918-4슬롯_구현계획/PLAN_4슬롯_잘못된PASS차단_결함수정_20260918_v05.md`, 게이트 기록 `REVIEW_PLAN게이트_20260918_v01.md`
 - **전역(2슬롯에도 적용 — 안전·표시 결함):**

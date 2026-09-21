@@ -2327,6 +2327,18 @@ namespace flexfab
                 return;
             }
 
+            // D3(2026-09-21): slot_group 허용값 검증 — 오타·미지원 값이면 common으로 떨어져 4칸 전부 OK가 되므로
+            //   하드웨어 동작 전에 거부한다(fail-closed). 허용값 = common / X / Y / all
+            if (Slot4Run && !ValidateSlotGroups(out string sgMsg))
+            {
+                ShowLargeConfirmDialog($"워크스페이스 slot_group 값이 올바르지 않습니다.\n허용값: common / X / Y / all\n\n{sgMsg}");
+                Log($"[4슬롯] slot_group 오류 → Start 거부\n{sgMsg}");
+                return;
+            }
+
+            // D2(2026-09-21): 시리얼 입력 직전 줄 수 기준선 기록 — 이번 사이클이 번호를 소모했는지 판정용
+            CaptureSerialBaselines();
+
             if (isMotionProject && !isSingleMode)
             {
                 // dual 모드: 밀어내기식 시리얼 입력 — 4슬롯(slot_layout=4)은 4칸, 아니면 기존 2칸
@@ -2902,6 +2914,17 @@ namespace flexfab
             bool RunProcSlot4(int i, dynamic proc, object instance, MethodInfo method)
             {
                 string group = MainForm.GetSlotGroup(proc);
+                // D3 2차 방어선: Start 게이트를 통과했더라도 허용값 외면 실행하지 않고 전 슬롯 FAIL + 중단
+                //   (common으로 떨어져 1회 실행 결과가 4칸 전부 OK가 되는 것을 차단)
+                if (group == MainForm.SLOT_GROUP_INVALID)
+                {
+                    logAction($"[설정 오류] {proc.name}: slot_group 값이 올바르지 않습니다 (허용값: common/X/Y/all) → 전 슬롯 FAIL");
+                    for (int s = 0; s < 4; s++) mainForm.UpdateSlotCell(i, s, "FAIL", Color.Red);
+                    failCount++;
+                    slot4CommonFailed = true;
+                    mainForm.AddFailRecord(proc, null, "slot_group 설정 오류");
+                    return true;   // 설정 오류는 fail_continue와 무관하게 중단
+                }
                 // 단계1: all(#6/#7)은 X 슬롯만 순차 측정 (Y 슬롯은 #14/#15에서 기존처럼 직접 측정) — v05 F1 공용 규칙
                 int[] slots = MainForm.SlotsForRun(group);
                 var swItem = System.Diagnostics.Stopwatch.StartNew();
@@ -3075,6 +3098,9 @@ namespace flexfab
                             anyXPass = true;
                             xWaiting++;
                             logAction($"[{xn}] X 결과 임시 저장: {xSn} ({xRet.Count}항목)");
+                            // D5: 새 X를 기록하면 아래 else-if를 타지 않아 옛 대기 보드 폐기가 무음이었다 → 여기서 명시
+                            if (lanePending[lane] != null && !laneConsumed[lane])
+                                logAction($"[레인{lane + 1}] 대기 보드 폐기 (Y 미투입): {lanePending[lane]?["serial"]}");
                         }
                         catch (Exception ex)
                         {
@@ -3083,13 +3109,27 @@ namespace flexfab
                             logAction($"[{xn}] pending 저장 실패: {ex.Message}");
                         }
                     }
-                    else if (lanePending[lane] != null && !laneConsumed[lane])
+                    // D4(2026-09-21): 공통 항목 FAIL은 지그·통신 문제이지 보드 결함이 아니므로 대기 기록을 보존한다(아래 ④에서 복원)
+                    else if (lanePending[lane] != null && !laneConsumed[lane] && !commonFailedEver)
                         logAction($"[레인{lane + 1}] 소비되지 않은 pending 폐기: {lanePending[lane]?["serial"]}");
 
                     // ④ .inuse 정리 (이번 사이클 소유분 삭제)
+                    // D4: 공통 항목 FAIL이면 폐기하지 않고 원래 이름으로 복원한다.
+                    //   기존에는 fail_continue 꺼짐 → 중단 경로(CleanupSlot4Abnormal)에서 복원 / 켜짐 → 여기서 폐기로
+                    //   설정값 하나에 따라 양품 2대의 X 기록 보존 여부가 갈렸다(REVIEW D4). 복원으로 통일한다.
                     if (laneInuse[lane])
                     {
-                        try { File.Delete(pendingPath + ".inuse"); laneInuse[lane] = false; }
+                        bool restorePending = commonFailedEver && !laneConsumed[lane] && !laneNewWritten[lane];
+                        try
+                        {
+                            if (restorePending)
+                            {
+                                File.Move(pendingPath + ".inuse", pendingPath);
+                                logAction($"[레인{lane + 1}] 공통 항목 FAIL — 대기 보드 기록 복원: {lanePending[lane]?["serial"]} (다음 사이클 Y 재검 가능)");
+                            }
+                            else File.Delete(pendingPath + ".inuse");
+                            laneInuse[lane] = false;
+                        }
                         catch (Exception ex) { cleanupFailed = true; logAction($"[레인{lane + 1}] pending 정리 실패: {ex.Message}"); }
                     }
                     // 코드 게이트 #1: 시작 때 폐기 못 한 파일 재삭제 (이번에 새 X를 쓴 경우는 새 파일이므로 제외)
@@ -4071,8 +4111,35 @@ namespace flexfab
             }
         }
 
+        // ── D2(2026-09-21): 롤백 가드 ──
+        // 마감 사이클(X1·X2 빈칸)·STOP 등은 serial 파일에 append하지 않는데도 롤백이 마지막 줄을 지워
+        // 채번이 역행했다(이미 검사한 번호가 다음 사이클 기본값으로 제시 → 결과 JSON 덮어쓰기,
+        // 반복되면 pending이 "같은 보드 재투입"으로 무효화되어 양품의 X 기록이 파괴됨. REVIEW D2).
+        // 사이클 시작 시 줄 수를 기록해 두고, 늘어나지 않았으면 롤백을 건너뛴다.
+        private int _serialLinesBaseline = -1;   // -1 = 미설정(가드 없음 = 기존 동작)
+        private int _macLinesBaseline = -1;
+
+        private static int CountNonEmptyLines(string path)
+        {
+            try
+            {
+                if (!File.Exists(path)) return 0;
+                return File.ReadAllLines(path, new UTF8Encoding(false)).Count(l => !string.IsNullOrWhiteSpace(l));
+            }
+            catch { return -1; }   // 읽기 실패 = 판단 불가 → 가드 없이 기존 동작
+        }
+
+        // 사이클 시작(시리얼 입력 직전)에 호출. 이후 롤백은 이 기준선보다 줄이 늘었을 때만 수행한다.
+        private void CaptureSerialBaselines()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            _serialLinesBaseline = CountNonEmptyLines(Path.Combine(baseDir, GetSerialFileName()));
+            _macLinesBaseline = CountNonEmptyLines(Path.Combine(baseDir, "MacAddress.txt"));
+        }
+
         // Fail일 경우 Serial Number와 Mac Address 텍스트 파일 마지막 줄을 지우는 함수
-        private void RemoveLastLineFromFile(string path, Action<string> log)
+        // baseline >= 0 이면 이번 사이클에 줄이 늘어난 경우에만 제거(D2)
+        private void RemoveLastLineFromFile(string path, Action<string> log, int baseline = -1)
         {
             try
             {
@@ -4080,6 +4147,17 @@ namespace flexfab
                 {
                     log($"롤백 스킵: '{Path.GetFileName(path)}' 가 없습니다.");
                     return;
+                }
+
+                // D2: 이번 사이클이 이 파일에 번호를 추가하지 않았으면 되돌릴 것이 없다
+                if (baseline >= 0)
+                {
+                    int now = CountNonEmptyLines(path);
+                    if (now >= 0 && now <= baseline)
+                    {
+                        log($"롤백 스킵: '{Path.GetFileName(path)}' — 이번 사이클은 번호를 소모하지 않았습니다 (줄 {now}, 기준 {baseline}).");
+                        return;
+                    }
                 }
 
                 var enc = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
@@ -4120,9 +4198,9 @@ namespace flexfab
             string serialPath = Path.Combine(baseDir, GetSerialFileName());
             string macPath = Path.Combine(baseDir, "MacAddress.txt");
 
-            RemoveLastLineFromFile(serialPath, log);
+            RemoveLastLineFromFile(serialPath, log, _serialLinesBaseline);   // D2: 소모 안 했으면 스킵
             if (IsMacWriteEnabledFromConfig())
-                RemoveLastLineFromFile(macPath, log); // MacAddressWrite=False면 스킵
+                RemoveLastLineFromFile(macPath, log, _macLinesBaseline); // MacAddressWrite=False면 스킵
 
             // _lastSerialX 롤백 (중간 취소/FAIL 시 이전 값 복원)
             // v0.6.8: 빈 문자열이면 파일 생성/덮어쓰기 생략 (보드 single 검사에서 빈 파일 생성 방지)

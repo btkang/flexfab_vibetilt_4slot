@@ -134,25 +134,66 @@ namespace flexfab
             cell.Value = "—"; cell.Style.BackColor = Color.Gainsboro; cell.Style.ForeColor = Color.Gray;
         }
 
+        // ── D3: slot_group 값 검증 (적대적 검증 2026-09-21) ──
+        // 허용값 외(오타 "y", 공백 "Y ", 미지원 값)를 그대로 넘기면 SlotsForRun이 빈 배열을 돌려주고
+        // RunProcSlot4가 common으로 취급 → 1회 실행 결과를 4칸 모두에 기록 → 실행되지 않은 슬롯이 PASS 증거를 얻는다.
+        // 정규화 후 허용값이 아니면 SLOT_GROUP_INVALID를 돌려 fail-closed로 처리한다.
+        internal const string SLOT_GROUP_INVALID = "__invalid";
+        internal static readonly string[] SLOT_GROUPS = { "common", "X", "Y", "all" };
+
         // proc.param.slot_group → 실행 슬롯 인덱스. common=[] (1회), X=[0,1], Y=[2,3], all=[0,1,2,3]
-        // slot_group 없으면 skip_coupling(X/Y)로 추정, 그것도 없으면 common
+        // slot_group 없으면 skip_coupling(X/Y)로 추정, 그것도 없으면 common (기존 동작)
+        // 값이 있으면 공백 제거 + 대소문자 무시로 정규화("x"→"X"). 허용값이 아니면 SLOT_GROUP_INVALID
         internal static string GetSlotGroup(dynamic proc)
         {
+            string raw = null;
             try
             {
                 var pd = proc?.param as IDictionary<string, object>;
                 if (pd != null)
                 {
-                    if (pd.TryGetValue("slot_group", out var sg) && sg != null) return sg.ToString();
-                    if (pd.TryGetValue("skip_coupling", out var sc) && sc != null)
+                    if (pd.TryGetValue("slot_group", out var sg) && sg != null) raw = sg.ToString();
+                    else if (pd.TryGetValue("skip_coupling", out var sc) && sc != null)
                     {
-                        string c = sc.ToString().ToUpperInvariant();
+                        string c = sc.ToString().Trim().ToUpperInvariant();
                         if (c == "X" || c == "Y") return c;
                     }
                 }
             }
-            catch { }
-            return "common";
+            catch { return SLOT_GROUP_INVALID; }
+            if (raw == null) return "common";
+            string v = raw.Trim();
+            foreach (var g in SLOT_GROUPS)
+                if (string.Equals(v, g, StringComparison.OrdinalIgnoreCase)) return g;
+            return SLOT_GROUP_INVALID;
+        }
+
+        // D3: 4슬롯 실행 전 전 항목의 slot_group 검증. 위반이 있으면 false + 항목 목록(fail-closed)
+        internal bool ValidateSlotGroups(out string msg)
+        {
+            msg = "";
+            var bad = new List<string>();
+            try
+            {
+                var procs = (IList<object>)((IDictionary<string, object>)((IList<object>)workspace.projects)[0])["procs"];
+                foreach (dynamic proc in procs)
+                {
+                    if (GetSlotGroup(proc) != SLOT_GROUP_INVALID) continue;
+                    string nm = ""; try { nm = (string)(proc.name ?? ""); } catch { }
+                    string raw = "";
+                    try
+                    {
+                        var pd = proc?.param as IDictionary<string, object>;
+                        if (pd != null && pd.TryGetValue("slot_group", out var sg)) raw = sg?.ToString() ?? "";
+                    }
+                    catch { }
+                    bad.Add($"{nm} → slot_group=\"{raw}\"");
+                }
+            }
+            catch (Exception ex) { msg = $"slot_group 검사 실패: {ex.Message}"; return false; }
+            if (bad.Count == 0) return true;
+            msg = string.Join("\n", bad);
+            return false;
         }
 
         internal static int[] SlotsOfGroup(string group) => group switch
@@ -198,7 +239,8 @@ namespace flexfab
                 {
                     dynamic proc = procs[i];
                     string g = GetSlotGroup(proc);
-                    bool applies = g == "common" || Array.IndexOf(SlotsForRun(g), s) >= 0;
+                    // D3: 허용값 외(설정 오류)는 전 슬롯 판정 대상 — 셀이 OK가 아니면 그대로 FAIL
+                    bool applies = g == "common" || g == SLOT_GROUP_INVALID || Array.IndexOf(SlotsForRun(g), s) >= 0;
                     if (!applies) continue;
                     string v = dataGridView1.Rows[i].Cells[2 + s].Value?.ToString() ?? "";
                     if (v == "OK") continue;
@@ -374,6 +416,34 @@ namespace flexfab
             // 4칸 상호 중복 차단
             var dup = _slotSerial.Where(s => s.Length > 0).GroupBy(s => s.ToUpperInvariant()).FirstOrDefault(g => g.Count() > 1);
             if (dup != null) { ShowLargeConfirmDialog($"동일 시리얼이 두 슬롯에 입력되었습니다 ({dup.First()}).\n서로 다른 시리얼을 입력하세요."); return false; }
+
+            // ── D5(2026-09-21): 대기 보드 소멸 경고 ──
+            // 유효 pending이 있는 레인의 Y칸을 비우면, 사이클 시작 시 .inuse로 잠근 뒤 종료 때 무조건 삭제되어
+            // 그 보드의 X 검사 기록이 사라진다. 같은 레인 X칸을 채운 경우 종료 로그도 남지 않아 무음 소멸이었다(REVIEW D5).
+            {
+                string wsKeyChk = CurrentWsKey();
+                var lost = new List<string>();
+                for (int lane = 0; lane < 2; lane++)
+                {
+                    int ys = lane == 0 ? SLOT_Y1 : SLOT_Y2;
+                    if (_slotSerial[ys].Length > 0) continue;               // Y 투입됨 → 정상 소비 예정
+                    var p = LoadValidPending(GetPendingSlotPath(lane, wsKeyChk), wsKeyChk, out _);
+                    if (p == null) continue;                                // 대기 보드 없음
+                    lost.Add($"{SLOT_LABELS[ys]} ← {p["serial"]}");
+                }
+                if (lost.Count > 0)
+                {
+                    string m = string.Join("\n", lost);
+                    if (ShowLargeYesNoDialog(
+                            $"X 검사를 마치고 대기 중인 보드가 있는데 해당 Y 슬롯 시리얼이 비어 있습니다.\n\n{m}\n\n" +
+                            "이대로 진행하면 그 보드의 X 검사 기록이 삭제되어\nX 단계부터 다시 검사해야 합니다.\n\n계속하시겠습니까?") == DialogResult.No)
+                    {
+                        Log($"[4슬롯] 대기 보드 있는 레인의 Y 빈칸 — 작업자 취소\n{m}");
+                        return false;
+                    }
+                    Log($"[4슬롯] 대기 보드 폐기 예정 (작업자 확인)\n{m}");
+                }
+            }
 
             label_Serial.Text = string.Join("\n", SLOT_LABELS.Select((n, i) => $"{n}: {(_slotSerial[i].Length == 0 ? "없음" : _slotSerial[i])}"));
             label_mac.Text = "";
