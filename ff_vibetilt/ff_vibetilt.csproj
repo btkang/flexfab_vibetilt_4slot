@@ -4,8 +4,8 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.0.0</Version>
-    <InformationalVersion>R1b3 (1.0.0.0)</InformationalVersion>
+    <Version>0.2.1</Version>
+    <InformationalVersion>0.2.1.5 (260929)</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 

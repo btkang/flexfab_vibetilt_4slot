@@ -11,7 +11,7 @@ namespace Cantops.FlexFab
 {
     public class MotionJig : ModuleBase, IProcess
     {
-        public const string MODULE_VERSION = "R1b3";
+        public const string MODULE_VERSION = "0.2.1.5";
 
         // ══════════════════════════════════════════════
         //  모터 파라미터 (JSON에서 로딩, 기본값 하드코딩)

@@ -489,7 +489,7 @@
                 {
                     "libid": "motionjig",
                     "id": "MOTION_VIBE_Z_232",
-                    "name": "#13 [Y슬롯] Z축 진동값 측정 (0도) — CAL/저장 후 배치",
+                    "name": "#13 [Y슬롯] Z축 진동값 측정 (0도)",
                     "_comment": "영점 후 0도 상태에서 GAC Z 측정. CAL/저장 후 모터 안 움직였으므로 0도 유지",
                     "param": {
                         "slot_group": "Y",

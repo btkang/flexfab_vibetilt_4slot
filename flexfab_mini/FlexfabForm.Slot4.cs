@@ -60,8 +60,10 @@ namespace flexfab
         }
 
         // 결과 열: 2슬롯 = "결과" 1열(Cells[2]) / 4슬롯 = X1·X2·Y1·Y2 4열(Cells[2..5]).
-        // 그리드 폭(542)·위치·폼·오른쪽 컨트롤(검사자/시리얼/Mac/불량보기) 전부 불변 — 기존 폭 안에서 열만 재배분
-        //  (행 머리 ▸ 열 숨김 41px + 번호 60→45 + 항목 300→235 → 슬롯 4열 × 60)
+        // 폼·오른쪽 컨트롤(검사자/시리얼/Mac/불량보기) 불변. 4슬롯은 그리드 오른쪽 끝(x=629)을 고정한 채
+        //  비어 있는 왼쪽 여백으로 75px 넓힌다(x 87→12, 폭 542→617) — 항목명 잘림 완화(2026-09-29)
+        //  (행 머리 ▸ 열 숨김 + 번호 60→45 + 항목 300→310(긴 이름은 줄바꿈) → 슬롯 4열 × 60)
+        private const int GRID_X_2SLOT = 87, GRID_W_2SLOT = 542, GRID_X_4SLOT = 12, GRID_W_4SLOT = 617;
         private void ConfigureGridColumnsForSlots()
         {
             if (InvokeRequired) { Invoke(new Action(ConfigureGridColumnsForSlots)); return; }
@@ -70,8 +72,17 @@ namespace flexfab
             if (_slot4 && !hasExtra)
             {
                 dataGridView1.RowHeadersVisible = false;
+                dataGridView1.Location = new Point(GRID_X_4SLOT, dataGridView1.Location.Y);
+                dataGridView1.Width = GRID_W_4SLOT;
                 dataGridView1.Columns["Number"].Width = 45;
-                dataGridView1.Columns["Name"].Width = 235;
+                dataGridView1.Columns["Name"].Width = 310;
+                // 폭을 넘는 항목명은 잘리지 않고 2줄로 표시 (해당 행만 높이 증가)
+                //  자동 높이는 1줄 행을 기본 높이보다 낮추므로 최소 높이 = 기본 행 높이로 고정(줄간격 유지)
+                int baseRowH = dataGridView1.RowTemplate.Height;
+                dataGridView1.RowTemplate.MinimumHeight = baseRowH;
+                foreach (DataGridViewRow r in dataGridView1.Rows) r.MinimumHeight = baseRowH;
+                dataGridView1.Columns["Name"].DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+                dataGridView1.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
                 dataGridView1.Columns["Result"].HeaderText = SLOT_LABELS[SLOT_X1];
                 dataGridView1.Columns["Result"].Width = slotW;
                 foreach (var nm in new[] { "X2", "Y1", "Y2" })
@@ -85,6 +96,12 @@ namespace flexfab
                 foreach (var nm in new[] { "Slot_X2", "Slot_Y1", "Slot_Y2" })
                     if (dataGridView1.Columns.Contains(nm)) dataGridView1.Columns.Remove(nm);
                 dataGridView1.RowHeadersVisible = true;
+                dataGridView1.Location = new Point(GRID_X_2SLOT, dataGridView1.Location.Y);
+                dataGridView1.Width = GRID_W_2SLOT;
+                dataGridView1.Columns["Name"].DefaultCellStyle.WrapMode = DataGridViewTriState.NotSet;
+                dataGridView1.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None;
+                dataGridView1.RowTemplate.MinimumHeight = 3;   // WinForms 기본값 복원
+                foreach (DataGridViewRow r in dataGridView1.Rows) { r.MinimumHeight = 3; r.Height = dataGridView1.RowTemplate.Height; }
                 dataGridView1.Columns["Number"].Width = 60;
                 dataGridView1.Columns["Name"].Width = 300;
                 dataGridView1.Columns["Result"].HeaderText = "결과";

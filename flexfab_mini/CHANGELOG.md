@@ -1,5 +1,48 @@
 # flexfab_mini CHANGELOG
 
+## 2026-09-29 — 0.2.1.5(260929): 버전 체계 적용, 테스트 항목명 잘림 완화, 타이틀 버전 표시 (**미커밋**)
+- 버전: 캔탑스 버전·파일명 표준규칙 R1(2026-09-16) 적용. 4슬롯은 미배포 개발본(0.x). 09-18부터의 작업 단계에 버전을 소급 부여해 이어감(사용자 결정) — 이력표는 `RELEASE_NOTE_ff_vl.txt` 맨 위
+  - 0.1.0.1(260918) 4슬롯 기능 → 0.1.1.2(260918) 잘못된 PASS 차단 → 0.1.2.3(260921) D2~D5 → 0.2.0.4(260921) 성적서·이력·FAIL 저장 → **0.2.1.5(260929) 본 항목**
+  - 기존 표기 `R1b3 (1.0.0.0)`(2슬롯 분기 시 상속값) 폐기. `Directory.Build.props` Version 0.2.1 / FileVersion 0.2.1.5 / InformationalVersion `0.2.1.5 (260929)`, `ff_vibetilt.csproj` 동일, `MODULE_VERSION`(VibeTilt·MotionJig, 결과 JSON `ver`) `R1b3` → `0.2.1.5`
+  - **메인툴(flexfab.exe) 버전 분리**: `flexfab.csproj`에서 별도 지정 → **1.8.0.7 (260929)**. 메인폼 계보(원본 v1.1=1.1.0.0 → pSMC 1.2.0.1~1.6.0.5 → VibeTilt 2슬롯 1.7.0.6) 다음 번호. ff_vibetilt(0.2.1.5)와 별개
+  - 이후 규칙 7페이지대로 b=기능 추가, c=버그 수정, d=릴리즈마다 +1. **제조에 최초 배포할 때 1.0.0.0**, 배포 파일명 `_R1.0`(8페이지)
+- 사유: 4슬롯은 결과 4열 때문에 항목 열이 235px로 줄어 긴 항목명(`#6 X축 기울기값 측정 (-20도, …)` 등)이 잘림 (사용자 요청 "최대한 보이게")
+- **FlexfabForm.Slot4.cs** `ConfigureGridColumnsForSlots` — 4슬롯일 때만 그리드를 비어 있는 왼쪽 여백으로 확장(x 87→12, 폭 542→617, 오른쪽 끝 x=629 고정), 항목 열 235→310, 항목 열 줄바꿈 + 행 높이 자동(넘치는 이름만 2줄). 2슬롯 전환 시 위치·폭·줄바꿈 원복
+- 영향: 오른쪽 컨트롤(검사자·SerialNo·Mac·불량보기)·폼 크기 불변. 2슬롯 화면 무변경. 판정·저장 무관
+  - 보정: 행 높이 자동 조절이 1줄 행을 기본 높이보다 낮춰 줄간격이 좁아짐 → 최소 행 높이 = 기본 행 높이(`RowTemplate.Height`)로 고정. 2슬롯 전환 시 원복
+- **워크스페이스 JSON(4슬롯 8개, Debug/Release)** #13 항목명 단축: `… Z축 진동값 측정 (0도) — CAL/저장 후 배치` → `… Z축 진동값 측정 (0도)`. 배치 이유는 기존 `_comment`("CAL/저장 후 모터 안 움직였으므로 0도 유지")에 있음. 이름은 표시·불량목록·성적서 행 이름에만 쓰이고 판정·결과 JSON 키(id)와 무관. 2슬롯 원본 워크스페이스는 무변경
+- **FlexfabForm.cs** 타이틀 바 버전 표시(사용자 요청, 2슬롯 1.0.5.5와 동일 코드): 창 타이틀 `CanTops Flexfab v1.0` → `ff_vibetilt {버전}`(검사 모듈 버전만). 메인툴 버전은 시작 로그 1줄 추가, 워크스페이스는 기존대로 로그
+
+## 2026-09-21 (3) — 4슬롯 검사성적서·검사이력 CSV·FAIL 결과 저장 (pSMC 수평전개, **미커밋 — 사용자 검토 대기**)
+- 근거: `02_분석_날짜/2026 0921-4슬롯_결함수정_psmc수평전개/PLAN_4슬롯_성적서_이력CSV_FAIL저장_20260921_v01.md` (상위 PLAN §4 3단계, 사용자 "추천대로 진행")
+- 참조: pSMC `flexfab_mini` `SaveLog`·`AppendResultCsv`·`AppendReportCsv`·성적서 설정·`ReportXlsxWriter.cs`
+- **호출 범위: 4슬롯 정상 종료(`FinishSlot4`)만.** 2슬롯 경로는 연결하지 않음(2026-09-21 사용자 결정: 2슬롯 기능 추가 안 함). 비정상 종료(STOP·중단)는 기록 안 함(pSMC 동일)
+- **신규 `ReportXlsxWriter.cs`** — pSMC 복사. 변경 3곳: 개정이력 0행 하드코딩("2026-08-31 / 신규 성적서 개정")을 `Header.RevNo/RevDate/RevNote` 필드로 분리(기본 빈칸 = 수기 칸), 주석 1곳. 의존성 `System.IO.Compression`만 — **NuGet·csproj 변경 없음**
+- **신규 `FlexfabForm.Report.cs`** (partial)
+  - C 저장 구조: `PreservePassDuplicate`(같은 날 같은 시리얼 재완성 → 기존 결과 `{날짜}/PASS_DUPLICATE/{sn}_{기존파일시각}.json` 이관), `SaveFailJsonSlot`(`{날짜}/FAIL/{sn}_{X|Y}_{시각}.json`, `pass_fail`·`stage`·`slot`·`fail_reason` 필드, **Mongo 업로드 안 함**), `SafeFileName`(경로 문자 치환)
+  - B 검사이력: `AppendHistorySlot4` — `Result/{proj}/이력/이력_{proj}_{yyyyMMdd}.csv`, 시리얼 있는 슬롯마다 1줄(고정 10열 + 그리드 항목 열: OK/FAIL/-/빈칸). 헤더가 달라지거나 형식 인식 불가면 기존 보존 후 `_NN` 분할, 잠긴 파일 읽기 실패 시 기록 건너뜀(덮어쓰기 금지)
+  - A 검사성적서: `AppendReportForBoard` — `Result/{proj}/성적서/성적서_{proj}_{yyyyMMdd}_{NN}.csv` + `.xlsx` 인쇄본. **완성 보드 1대 = 1열**, 값은 판정만(`OK`, 판정행 `합`) — 완성 = X·Y 양 단계 `SlotVerdict` 통과가 전제. 하루 1파일·N열(`report_serial_count`, 기본 10) 롤오버·재검은 기존 열 갱신·행 구성 변경 시 보존+각주
+  - 성적서 설정: `report_items`(키 없음 = 전체, `[]` = 생성 안 함)·`report_serial_count`, `[성적서 설정]` 다이얼로그(검사 중 차단), 저장은 `UpsertTopLevelJson`으로 값 토큰만 치환/삽입(전체 재직렬화 금지, `_comment` 동반)
+  - 순수 로직은 `internal static`으로 분리(단위 테스트)
+  - 검사번호 정규식: pSMC `[a-z]?` → `[A-Za-z]?` — VibeTilt `#1-X`가 `#1-`로 잘리던 것을 단위 테스트가 검출
+- **FlexfabForm.cs**
+  - `FinishSlot4` ②: 완성 저장 직전 `PreservePassDuplicate` → 이관되면 `existedBefore=false`가 되어 저장 도중 예외 시 새 반쪽 파일만 지우고 기존 결과는 보존(L6 부분 해소). 완성 직후 `AppendReportForBoard`, 결과 상대경로 기록
+  - `FinishSlot4` ⑤(신설): 판정 확정 후 FAIL 슬롯마다 `SaveFailJsonSlot`(Y FAIL은 같은 시리얼의 pending X retmsg를 앞에 붙임) → `AppendHistorySlot4`
+  - `SaveLogDirect`: `slotLane`(4슬롯)일 때만 `pass_fail: "PASS"` 추가. 2슬롯 경로(slotLane 없음) 무변경
+  - 결과 라벨 우클릭 메뉴(`passMenu`)에 `AddReportMenuItems` — 성적서 설정 / 성적서·이력·FAIL 폴더 / 최신 성적서(xlsx). **화면 배치 변경 없음**
+- **배포 전 결정 필요** (PLAN §1)
+  - K1 FAIL JSON Mongo 업로드: 현재 **안 함**. `TryUploadToMongo`가 `InsertOne`이라 양산 DB `ctsm.product`에 불량 문서가 쌓이기 때문
+  - K2 **품질 모니터링 영향**: `tools/quality_monitor` `parser.py`·`etl.py`가 `rglob("*.json")` 재귀 수집 → `FAIL/`·`PASS_DUPLICATE/` JSON이 섞여 시리얼 판정·SPC 통계가 바뀐다. 모니터링 쪽 제외 처리 또는 경로 변경을 **배포 전 결정**
+  - K4 성적서 측정 수치 미기재(판정만), K7 공통 항목 retmsg 2회 수록(D6-1) 미수정
+- **구현 검증(Fable 3개 병렬) 반영 — 13건 수정** (`REVIEW_구현검증_성적서이력FAIL_20260921_v01.md`)
+  - **치명** `UpsertTopLevelJson` 배열 정규식이 항목명 안의 `]`([X슬롯])에서 끊겨 [성적서 설정] 2번째 저장부터 **워크스페이스 JSON 파괴**(다음 실행 로드 불가) → 문자열 인식형 정규식 + 저장 전 `JObject.Parse` 검증(실패 시 파일 불변). **pSMC 원본에도 같은 결함**
+  - **중대** 성적서 기록을 레인 처리 완료 후(⑤)로 이동 — 잠김 팝업이 레인2 완성 저장·pending 기록보다 먼저 워커를 막던 순서 결함
+  - **중대** 4슬롯 완성 JSON 쓰기에 잠김 재시도(`slotLane` 있을 때만, 2슬롯 무변경)
+  - 경미: 이관 후 저장 실패 시 기존 PASS 원위치(중복검사 유지), I/O 실패는 FAIL JSON 생략, 공유·잠금 위반만 잠김 팝업, CSV 전체 쓰기 원자적(tmp→교체), 이어쓰기 끝 개행 보정, 판정 행 없는 성적서 거부, 성적서 열 매칭 대소문자 무시, `report_items` 불일치 로그, 이력 분할 상한 제거
+  - **결정 필요 12건** 이관(스펙 드리프트 성적서·품질 모니터링 집계·롤백 시리얼 재사용 등) — REVIEW §3
+- 단위 테스트: `tools/ff_tests/ReportTests.cs` 신설 — 전체 106건(통과 105 / 건너뜀 1)
+- 빌드: `dotnet build flexfab.sln` 오류 0
+
 ## 2026-09-21 (2) — D3 보정: `param` 없는 proc 하위호환 + 단위 테스트 도입
 - **사유:** 단위 테스트(`tools/ff_tests`)가 D3 커밋(`2e7d580`)의 회귀를 검출. `param` 멤버가 없는 proc는 ExpandoObject 접근 시 예외가 나는데, D3에서 예외를 fail-closed(`SLOT_GROUP_INVALID`)로 바꾸면서 **기존 `common` 동작이 Start 거부로 바뀌었다**. CHANGELOG의 "키 자체가 없으면 기존 동작 유지" 서술과 불일치.
 - **FlexfabForm.Slot4.cs** `GetSlotGroup` — `param` 접근 예외는 "키 없음"으로 보고 `common` 반환(기존 동작). 그 외 예외는 여전히 `SLOT_GROUP_INVALID`.

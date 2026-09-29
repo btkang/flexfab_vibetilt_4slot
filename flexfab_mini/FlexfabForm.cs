@@ -272,11 +272,11 @@ namespace flexfab
             label_overrides.BringToFront();
 
             // VibeTilt DLL 버전 로그
-            var vtPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ff_vibetilt.dll");
-            var vtVer = File.Exists(vtPath) ? System.Diagnostics.FileVersionInfo.GetVersionInfo(vtPath).ProductVersion ?? "?" : "?";
-            var vtPlus = vtVer.IndexOf('+'); if (vtPlus >= 0) vtVer = vtVer[..vtPlus];
+            var vtVer = ReadProductVersion(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ff_vibetilt.dll"));
+            Text = $"ff_vibetilt {vtVer}";   // 타이틀 = 검사 모듈 버전만 (2026-09-29)
             Log("──────────────────────────────────────────────");
             Log($"[INFO] ff_vibetilt.dll version: {vtVer}");
+            Log($"[INFO] flexfab(메인툴) version: {ReadProductVersion(Application.ExecutablePath)}");
 
             InitConfig(); // config.ini 먼저 초기화 (IniRead 사용 전)
 
@@ -797,6 +797,7 @@ namespace flexfab
                 else
                     MessageBox.Show($"폴더를 찾을 수 없습니다.\n{dirPath}", "알림");
             });
+            AddReportMenuItems(passMenu);   // 3단계(2026-09-21): 성적서 설정·성적서/이력/FAIL 폴더 — 화면 배치 변경 없이 우클릭 메뉴에만 추가
             label_passSaved.ContextMenuStrip = passMenu;
             this.Controls.Add(label_passSaved);
             button_ChangeInspector.UseVisualStyleBackColor = true;
@@ -1549,9 +1550,20 @@ namespace flexfab
                 ["mac"] = "Not Use",
                 ["result"] = resultArr
             };
-            if (!string.IsNullOrEmpty(slotLane)) root["slot"] = slotLane;   // 4슬롯: 검사 레인 (예: "X1->Y1") — 슬롯 편중 불량 추적용
+            if (!string.IsNullOrEmpty(slotLane))
+            {
+                root["slot"] = slotLane;   // 4슬롯: 검사 레인 (예: "X1->Y1") — 슬롯 편중 불량 추적용
+                root["pass_fail"] = "PASS";   // 3단계(2026-09-21): 4슬롯 완성 = PASS. FAIL JSON(FAIL/)과 파일 안에서 구분(pSMC 호환, additive). 2슬롯 경로(slotLane 없음)는 무변경
+            }
 
-            File.WriteAllText(filePath, root.ToString(), new System.Text.UTF8Encoding(false));
+            string json = root.ToString();
+            if (!string.IsNullOrEmpty(slotLane))
+            {
+                // 3단계(4슬롯만): 잠김 재시도(PLAN §2.1). [취소] = 저장 실패로 던져 기존 catch 경로(FAIL(저장 실패)·반쪽 삭제·이관 원복) 유지. 2슬롯 경로 무변경
+                if (!RunFileOpWithLockRetry(() => File.WriteAllText(filePath, json, new System.Text.UTF8Encoding(false)), Path.GetFileName(filePath)))
+                    throw new IOException($"결과 파일 잠김 — 저장 취소: {Path.GetFileName(filePath)}");
+            }
+            else File.WriteAllText(filePath, json, new System.Text.UTF8Encoding(false));
             logAction($"결과 파일 저장: {filePath}");
 
             // MongoDB 업로드
@@ -3025,6 +3037,8 @@ namespace flexfab
                 var savedList = new List<string>();
                 bool anyXPass = false, cleanupFailed = false;
                 int completed = 0, xWaiting = 0;
+                var savedRel = new string[4];   // 3단계(2026-09-21): 슬롯별 저장한 결과 JSON 상대경로 → 검사이력 CSV '결과파일' 열
+                var completedSn = new List<string>();   // 3단계: 성적서는 레인 처리(pending·.inuse)가 끝난 뒤 ⑤에서 기록 — 잠김 팝업이 핵심 저장을 막지 않게
                 for (int lane = 0; lane < 2; lane++)
                 {
                     int xs = lane == 0 ? MainForm.SLOT_X1 : MainForm.SLOT_X2;
@@ -3046,6 +3060,9 @@ namespace flexfab
                         else
                         {
                             string jsonPath = mainForm.ResultJsonPath(ySn);
+                            // 3단계(2026-09-21): 같은 날 같은 시리얼 재완성 → 기존 PASS를 PASS_DUPLICATE/로 이관 후 저장(덮어쓰기 유실 방지).
+                            //   이관되면 existedBefore=false가 되어, 저장 도중 예외 시 새 반쪽 파일만 지우고 기존 결과는 보존된다(L6 부분 해소)
+                            string movedPrev = mainForm.PreservePassDuplicate(jsonPath, logAction);
                             bool existedBefore = File.Exists(jsonPath);
                             bool returned = false;
                             try
@@ -3062,6 +3079,8 @@ namespace flexfab
                                 completed++;
                                 savedList.Add(ySn);
                                 logAction($"[{yn}] 완성 업로드: {ySn} (X+Y {combined.Count}항목)");
+                                completedSn.Add(ySn);   // 3단계: 성적서 1열은 ⑤에서(부가 산출물)
+                                try { savedRel[ys] = Path.GetRelativePath(mainForm.ResultRootDir(), jsonPath).Replace('\\', '/'); } catch { }
                             }
                             catch (Exception ex)
                             {
@@ -3071,6 +3090,7 @@ namespace flexfab
                                     state[ys] = "FAIL(저장 실패)";
                                     logAction($"[{yn}] 결과 저장 실패: {ex.Message}");
                                     try { if (!existedBefore && File.Exists(jsonPath)) File.Delete(jsonPath); } catch { }
+                                    mainForm.RestorePassDuplicate(movedPrev, jsonPath, logAction);   // 3단계: 이관했던 기존 PASS 원위치(중복검사 유지)
                                 }
                                 else logAction($"[{yn}] 저장 후 처리 예외(판정 유지): {ex.Message}");
                             }
@@ -3140,6 +3160,28 @@ namespace flexfab
                     }
                     if (laneCleanupWarn[lane]) cleanupFailed = true;
                 }
+
+                // ⑤ 3단계(2026-09-21, PLAN_4슬롯_성적서_이력CSV_FAIL저장): 판정 확정 후 FAIL 결과 JSON(로컬) + 검사이력 CSV.
+                //   부가 산출물 — 내부에서 예외를 삼키므로 판정·완성 저장·pending 처리에 영향 없음. 정상 종료 경로에서만 기록(pSMC 동일).
+                for (int fs = 0; fs < 4; fs++)
+                {
+                    string fsn = mainForm._slotSerial[fs];
+                    if (fsn.Length == 0 || !fail[fs]) continue;
+                    // 저장·pending 기록 실패는 I/O 장애이지 보드 불량이 아니다 → FAIL JSON 만들지 않음(이력 CSV 판정에만 남김) — 구현 검증 지적
+                    if (state[fs] == "FAIL(저장 실패)" || state[fs] == "FAIL(pending 저장 실패)") continue;
+                    int flane = (fs == MainForm.SLOT_X1 || fs == MainForm.SLOT_Y1) ? 0 : 1;
+                    var fret = new JArray();
+                    // Y단계 FAIL: 이 보드의 X 기록(pending retmsg)을 앞에 붙여 보드 단위로 추적
+                    if (fs >= MainForm.SLOT_Y1 && lanePending[flane] != null
+                        && string.Equals(lanePending[flane]["serial"]?.ToString(), fsn, StringComparison.OrdinalIgnoreCase))
+                        foreach (var it in lanePending[flane]["retmsg"] as JArray ?? new JArray()) fret.Add(it);
+                    int fsCopy = fs;
+                    try { mainForm.Invoke(new Action(() => CollectRetmsgBySlot(mainForm, fsCopy, fret))); } catch { }
+                    savedRel[fs] = mainForm.SaveFailJsonSlot(fsn, fs <= MainForm.SLOT_X2 ? "X" : "Y", MainForm.SLOT_LABELS[fs], state[fs], fret, logAction);
+                }
+                foreach (var csn in completedSn) mainForm.AppendReportForBoard(csn, logAction);   // 성적서(완성 보드 1대 = 1열)
+                mainForm.AppendHistorySlot4(state, savedRel, logAction);
+
                 slot4Finished = true;
 
                 if (savedList.Count > 0)
@@ -4315,6 +4357,19 @@ namespace flexfab
                     }
                 }
             }
+        }
+
+        // ── 버전 표시 (2026-09-29) ── 타이틀 = ff_vibetilt.dll 버전, 메인툴(flexfab) 버전·워크스페이스는 로그
+        private static string ReadProductVersion(string path)
+        {
+            try
+            {
+                if (!File.Exists(path)) return "?";
+                var v = System.Diagnostics.FileVersionInfo.GetVersionInfo(path).ProductVersion ?? "?";
+                int plus = v.IndexOf('+'); if (plus >= 0) v = v[..plus];   // 소스 해시 접미어 제거
+                return v;
+            }
+            catch { return "?"; }
         }
 
         // v0.6.9: 우클릭 메뉴에서 호출 — 현재 워크스페이스 파일을 다이얼로그 없이 재로드
