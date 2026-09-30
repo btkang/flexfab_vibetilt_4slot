@@ -8,3 +8,4 @@
 
 | BAT ID | Profile | Status | Included REQ | Discovery | Folder |
 | --- | --- | --- | --- | --- | --- |
+| bat-001 | standard | release-candidate | REQ-001, REQ-002 | dcy-001 | [bat-001_20260930_fail-archive-path](./bat-001_20260930_fail-archive-path/index.md) |

@@ -4,7 +4,7 @@
 - Baseline Seed: .stage-pilot/bootstrap/baseline.yaml
 - Status: draft
 - Owner: (미정 — 사용자 결정)
-- Last Updated (KST): 2026-09-30 10:55
+- Last Updated (KST): 2026-09-30 17:40
 - Source Discovery / Batch: bootstrap-baseline (2026-09-30, 저장소 관찰)
 
 ## Project Summary
@@ -35,7 +35,7 @@
 ## Entity: `완성 결과 JSON`
 - Purpose: X·Y 두 단계를 모두 통과한 보드 1대의 검사 결과
 - Source of Truth: `Result/{프로젝트}/{yyyy-MM-dd}/{sn}.json` (+ MongoDB `ctsm.product`)
-- Lifecycle: Y 완성 시 생성 -> 같은 날 같은 시리얼 재완성 시 기존은 `PASS_DUPLICATE/{sn}_{시각}.json`으로 이관
+- Lifecycle: Y 완성 시 생성 -> 같은 날 같은 시리얼 재완성 시 기존은 `Result_보관/{프로젝트}/{날짜}/PASS_DUPLICATE/{sn}_{시각}.json`으로 이관 (req-001)
 
 ### Key Fields
 - `sn` :: string :: 보드 시리얼 (`VL1-`/`VL2-` + 5자리 이상, 최대 11자)
@@ -83,14 +83,13 @@
 - 성적서는 완성 보드 1대 = 1열, `report_serial_count`(기본 10) 열 롤오버, 재검은 기존 열 갱신
 
 ## Persistence / Integration Notes
-- FAIL 결과 `{날짜}/FAIL/{sn}_{X|Y}_{시각}.json` — 로컬만(Mongo 업로드 안 함). 저장 실패·공통 FAIL은 만들지 않음
+- FAIL 결과 `Result_보관/{프로젝트}/{날짜}/FAIL/{sn}_{X|Y}_{시각}.json` — 로컬만, **DB 업로드 안 함** (dcy-001 K1, req-002). 저장 실패·공통 FAIL은 만들지 않음
 - 검사이력에는 공통 FAIL 중단 사이클도 `FAIL(공통 항목 #n)`으로 기록
 - 로그 `Log/{프로젝트}/{yyyy-MM-dd}.log`
 - SIL 실행 결과는 프로젝트명 `_SIM` 폴더로 분리, DB 업로드 차단
 
 ## Current Gaps / Planned Changes
-- K1 FAIL JSON Mongo 업로드 여부 미정
-- K2 품질모니터링이 FAIL·PASS_DUPLICATE까지 재귀 수집 → 집계 왜곡 (배포 전 결정)
+- (해소, bat-001) K1 FAIL 업로드 안 함 / K2 FAIL·PASS_DUPLICATE를 `Result/` 밖 `Result_보관/`으로 — 품질모니터링은 완성 결과만 수집
 - 완성 JSON `result`에 공통 항목(#0·#3·#10) retmsg 2회 수록 (D6-1)
 - 성적서에 측정 수치 미기재(판정만) (K4)
 
@@ -101,3 +100,4 @@
 
 ## Change Log
 - 2026-09-30 bootstrap-baseline 초안 (저장소 관찰, 0.2.2.6 / 메인툴 1.8.1.8 기준)
+- 2026-09-30 보관 기록(FAIL·PASS_DUPLICATE) 경로 `Result_보관/`, FAIL DB 미업로드 (dcy-001, req-001, req-002, bat-001, 0.2.3.7)

@@ -18,8 +18,9 @@ namespace flexfab
     // - 4슬롯 정상 종료(FinishSlot4)에서만 호출한다. 2슬롯 경로에는 연결하지 않는다(2026-09-21 사용자 결정: 2슬롯 기능 추가 안 함).
     // - 저장 루트 = 기존 결과 JSON 규칙(SaveLogDirect) Result/{프로젝트명(공백 제거)}/
     //     {날짜}/{sn}.json                        완성(PASS) — 기존과 동일
-    //     {날짜}/PASS_DUPLICATE/{sn}_{시각}.json   같은 날 같은 시리얼 재완성 시 기존 파일 보존
-    //     {날짜}/FAIL/{sn}_{X|Y}_{시각}.json      FAIL — 로컬만(Mongo 업로드 안 함: InsertOne이라 양산 DB에 불량 문서가 쌓임)
+    //   bat-001(2026-09-30, REQ-001): FAIL·PASS_DUPLICATE는 품질모니터링 수집 경로(Result/) 밖 형제 폴더 Result_보관/{프로젝트}/ 로
+    //     Result_보관/{proj}/{날짜}/PASS_DUPLICATE/{sn}_{시각}.json   같은 날 같은 시리얼 재완성 시 기존 파일 보존
+    //     Result_보관/{proj}/{날짜}/FAIL/{sn}_{X|Y}_{시각}.json      FAIL — 로컬만(Mongo 업로드 안 함: dcy-001 K1)
     //     이력/이력_{proj}_{yyyyMMdd}[_NN].csv      슬롯(보드) 1장당 1줄, 사이클마다 누적
     //     성적서/성적서_{proj}_{yyyyMMdd}_{NN}.csv  완성 보드 1대 = 1열(가로 누적) + 같은 이름 .xlsx 인쇄본
     // - 성적서·이력·FAIL 저장은 부가 산출물: 실패해도 판정·완성 저장·pending에 영향을 주지 않는다(전부 내부 try/catch).
@@ -36,6 +37,10 @@ namespace flexfab
         }
 
         internal string ResultRootDir() => Path.Combine(Directory.GetCurrentDirectory(), "Result", ResultProjFolder());
+
+        // bat-001(REQ-001): FAIL·PASS_DUPLICATE 보관 루트 — 품질모니터링은 상위 Result/ 를 재귀 수집하므로 그 밖(형제 폴더)에 둔다
+        internal const string ARCHIVE_ROOT_NAME = "Result_보관";
+        internal string ArchiveRootDir() => Path.Combine(Directory.GetCurrentDirectory(), ARCHIVE_ROOT_NAME, ResultProjFolder());
 
         // 파일명에 쓸 수 없는 문자·경로 구분자를 '_'로 (시리얼 형식 검사를 우회한 값이 폴더를 벗어나지 않게)
         internal static string SafeFileName(string s)
@@ -180,11 +185,14 @@ namespace flexfab
                 if (!File.Exists(jsonPath)) return null;
                 string saveDir = Path.GetDirectoryName(jsonPath)!;
                 string sn = Path.GetFileNameWithoutExtension(jsonPath);
-                string prevPath = PassDuplicatePath(saveDir, sn, File.GetLastWriteTime(jsonPath));
+                // bat-001: 완성 파일의 날짜 폴더명 그대로 보관 루트 아래로 (날짜 폴더가 아니면 오늘)
+                string dayName = Path.GetFileName(saveDir);
+                if (!DateTime.TryParseExact(dayName, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out _)) dayName = DateTime.Now.ToString("yyyy-MM-dd");
+                string prevPath = PassDuplicatePath(Path.Combine(ArchiveRootDir(), dayName), sn, File.GetLastWriteTime(jsonPath));
                 Directory.CreateDirectory(Path.GetDirectoryName(prevPath)!);
                 if (RunFileOpWithLockRetry(() => File.Move(jsonPath, prevPath), Path.GetFileName(jsonPath)))
                 {
-                    log($"[결과] 기존 PASS 결과 보존(PASS 중복) → PASS_DUPLICATE\\{Path.GetFileName(prevPath)}");
+                    log($"[결과] 기존 PASS 결과 보존(PASS 중복) → {ARCHIVE_ROOT_NAME}\\…\\PASS_DUPLICATE\\{Path.GetFileName(prevPath)}");
                     return prevPath;
                 }
                 log("[결과] ★경고: 기존 PASS 결과 보존 취소(파일 잠김·사용자 취소) — 덮어쓰기 진행");
@@ -222,7 +230,7 @@ namespace flexfab
             {
                 DateTime now = DateTime.Now;
                 string dateStr = now.ToString("yyyy-MM-dd");
-                string dateDir = Path.Combine(ResultRootDir(), dateStr);
+                string dateDir = Path.Combine(ArchiveRootDir(), dateStr);   // bat-001: Result/ 밖 보관
                 string filePath = FailJsonPath(dateDir, sn, stage, now);
                 Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
 
@@ -260,7 +268,7 @@ namespace flexfab
                     return "";
                 }
                 log($"[{slotLabel}] FAIL 결과 저장(로컬): FAIL\\{Path.GetFileName(filePath)}");
-                return $"{dateStr}/FAIL/{Path.GetFileName(filePath)}";
+                return $"{ARCHIVE_ROOT_NAME}/{ResultProjFolder()}/{dateStr}/FAIL/{Path.GetFileName(filePath)}";   // 작업 폴더 기준 (bat-001)
             }
             catch (Exception ex)
             {
@@ -798,7 +806,7 @@ namespace flexfab
                 else MessageBox.Show(this, $"성적서 인쇄본(xlsx)이 아직 없습니다.\n{dir}", "알림");
             });
             menu.Items.Add("이력 폴더 열기 (CSV)", null, (s, e) => OpenFolderOrNotify(Path.Combine(ResultRootDir(), "이력"), "이력"));
-            menu.Items.Add("FAIL 결과 폴더 열기 (오늘)", null, (s, e) => OpenFolderOrNotify(Path.Combine(ResultRootDir(), DateTime.Now.ToString("yyyy-MM-dd"), "FAIL"), "FAIL"));
+            menu.Items.Add("FAIL 결과 폴더 열기 (오늘)", null, (s, e) => OpenFolderOrNotify(Path.Combine(ArchiveRootDir(), DateTime.Now.ToString("yyyy-MM-dd"), "FAIL"), "FAIL"));
         }
     }
 }

@@ -1,5 +1,15 @@
 # flexfab_mini CHANGELOG
 
+## 2026-09-30 — 0.2.3.7(260930) / 메인툴 1.8.2.9: FAIL·재완성 기록 보관 경로 분리 (stage-pilot bat-001)
+- 근거: stage-pilot `docs/discovery/dcy-001_…`(K1·K2) → `docs/srs/Data/req-001`, `Documentation/req-002` → `docs/batches/bat-001_20260930_fail-archive-path/`. 레드마인 #4900
+- **FlexfabForm.Report.cs** — `ArchiveRootDir()` = `Result_보관/{프로젝트}` 신설. FAIL 결과·재완성 이전 결과(PASS_DUPLICATE)를 품질모니터링 수집 경로(`Result/`) 밖으로
+  - 사유: 품질모니터링이 상위 `Result/`를 재귀 수집 → FAIL·중복이 섞여 시리얼 판정·수율 왜곡(K2)
+  - 이력 CSV `결과파일` 열: FAIL은 작업 폴더 기준 `Result_보관/…`, 완성은 기존대로
+  - 우클릭 "FAIL 결과 폴더 열기 (오늘)" → 새 경로
+- K1: FAIL 결과는 DB에 올리지 않음(현행 유지) — 기준 문서에 명시
+- 2슬롯 경로 무변경 (FAIL·PASS_DUPLICATE는 4슬롯 전용)
+- 검증: 빌드 0, 단위 106(105+건너뜀1, 기대 경로 갱신), SIL 5사이클 CHECK OK, 품질모니터링(무수정) 파서로 시리얼 4개 PASS 확인
+
 ## 2026-09-30 — 0.2.2.6(260930) / 메인툴 1.8.1.8: SIL 테스트 결정사항 Q1·M5·Q2·Q3 (**미커밋**)
 - 근거: `02_분석_날짜/2026 0930-4슬롯_SIL결정사항_수정/PLAN_4슬롯_SIL결정사항_Q1M5Q2Q3_20260930_v01.md`, SIL 결과(레드마인 #4901). 사용자 결정 2026-09-30
 - **Q1 — 공통 FAIL 중단 사이클 검사이력 기록** (`FlexfabForm.cs` 중단 경로)

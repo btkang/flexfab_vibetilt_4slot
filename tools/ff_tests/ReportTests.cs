@@ -391,6 +391,8 @@ public class ReportFileTests : IDisposable
 
     const string PROJ = "VL10 모션검사 (RS-232)_TEST_4slot";
     string Root => Path.Combine(_tmp, "Result", PROJ.Replace(" ", ""));
+    // bat-001(REQ-001): FAIL·PASS_DUPLICATE 보관 루트 — 품질모니터링 수집 경로(Result/) 밖
+    string Archive => Path.Combine(_tmp, "Result_보관", PROJ.Replace(" ", ""));
 
     flexfab.MainForm Form(long n = 10)
     {
@@ -452,8 +454,9 @@ public class ReportFileTests : IDisposable
         var f = Form();
         var ret = new JArray { new JObject { ["Name"] = "#1-X FW", ["result"] = "FAIL" } };
         string rel = (string)Priv.Call(f, "SaveFailJsonSlot", "VL1-00012", "X", "X1슬롯", "FAIL(FAIL #1-X)", ret, (Action<string>)_log.Add)!;
-        Assert.StartsWith(DateTime.Now.ToString("yyyy-MM-dd") + "/FAIL/VL1-00012_X_", rel);
-        var o = JObject.Parse(File.ReadAllText(Path.Combine(Root, rel)));
+        Assert.StartsWith($"Result_보관/{PROJ.Replace(" ", "")}/{DateTime.Now:yyyy-MM-dd}/FAIL/VL1-00012_X_", rel);
+        Assert.False(Directory.Exists(Path.Combine(Root, DateTime.Now.ToString("yyyy-MM-dd"), "FAIL")));   // Result/ 아래엔 없음
+        var o = JObject.Parse(File.ReadAllText(Path.Combine(_tmp, rel)));
         Assert.Equal("FAIL", (string)o["pass_fail"]!);
         Assert.Equal("X", (string)o["stage"]!);
         Assert.Equal("X1슬롯", (string)o["slot"]!);
@@ -471,11 +474,13 @@ public class ReportFileTests : IDisposable
         File.WriteAllText(json, "{\"old\":1}");
         Priv.Call(f, "PreservePassDuplicate", json, (Action<string>)_log.Add);
         Assert.False(File.Exists(json));
-        var moved = Directory.GetFiles(Path.Combine(day, "PASS_DUPLICATE"));
+        string dupDir = Path.Combine(Archive, DateTime.Now.ToString("yyyy-MM-dd"), "PASS_DUPLICATE");   // bat-001: Result/ 밖
+        var moved = Directory.GetFiles(dupDir);
         Assert.Single(moved);
         Assert.Equal("{\"old\":1}", File.ReadAllText(moved[0]));
+        Assert.False(Directory.Exists(Path.Combine(day, "PASS_DUPLICATE")));
         Priv.Call(f, "PreservePassDuplicate", json, (Action<string>)_log.Add);   // 없으면 아무 일 없음
-        Assert.Single(Directory.GetFiles(Path.Combine(day, "PASS_DUPLICATE")));
+        Assert.Single(Directory.GetFiles(dupDir));
     }
 
     [Fact]

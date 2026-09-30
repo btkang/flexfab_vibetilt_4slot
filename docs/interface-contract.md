@@ -4,7 +4,7 @@
 - Baseline Seed: .stage-pilot/bootstrap/baseline.yaml
 - Status: draft
 - Owner: (미정 — 사용자 결정)
-- Last Updated (KST): 2026-09-30 10:55
+- Last Updated (KST): 2026-09-30 17:40
 - Source Discovery / Batch: bootstrap-baseline (2026-09-30, 저장소 관찰)
 - Primary Runtime: other (Windows 데스크톱 GUI)
 
@@ -115,9 +115,10 @@
 - 완성·FAIL 판정, 그리드 셀, 슬롯 시리얼
 
 ### Outputs
-- `Result/{프로젝트}/{날짜}/{sn}.json` (+ `PASS_DUPLICATE/`, `FAIL/{sn}_{X|Y}_{시각}.json`)
+- `Result/{프로젝트}/{날짜}/{sn}.json` — 완성 결과만 (품질모니터링 수집 대상)
+- `Result_보관/{프로젝트}/{날짜}/FAIL/{sn}_{X|Y}_{시각}.json`, `…/PASS_DUPLICATE/{sn}_{시각}.json` — 보관 기록 (수집 대상 아님, req-001)
 - `Result/{프로젝트}/성적서/…csv·xlsx`, `이력/…csv`
-- MongoDB `ctsm.product` (완성만, `MongoDBUpload=True`일 때)
+- MongoDB `ctsm.product` (완성만, `MongoDBUpload=True`일 때). **FAIL 결과는 DB에 올리지 않는다** (dcy-001 K1, req-002)
 
 ### Error Contract
 - 결과 저장 실패 :: 그 슬롯 FAIL(저장 실패), 반쪽 JSON 삭제, 다른 레인 격리
@@ -125,7 +126,7 @@
 
 ### Compatibility Rules
 - 결과 JSON `ver` = 검사 모듈 `MODULE_VERSION`. 과거 데이터 표기는 소급 변경 안 함
-- 품질모니터링은 결과 폴더를 재귀 수집 — 새 하위 폴더(FAIL·PASS_DUPLICATE) 추가 시 영향 확인(K2)
+- 품질모니터링은 상위 `Result/`를 `*.json` 재귀 수집한다 → `Result/` 아래에는 완성 결과 JSON만 둔다. FAIL·재완성 이전 결과는 형제 폴더 `Result_보관/` (dcy-001 K2, req-001)
 
 ## Shared Constraints
 - 판정은 로그 문자열 Contains 기반, PASS/FAIL 명확 구분
@@ -133,7 +134,7 @@
 - 장비 대기는 wall-clock 타임아웃, 응답 없음 = FAIL (fail-closed)
 
 ## Current Gaps / Planned Changes
-- K1 FAIL JSON Mongo 업로드 여부 / K2 품질모니터링 집계 영향 — 배포 전 결정
+- (해소) K1 FAIL 업로드 안 함 / K2 보관 경로 분리 — bat-001. FAIL 분석·별도 컬렉션은 후속 Discovery 후보
 - #0 통신검사는 X1·Y1 포트만 확인, VER 판정코드 미확인
 - D1 레인 교차 — Y 단계 UID 대조 등 검사 항목 변경 안건(#4902)
 
@@ -144,3 +145,4 @@
 
 ## Change Log
 - 2026-09-30 bootstrap-baseline 초안 (저장소 관찰, 0.2.2.6 / 메인툴 1.8.1.8 기준)
+- 2026-09-30 검사 결과 파일: FAIL·PASS_DUPLICATE → `Result_보관/`, FAIL DB 미업로드 명시 (dcy-001, req-001, req-002, bat-001, 0.2.3.7)
