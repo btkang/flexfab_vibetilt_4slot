@@ -1,0 +1,152 @@
+schema_version: 1
+capture_mode: observed # 저장소 코드·설정·커밋 이력에서 관찰. 사람이 정할 값(Owner 등)은 비움
+
+project:
+  repository_name: flexfab_VibeTilt_4slot_
+  display_name: flexfab VibeTilt 4-Slot
+  summary: 진동기울기센서(VL10 RS-232 / VL20 RS-485) 양산 검사 프로그램 — 모션 지그 4슬롯(X1·X2·Y1·Y2) 대응, 워크스페이스 JSON으로 검사 항목과 장비 라이브러리를 런타임 로딩하는 flexfab 기반 Windows 데스크톱 앱
+  primary_domain: 제조 양산 검사 (센서 보드 EOL 테스트, 모션 지그)
+
+stack:
+  tech_stack:
+    - C# / .NET 8 (net8.0-windows)
+    - WinForms
+    - Newtonsoft.Json (워크스페이스·결과 JSON)
+    - System.IO.Ports (UART), TCP (EMIO 모터·IO)
+    - MongoDB.Driver (결과 업로드, 설정으로 끔)
+    - xUnit (tools/ff_tests 단위 테스트)
+    - Python 3 (워크스페이스 생성·SIL 보조 스크립트)
+
+runtime:
+  primary_runtime: other # Windows 데스크톱 GUI (WinForms). 목록에 desktop 이 없어 other
+  primary_entrypoints:
+    - name: flexfab.exe (flexfab_mini, Cantops.FlexFab.Mini.App)
+      purpose: 검사자가 쓰는 메인 검사 GUI — 워크스페이스 로드, 시리얼 입력, 검사 실행, 판정·저장
+    - name: 워크스페이스 JSON (output/{Debug|Release}/net8.0-windows/*_workspace_*.json)
+      purpose: 검사 항목(procs)·장비 라이브러리(libraries)·4슬롯 배치(slot_layout·slot_uarts)·운영 옵션 정의
+    - name: tools/ (ff_tests, ff_simulator, gen_workspace_4slot.py, sync_flexfab_mini.ps1)
+      purpose: 단위 테스트, SIL 시뮬레이터, 4슬롯 워크스페이스 생성, 메인폼 GitLab 기록
+
+interfaces:
+  contracts:
+    - name: 워크스페이스 JSON
+      type: file
+      actors: 개발자·생산기술(작성) → flexfab.exe(로드)
+      purpose: 검사 항목·판정 기준·장비 연결을 코드 수정 없이 정의
+      stability: stable
+      inputs:
+        - libraries[] :: filename·classname·id·config — Assembly.LoadFrom 으로 런타임 로딩
+        - projects[].procs[] :: id(모듈 메서드명)·libid·name·param(tests[]·slot_group·판정값)
+        - slot_layout "4" + slot_uarts {X1,X2,Y1,Y2} :: 4슬롯 활성화
+        - 운영 옵션 :: test_mode, fail_continue, serial_*, repeat_all_count, log_level, report_*
+      outputs:
+        - 그리드 항목·슬롯 열 구성, 실행 순서, 판정 기준
+      errors:
+        - JSON 파싱 실패 → 로드 실패 팝업 / slot_group 허용값 외 → Start 거부 / slot_uarts 누락 → 2슬롯 폴백
+      compatibility_rules:
+        - 코드 변경에 JSON 변경이 따르면 같은 커밋, Debug·Release 두 경로 동시 수정
+        - spec 수치에는 _ 접두어 주석 필수(프로그램은 _ 필드 무시)
+    - name: 검사 모듈 계약 (flexfab_interfaces)
+      type: internal-service
+      actors: flexfab.exe(호출) → ff_vibetilt(VibeTilt·MotionJig) 등 검사 모듈, ff_common(Uart·Tcp·Ctsp)
+      purpose: 호스트와 검사 모듈·통신 라이브러리 사이 공통 계약
+      stability: stable
+      inputs:
+        - IModule.SetConfig(config) / PreRun(libraries) :: 로드 시 설정·라이브러리 사전 주입
+        - proc 메서드(libraries, param, logAction[, confirmCallback]) :: param 에 uart_id·__serial·__slot 주입(4슬롯)
+        - IComm Connect/Disconnect/Send({body})/Recv({timeout,recv_mode}) :: 장비 통신
+      outputs:
+        - proc 반환 {success: bool, retmsg: json} :: 셀 OK/FAIL·결과 JSON 원천
+      errors:
+        - 예외 → 슬롯 항목은 그 슬롯 FAIL, 공통 항목은 4칸 FAIL + 중단(fail_continue 꺼짐)
+        - 라이브러리·메서드 미발견 → 4슬롯은 전 슬롯 FAIL
+      compatibility_rules:
+        - ff_common·flexfab_interfaces 는 공용 — 수정 금지(요청 시 사용자 확인). 모델 특화 로직은 ff_vibetilt
+        - IProcess 시그니처·모듈 경계·public API 변경 금지 (CLAUDE.md 절대 규칙)
+  shared_constraints:
+    - 판정은 계산이 아닌 로그 문자열(Contains) 기반, 결과는 PASS/FAIL 명확 구분
+    - 양성 증거 원칙(4슬롯): 슬롯에 해당하는 모든 셀이 OK일 때만 PASS
+    - 장비 통신은 wall-clock 타임아웃 기반, 응답 없음 = FAIL (fail-closed)
+  current_gaps:
+    - D1 레인 교차(X FAIL 보드를 다른 레인 Y에 투입) — 소프트웨어로 차단 불가, 검사 항목 변경 안건(#4902)
+    - #0 통신검사는 X1·Y1 포트만, VER 판정코드 미확인 — 첫 FW 항목에서 잡힘
+
+structure:
+  planned_top_level_areas:
+    - path: flexfab_mini/
+      responsibility: 메인툴 flexfab.exe — WinForms 호스트, 실행 루프, 4슬롯(FlexfabForm.Slot4.cs), 성적서·이력(FlexfabForm.Report.cs)
+    - path: flexfab_interfaces/
+      responsibility: IModule·IComm·IProcess·ModuleBase 공용 계약 (공용, 수정 금지)
+    - path: ff_common/
+      responsibility: Uart·Tcp·Ctsp 공용 통신 라이브러리 (공용, 수정 금지)
+    - path: ff_vibetilt/
+      responsibility: 진동기울기 검사 모듈 VibeTilt(보드 명령)·MotionJig(모터·경사계·기울기/진동 측정) — 프로젝트 전용
+    - path: ff_dpm/, ff_portremote/, ff_pim/, ff_e84a/, Colorimeter/
+      responsibility: 다른 모델·장비용 라이브러리 (솔루션에 포함, 이 프로젝트에서 직접 수정 안 함)
+    - path: output/
+      responsibility: 실행 폴더 — 빌드 산출물(추적 안 함) + 워크스페이스 JSON(Debug/Release, 추적)
+    - path: tools/
+      responsibility: ff_tests(단위 테스트), ff_simulator(SIL), 워크스페이스 생성·동기화 스크립트 — 솔루션 밖
+    - path: docs/
+      responsibility: 빌드·배포 절차, stage-pilot 문서(discovery·srs·batches·releases), archive/2slot
+    - path: .stage-pilot/
+      responsibility: stage-pilot SDLC 프레임워크 (subtree, update.sh 로 갱신)
+
+data_model:
+  persistence_backend: 로컬 파일(JSON·CSV·텍스트) + MongoDB ctsm.product(선택, config.ini MongoDBUpload)
+  entities:
+    - name: 완성 결과 JSON (보드 1대)
+      purpose: X·Y 두 단계를 모두 통과한 보드의 검사 결과
+      source_of_truth: Result/{프로젝트}/{yyyy-MM-dd}/{시리얼}.json (+ MongoDB ctsm.product)
+      lifecycle: Y 완성 시 생성 -> 같은 날 재완성 시 기존은 PASS_DUPLICATE/ 로 이관
+      key_fields:
+        - sn :: string :: 보드 시리얼 (VL1-/VL2- + 5자리 이상)
+        - slot :: string :: "X1슬롯->Y1슬롯" 레인 표기
+        - pass_fail :: string :: PASS (4슬롯)
+        - result :: array :: 항목별 retmsg (X 단계 + Y 단계)
+        - ver :: string :: 검사 모듈 버전(MODULE_VERSION)
+      relationships:
+        - 대기 기록(pending) :: X 단계 retmsg 를 가져와 합침
+        - 성적서·검사이력 :: 완성 시 1열/1줄 추가
+      state_rules:
+        - 레인 X 통과 + 같은 시리얼 Y 통과일 때만 생성 (양성 증거)
+    - name: 대기 기록 (pending, 레인별)
+      purpose: X 단계를 통과하고 Y 단계를 기다리는 보드
+      source_of_truth: 실행 폴더 pending_{워크스페이스파일명}_x{1|2}.json
+      lifecycle: X 통과 시 생성 -> 사이클 시작 시 .inuse 잠금 -> Y 완성·폐기 시 삭제 / 중단 시 복원 / 무효는 .invalid·.stale·.old
+      key_fields:
+        - serial :: string :: 보드 시리얼
+        - ws :: string :: 워크스페이스 파일명(다른 워크스페이스 기록 차단)
+        - x_result :: string :: "PASS"
+        - time :: string :: yyyy-MM-dd HH:mm:ss (pending_max_age_h 기본 24h)
+        - retmsg :: array :: X 단계 결과
+      relationships:
+        - 완성 결과 JSON :: Y 완성 시 소비
+      state_rules:
+        - 유효 = 파일·파싱·ws 일치·x_result PASS·유효기간·serial 있음
+        - 같은 보드 재투입·레인 교차면 무효 / 공통 FAIL·STOP(Y FAIL 아님)이면 복원
+  consistency_rules:
+    - 시리얼 채번 파일(serial_*.txt)은 번호를 실제 소모한 사이클만 롤백 (D2)
+    - 대기 기록 쓰기는 원자적(tmp -> Replace/Move)
+    - 검사이력 CSV는 헤더가 다르면 분할, 잠긴 파일은 덮어쓰지 않고 건너뜀
+  persistence_notes:
+    - 성적서 Result/{프로젝트}/성적서/성적서_*_{yyyyMMdd}_{NN}.csv/.xlsx — 완성 보드 1대 = 1열, 10열 롤오버
+    - 검사이력 Result/{프로젝트}/이력/이력_*_{yyyyMMdd}.csv — 시리얼 슬롯마다 1줄(공통 FAIL 중단 포함)
+    - FAIL 결과 {날짜}/FAIL/{sn}_{X|Y}_{시각}.json — 로컬만, Mongo 업로드 안 함
+    - 로그 Log/{프로젝트}/{yyyy-MM-dd}.log
+  current_gaps:
+    - K1 FAIL JSON Mongo 업로드 여부 미정
+    - K2 품질모니터링이 FAIL·PASS_DUPLICATE JSON까지 재귀 수집 → 집계 왜곡 (배포 전 결정)
+    - 완성 JSON result 에 공통 항목(#0·#3·#10) retmsg 2회 수록 (D6-1)
+
+notes:
+  known_unknowns:
+    - Owner (문서 책임자·팀) — 사용자 결정
+    - 4슬롯 지그 배선·COM 포트(X2·Y2) 확정 시점
+    - 2슬롯·4슬롯 통합(4슬롯 프로그램으로 2슬롯 운용) 시점
+    - 병렬 측정(단계 2·3) 착수 여부
+
+metadata:
+  captured_at_kst: 2026-09-30 10:55
+  source: bootstrap-baseline-questionnaire
+  updated_from: repo-observation
