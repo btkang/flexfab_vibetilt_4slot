@@ -80,6 +80,8 @@
 ```
 (2026-09-29 추가: 테스트 절차서 + SIL 테스트 단계 / 2026-09-30 추가: 커밋 → 레드마인 기록)
 
+> 2026-09-30 stage-pilot 도입 이후: **주 절차는 stage-pilot**(아래 "StagePilot 적용 규칙"). 이 작업 사이클의 테스트 절차서(CHECK_) → SIL → 결과(CODE_) → 레드마인 기록은 stage-pilot **Batch 검증(verification) 단계 안의 게이트**로 수행한다.
+
 ### 커밋할 때 레드마인 기록 (2026-09-30)
 - 커밋하면 **같은 흐름에서** 레드마인에 댓글: 커밋 해시·제목·버전, 관련 일감 번호, GitLab 기록(브랜치·태그), 원격 푸시 여부, "2슬롯 해당" 여부
 - 어디에: 버전 요약은 상위 일감(4슬롯 #4897)에 + 릴리즈노트 첨부, 상세는 해당 하위 일감(#4898~#4902)에 한 줄
@@ -205,3 +207,18 @@
 3. 배포 전 롤백 계획
 4. 배포 후 Postmortem 작성 및 다음 스프린트 환류
 <!-- STAGEPILOT:END -->
+
+## StagePilot 적용 규칙 (2026-09-30)
+- 기능 개발은 stage-pilot 절차(Discovery → REQ → Batch → Release)를 따른다. 명령은 `.claude/commands/`, 기준은 `.stage-pilot/skills/*/SKILL.md`. 단계를 건너뛰지 않는다. 작은 변경은 batch-lite 적용 여부를 먼저 본다.
+- 사람이 정할 값(Owner, Confirmed By, Priority, 범위)은 AI가 채우지 않는다. 비어 있으면 묻는다.
+- stage-pilot 문서는 `docs/discovery|srs|batches|releases` 에 두고, 날짜 폴더는 만들지 않는다. 기준 문서: `docs/project-structure.md`, `runtime-flows.md`, `interface-contract.md`, `data-model.md` (seed `.stage-pilot/bootstrap/baseline.yaml`)
+- 기존 개발 프로세스(테스트 절차서 CHECK_ → SIL 테스트 → CODE_ 결과, 공통 설정 `~/.claude/CLAUDE.md`)는 Batch의 검증(verification) 단계 안에서 그대로 수행한다. 겹치는 절은 stage-pilot을 주 절차로 두고 기존 절은 그 안의 게이트로 본다.
+- 날짜 폴더 문서(`02_분석_날짜/…` PLAN_·CODE_·CHECK_)는 레포 밖 작업 폴더의 기존 기록 방식으로 유지한다 (stage-pilot 문서와 서로 번호로 참조).
+
+## 출처 규칙 — 레드마인 연결
+- 외부 팀에서 받은 요구·회신·자료는 레드마인 일감에 남기고, stage-pilot 문서의 출처·Change Log에는 레드마인 번호를 적는다. 형식: `#일감번호` 또는 `#일감번호-노트N`, 첨부는 파일명 그대로.
+- 레드마인 댓글에는 반영한 문서 번호(dcy-nnn / req-nnn / bat-nnn)와 산출물 판(_Rn_YYMMDD)을 적는다.
+- 출처 없는 요구는 문서에 넣지 않는다. 구두·메신저로 들은 것은 레드마인 댓글이나 메일로 확인을 받은 뒤 적는다.
+- 레드마인 쓰기는 공통 설정대로: 커밋할 때마다 해당 일감에 댓글(해시·제목·버전·관련 일감·푸시 여부), 테스트 결과·결정 사항도 댓글. **새 일감 생성만 먼저 묻는다.**
+- 받은 원본은 작업 폴더 `05.레드마인 …/일감번호_제목/등록일_올린팀_내용요약/` 에 보관하고 SHA-256을 기록한다.
+- 4슬롯 일감: #4897(800 상위) / #4898 810 / #4899 820 / #4900 830 / #4901 840 SIL / #4902 850 D1
