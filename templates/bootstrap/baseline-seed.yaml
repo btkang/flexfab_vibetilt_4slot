@@ -1,0 +1,95 @@
+schema_version: 1
+capture_mode: declared # declared | observed | mixed
+
+project:
+  repository_name: {{REPOSITORY_NAME:repo-folder-name}}
+  display_name: {{PROJECT_NAME:display name or repo name}}
+  summary: {{PROJECT_SUMMARY:one-sentence project summary}}
+  primary_domain: {{PRIMARY_DOMAIN:short domain phrase or undecided}}
+
+stack:
+  tech_stack:
+    - {{TECH_STACK_ITEM_1:primary language or framework}}
+
+runtime:
+  primary_runtime: {{PRIMARY_RUNTIME:cli|api-service|web-app|worker|library|mixed|other}}
+  primary_entrypoints:
+    - name: {{ENTRYPOINT_NAME_1:command or interface name}}
+      purpose: {{ENTRYPOINT_PURPOSE_1:brief purpose}}
+
+interfaces:
+  contracts:
+    - name: {{INTERFACE_NAME_1:primary interface name}}
+      type: {{INTERFACE_TYPE_1:http-api|cli|event|file|internal-service|other}}
+      actors: {{INTERFACE_ACTORS_1:who calls or receives it}}
+      purpose: {{INTERFACE_PURPOSE_1:what this interface exists to do}}
+      stability: {{INTERFACE_STABILITY_1:experimental|internal|stable}}
+      inputs:
+        - {{INTERFACE_INPUT_1_1:input contract or invocation note}}
+      outputs:
+        - {{INTERFACE_OUTPUT_1_1:output contract or artifact}}
+      errors:
+        - {{INTERFACE_ERROR_1_1:error code or failure behavior}}
+      compatibility_rules:
+        - {{INTERFACE_COMPATIBILITY_1_1:compatibility or versioning rule}}
+    - name: {{INTERFACE_NAME_2:secondary interface name}}
+      type: {{INTERFACE_TYPE_2:http-api|cli|event|file|internal-service|other}}
+      actors: {{INTERFACE_ACTORS_2:who calls or receives it}}
+      purpose: {{INTERFACE_PURPOSE_2:what this interface exists to do}}
+      stability: {{INTERFACE_STABILITY_2:experimental|internal|stable}}
+      inputs:
+        - {{INTERFACE_INPUT_2_1:input contract or invocation note}}
+      outputs:
+        - {{INTERFACE_OUTPUT_2_1:output contract or artifact}}
+      errors:
+        - {{INTERFACE_ERROR_2_1:error code or failure behavior}}
+      compatibility_rules:
+        - {{INTERFACE_COMPATIBILITY_2_1:compatibility or versioning rule}}
+  shared_constraints:
+    - {{INTERFACE_SHARED_CONSTRAINT_1:cross-cutting interface constraint}}
+  current_gaps:
+    - {{INTERFACE_GAP_1:known contract gap or planned change}}
+
+structure:
+  planned_top_level_areas:
+    - path: {{TOP_LEVEL_PATH_1:path such as src/ or app/}}
+      responsibility: {{TOP_LEVEL_RESPONSIBILITY_1:brief responsibility}}
+
+data_model:
+  persistence_backend: {{PERSISTENCE_BACKEND:primary persistence backend or storage system}}
+  entities:
+    - name: {{ENTITY_NAME_1:primary entity}}
+      purpose: {{ENTITY_PURPOSE_1:what this entity represents}}
+      source_of_truth: {{ENTITY_SOURCE_1:table, collection, file, or service}}
+      lifecycle: {{ENTITY_LIFECYCLE_1:created -> updated -> archived}}
+      key_fields:
+        - {{ENTITY_FIELD_1_1:field :: type :: meaning}}
+      relationships:
+        - {{ENTITY_RELATIONSHIP_1_1:related entity :: relationship meaning}}
+      state_rules:
+        - {{ENTITY_STATE_RULE_1_1:state or invariant rule}}
+    - name: {{ENTITY_NAME_2:secondary entity}}
+      purpose: {{ENTITY_PURPOSE_2:what this entity represents}}
+      source_of_truth: {{ENTITY_SOURCE_2:table, collection, file, or service}}
+      lifecycle: {{ENTITY_LIFECYCLE_2:created -> updated -> archived}}
+      key_fields:
+        - {{ENTITY_FIELD_2_1:field :: type :: meaning}}
+      relationships:
+        - {{ENTITY_RELATIONSHIP_2_1:related entity :: relationship meaning}}
+      state_rules:
+        - {{ENTITY_STATE_RULE_2_1:state or invariant rule}}
+  consistency_rules:
+    - {{CONSISTENCY_RULE_1:consistency or referential rule}}
+  persistence_notes:
+    - {{PERSISTENCE_NOTE_1:mapping, storage, or migration note}}
+  current_gaps:
+    - {{MODEL_GAP_1:known model gap or planned schema change}}
+
+notes:
+  known_unknowns:
+    - {{KNOWN_UNKNOWN_1:optional unresolved bootstrap item or none}}
+
+metadata:
+  captured_at_kst: {{CAPTURED_AT_KST:YYYY-MM-DD HH:MM}}
+  source: bootstrap-baseline-questionnaire
+  updated_from: {{UPDATED_FROM:user-answer|repo-observation|mixed}}

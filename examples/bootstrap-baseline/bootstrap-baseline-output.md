@@ -1,0 +1,45 @@
+# Sample Output: bootstrap-baseline
+
+- Input:
+  - fresh host repository after StagePilot install
+- Asked Questions:
+  - `project-summary` -> `Python-based API service for curated market data analysis`
+  - `primary-domain` -> `financial analytics`
+  - `tech-stack` -> `Python, FastAPI, PostgreSQL`
+  - `primary-runtime` -> `api-service`
+  - `primary-entrypoints` -> `uvicorn src.main:app :: serve the HTTP API`, `python -m src.jobs.refresh_market_data :: refresh curated market data snapshots`
+  - `interface-contracts` -> `HTTP market data API :: http-api :: internal dashboards and downstream service clients :: serve curated market data and derived analytics to clients`, `Refresh job command :: cli :: operators and scheduled automation :: update stored market data snapshots from upstream sources`
+  - `interface-inputs` -> `HTTP market data API :: GET /markets/{symbol} :: request the current curated snapshot for a symbol`, `HTTP market data API :: GET /analytics/{symbol} :: request derived analytics for a symbol`, `Refresh job command :: python -m src.jobs.refresh_market_data :: trigger a refresh of curated market data snapshots`
+  - `interface-outputs` -> `HTTP market data API :: JSON market snapshot payload :: current normalized market data for the requested symbol`, `HTTP market data API :: JSON analytics payload :: derived analytics and summary metrics for the requested symbol`, `Refresh job command :: refreshed local snapshot artifacts :: normalized data persisted for later API reads`
+  - `interface-errors` -> `HTTP market data API :: 404 not_found :: symbol is not available in the curated dataset`, `HTTP market data API :: 503 upstream_unavailable :: refreshed data is temporarily unavailable`, `Refresh job command :: non-zero exit code :: refresh failed and data should be treated as stale`
+  - `core-entities` -> `Market Snapshot :: represent the latest curated market data for a tracked symbol`, `Analytics Snapshot :: represent derived metrics computed from a market snapshot`
+  - `persistence-backend` -> `PostgreSQL`
+  - `compatibility-rules` -> `HTTP market data API :: response payload changes should remain backward compatible within the same API version`, `Refresh job command :: command arguments and exit-code semantics should remain stable for automation callers`
+- Created Files:
+  - `.stage-pilot/bootstrap/baseline.yaml`
+  - `docs/discovery/index.md`
+  - `docs/srs/index.md`
+  - `docs/batches/index.md`
+  - `docs/releases/index.md`
+  - `docs/project-structure.md`
+  - `docs/runtime-flows.md`
+  - `docs/interface-contract.md`
+  - `docs/data-model.md`
+- Seed Status:
+  - `.stage-pilot/bootstrap/baseline.yaml`: created
+- Baseline Status:
+  - `docs/project-structure.md`: created
+  - `docs/runtime-flows.md`: created
+  - `docs/interface-contract.md`: created
+  - `docs/data-model.md`: created
+- Index Status:
+  - `docs/discovery/index.md`: created
+  - `docs/srs/index.md`: created
+  - `docs/batches/index.md`: created
+  - `docs/releases/index.md`: created
+- Notes:
+  - baseline docs were rendered from `.stage-pilot/bootstrap/baseline.yaml`
+  - no Discovery document was created
+  - no REQ, Batch, or Release unit was opened
+- Next Action:
+  - `/new-discovery <actual product or service change topic>`
