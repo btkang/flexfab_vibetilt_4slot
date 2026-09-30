@@ -180,3 +180,6 @@ output/**/workspace_backup/*.7z
 !output/Debug/net8.0-windows/workspace_backup/
 !output/Debug/net8.0-windows/workspace_backup/*.json
 output/Debug/net8.0-windows/workspace_backup/*.7z
+
+# ff_vibetilt 프로젝트 로컬 빌드 출력 (빌드마다 바뀜 — 추적 안 함, 2026-09-30)
+ff_vibetilt/output/
