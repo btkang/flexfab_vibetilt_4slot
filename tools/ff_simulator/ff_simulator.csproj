@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 4슬롯 지그 없는 시뮬 검증용 가짜 통신 모듈 (2026-09-29, 레드마인 #4901, PLAN_4슬롯_지그없는_시뮬검증)
+       - flexfab.sln 밖에 둔다 (CLAUDE.md: 솔루션 구조 변경 금지). 빌드: dotnet build tools/ff_simulator
+       - 결과 ff_simulator.dll 은 output\$(Configuration)\net8.0-windows\ 에 직접 떨어진다 → SIM_ 워크스페이스가 로드
+       - ★ 양산 배포본에 넣지 말 것 (배포 체크리스트 제외 대상) -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Cantops.FlexFab</RootNamespace>
+    <AssemblyName>ff_simulator</AssemblyName>
+    <OutputPath>$(MSBuildThisFileDirectory)..\..\output\$(Configuration)\net8.0-windows\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <Version>0.1.0</Version>
+    <FileVersion>0.1.0.1</FileVersion>
+    <InformationalVersion>0.1.0.1 (260929) SIMULATOR</InformationalVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- 호스트가 이미 로드한 flexfab_interfaces 를 그대로 쓴다 (복사 안 함) -->
+    <Reference Include="flexfab_interfaces">
+      <HintPath>$(MSBuildThisFileDirectory)..\..\output\$(Configuration)\net8.0-windows\flexfab_interfaces.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(MSBuildThisFileDirectory)..\..\output\$(Configuration)\net8.0-windows\Newtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
