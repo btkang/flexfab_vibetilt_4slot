@@ -261,6 +261,9 @@ namespace flexfab
                     // D3: 허용값 외(설정 오류)는 전 슬롯 판정 대상 — 셀이 OK가 아니면 그대로 FAIL
                     bool applies = g == "common" || g == SLOT_GROUP_INVALID || Array.IndexOf(SlotsForRun(g), s) >= 0;
                     if (!applies) continue;
+                    // M5(2026-09-30): 작업자가 제외(번호셀 빨강)한 항목은 판정에서 뺀다 — Skip 때문에 FAIL 나지 않게(2슬롯과 같은 동작).
+                    //   단 쓰기 항목은 제외 자체를 막으므로(IsSlot4WriteRow) 빨강이어도 판정 대상 유지(fail-closed)
+                    if (dataGridView1.Rows[i].Cells[0].Style.BackColor == Color.Red && !IsWriteProcId(ProcIdOf(proc))) continue;
                     string v = dataGridView1.Rows[i].Cells[2 + s].Value?.ToString() ?? "";
                     if (v == "OK") continue;
                     string name = "";
@@ -274,6 +277,77 @@ namespace flexfab
             if (InvokeRequired) Invoke(a); else a();
             reason = r;
             return ok;
+        }
+
+        // ── M5(2026-09-30): 작업자 항목 제외 — 쓰기 항목은 제외 금지, 제외 항목은 판정에서 뺌 ──
+        // 쓰기 항목 = 보드에 기록하는 항목(시리얼·출하 상태·파라미터 저장). 제외하면 기록 안 된 보드가 완성될 수 있음
+        internal static bool IsWriteProcId(string id)
+            => id.StartsWith("UID_") || id.StartsWith("RCONF_") || id.StartsWith("APPCFG_SAVE_");
+
+        static string ProcIdOf(dynamic proc)
+        {
+            try { return (string)(((IDictionary<string, object>)proc).TryGetValue("id", out var v) ? v?.ToString() ?? "" : ""); } catch { return ""; }
+        }
+
+        // 그리드 행 → proc id (active_project 기준, 단독실행 차단과 같은 기준)
+        internal string ProcIdAtRow(int row)
+        {
+            try
+            {
+                string ap = workspace.active_project;
+                foreach (var pj in (IList<object>)workspace.projects)
+                    if (pj is IDictionary<string, object> pjd && (pjd.TryGetValue("id", out var pid) ? pid?.ToString() : "") == ap)
+                    {
+                        var procs = (IList<object>)pjd["procs"];
+                        return row >= 0 && row < procs.Count ? ProcIdOf(procs[row]) : "";
+                    }
+            }
+            catch { }
+            return "";
+        }
+
+        // 4슬롯에서 이 행을 작업자 제외할 수 없는가 (쓰기 항목)
+        internal bool IsSlot4WriteRow(int row) => _slot4 && IsWriteProcId(ProcIdAtRow(row));
+
+        // 사이클 시작 시: 제외 항목 로그 + 혹시 빨강인 쓰기 항목은 해제(방어선)
+        internal void LogSlot4Exclusions()
+        {
+            if (InvokeRequired) { Invoke(new Action(LogSlot4Exclusions)); return; }
+            var excluded = new List<string>();
+            for (int i = 0; i < dataGridView1.Rows.Count; i++)
+            {
+                var cell = dataGridView1.Rows[i].Cells[0];
+                if (cell.Style.BackColor != Color.Red) continue;
+                string no = (dataGridView1.Rows[i].Cells[1].Value?.ToString() ?? "").Split(' ')[0];
+                if (IsSlot4WriteRow(i))
+                {
+                    cell.Style.BackColor = Color.White;
+                    Log($"[4슬롯] 쓰기 항목은 제외할 수 없어 해제: {no}");
+                    continue;
+                }
+                excluded.Add(no);
+            }
+            if (excluded.Count > 0) Log($"[4슬롯] 작업자 제외 항목 (판정 제외): {string.Join(", ", excluded)}");
+        }
+
+        // Q1(2026-09-30): 공통 항목 FAIL로 중단된 사이클 — 실패한 공통 항목 번호 (이력 판정 문구용)
+        internal string FirstCommonFailNo()
+        {
+            string no = "";
+            Action a = () =>
+            {
+                var procs = (IList<object>)((IDictionary<string, object>)((IList<object>)workspace.projects)[0])["procs"];
+                for (int i = 0; i < procs.Count && i < dataGridView1.Rows.Count; i++)
+                {
+                    dynamic proc = procs[i];
+                    if (GetSlotGroup(proc) != "common") continue;
+                    if ((dataGridView1.Rows[i].Cells[2].Value?.ToString() ?? "") != "FAIL") continue;
+                    no = (dataGridView1.Rows[i].Cells[1].Value?.ToString() ?? "").Split(' ')[0];
+                    return;
+                }
+            };
+            try { if (InvokeRequired) Invoke(a); else a(); } catch { }
+            return no;
         }
 
         // ── v05 F2: 레인 pending — 워크스페이스별 파일, 검증 공용 함수 ──

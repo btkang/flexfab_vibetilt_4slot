@@ -2348,6 +2348,9 @@ namespace flexfab
                 return;
             }
 
+            // M5(2026-09-30): 작업자 제외 항목 기록 (판정 제외 대상) — 쓰기 항목이 빨강이면 해제
+            if (Slot4Run) LogSlot4Exclusions();
+
             // D2(2026-09-21): 시리얼 입력 직전 줄 수 기준선 기록 — 이번 사이클이 번호를 소모했는지 판정용
             CaptureSerialBaselines();
 
@@ -2493,6 +2496,15 @@ namespace flexfab
                 // 현재 색상이 흰색이면 빨간색, 아니면 흰색으로 토글
                 if (cell.Style.BackColor == Color.White || cell.Style.BackColor == Color.Empty)
                 {
+                    // M5(2026-09-30): 4슬롯 쓰기 항목(시리얼·출하 상태·파라미터 저장)은 제외 금지 — 기록 안 된 보드가 완성되는 것 방지
+                    if (IsSlot4WriteRow(e.RowIndex))
+                    {
+                        string no = (dataGridView1.Rows[e.RowIndex].Cells[1].Value?.ToString() ?? "").Split(' ')[0];
+                        Log($"[4슬롯] 쓰기 항목은 제외할 수 없습니다: {no}");
+                        MessageBox.Show($"{no} 은(는) 보드에 기록하는 항목이라 제외할 수 없습니다.\n(시리얼·출하 상태·파라미터 저장)", "항목 제외",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
                     cell.Style.BackColor = Color.Red; // 빨간색으로 변경
                 }
                 else
@@ -2510,16 +2522,18 @@ namespace flexfab
 
             // 현재 빨간색 아닌 행이 하나라도 있으면 → 전체 빨간색(스킵)
             // 전부 빨간색이면 → 전체 해제
+            // M5(2026-09-30): 4슬롯 쓰기 항목은 전체 제외에서도 빼고 흰색 유지
             bool allRed = true;
             foreach (DataGridViewRow row in dataGridView1.Rows)
             {
+                if (IsSlot4WriteRow(row.Index)) continue;
                 if (row.Cells[0].Style.BackColor != Color.Red)
                 { allRed = false; break; }
             }
 
             Color target = allRed ? Color.White : Color.Red;
             foreach (DataGridViewRow row in dataGridView1.Rows)
-                row.Cells[0].Style.BackColor = target;
+                row.Cells[0].Style.BackColor = (target == Color.Red && IsSlot4WriteRow(row.Index)) ? Color.White : target;
         }
 
         private void DisableColumnSorting()
@@ -3670,6 +3684,20 @@ namespace flexfab
 
                 if (wasCanceled)
                 {
+                    // Q1(2026-09-30): 공통 항목 FAIL로 중단된 사이클도 검사이력에 남긴다 (지그·통신 이상 추적용).
+                    //   FAIL 결과 JSON은 만들지 않음 — 공통 항목은 지그 문제라 보드 불량 기록이 아님. 작업자 STOP은 기록 안 함(FAIL 아님)
+                    if (slot4 && slot4CommonFailed)
+                    {
+                        try
+                        {
+                            string cno = mainForm.FirstCommonFailNo();
+                            var st = new string[4];
+                            for (int s = 0; s < 4; s++)
+                                st[s] = string.IsNullOrEmpty(mainForm._slotSerial[s]) ? "" : (cno.Length > 0 ? $"FAIL(공통 항목 {cno})" : "FAIL(공통 항목)");
+                            mainForm.AppendHistorySlot4(st, new string[4], logAction);
+                        }
+                        catch (Exception ex) { logAction($"[검사이력] 공통 FAIL 중단 기록 실패: {ex.Message}"); }
+                    }
                     RollbackSerialAndMacIfFail(logAction);
                     if (failCount > 0)
                     {

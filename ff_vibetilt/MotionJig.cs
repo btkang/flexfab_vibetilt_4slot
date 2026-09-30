@@ -11,7 +11,7 @@ namespace Cantops.FlexFab
 {
     public class MotionJig : ModuleBase, IProcess
     {
-        public const string MODULE_VERSION = "0.2.1.5";
+        public const string MODULE_VERSION = "0.2.2.6";
 
         // ══════════════════════════════════════════════
         //  모터 파라미터 (JSON에서 로딩, 기본값 하드코딩)
@@ -1129,7 +1129,7 @@ namespace Cantops.FlexFab
                     // VL 센서 AN 스트리밍 읽기 (STOP→버퍼클리어→MODE→START→스트리밍 수집→STOP)
                     StopVlStreaming(vl, isRs485, log);
                     Thread.Sleep(100);
-                    VlClear(vl, log);
+                    VlClear(vl, log, untilEmpty: true);   // Q2: STOP 후 잔여 전부 비움
                     StartVlStreaming(vl, isRs485, "06", log);
                     int tiltSettleWait = GetParamInt(param, "tilt_settle_wait", _vlStreamSettle);
                     Thread.Sleep(tiltSettleWait);
@@ -1142,6 +1142,21 @@ namespace Cantops.FlexFab
                         if (attempt == maxAttempts)
                         {
                             LogErrorInfo("TILT_AN_PARSE_FAIL", log);
+                            allPass = false;
+                        }
+                        continue;
+                    }
+
+                    // Q3(2026-09-30, SIL 밤샘): 최소 샘플 수 — 스트림이 거의 안 읽혔으면(호스트 멈춤·잔여 데이터) 판정하지 않고 재시도.
+                    //   센서 차이 검사보다 먼저 본다. 기본 = 판정 tail 수. 워크스페이스 tilt_judge_min_samples 로 조정
+                    int tiltMinSamples = GetParamInt(param, "tilt_judge_min_samples", tailCount);
+                    if (anSamples.Count < tiltMinSamples)
+                    {
+                        log($"[TILT] 샘플 부족 {anSamples.Count}개 < {tiltMinSamples}개 (시도 {attempt}/{maxAttempts}){(attempt < maxAttempts ? " — 재측정" : "")}");
+                        if (attempt == maxAttempts)
+                        {
+                            log("[TILT] TILT_SAMPLE_SHORT: 기울기 스트림 샘플 부족 — VL 통신 끊김/지연 확인");
+                            details.Add(new Dictionary<string, object?> { { "item", $"샘플 부족 {targetAngle}도" }, { "value", anSamples.Count }, { "result", "NG" } });
                             allPass = false;
                         }
                         continue;
@@ -1424,7 +1439,7 @@ namespace Cantops.FlexFab
                 // MODE 02 스트리밍 수집 (STOP→클리어→MODE→START→수집→STOP)
                 StopVlStreaming(vl, isRs485, log);
                 Thread.Sleep(100);
-                VlClear(vl, log);
+                VlClear(vl, log, untilEmpty: true);   // Q2: STOP 후 잔여 전부 비움
                 StartVlStreaming(vl, isRs485, "02", log);
                 Thread.Sleep(gacSettleWait); // 스트리밍 안정화 대기
                 VlClear(vl, log); // 초기 과도 데이터 버리기
@@ -1452,6 +1467,20 @@ namespace Cantops.FlexFab
                     {
                         LogErrorInfo("VIBE_GAC_PARSE_FAIL", log);
                         details.Add(new Dictionary<string, object?> { { "item", $"{axis}축 진동 파싱실패" }, { "result", "NG" } });
+                        return false;
+                    }
+                    continue;
+                }
+
+                // Q3(2026-09-30, SIL 밤샘): 최소 샘플 수 — 모자라면 재시도, 끝까지 모자라면 FAIL. 기본 = 판정 tail 수
+                int vibeMinSamples = GetParamInt(param, "vibe_judge_min_samples", tailCount);
+                if (gacSamples.Count < vibeMinSamples)
+                {
+                    log($"[VIBE] 샘플 부족 {gacSamples.Count}개 < {vibeMinSamples}개 (시도 {attempt}/{maxAttempts}){(attempt < maxAttempts ? " — 재측정" : "")}");
+                    if (attempt == maxAttempts)
+                    {
+                        log("[VIBE] VIBE_SAMPLE_SHORT: 진동 스트림 샘플 부족 — VL 통신 끊김/지연 확인");
+                        details.Add(new Dictionary<string, object?> { { "item", $"{axis}축 진동 샘플 부족" }, { "value", gacSamples.Count }, { "result", "NG" } });
                         return false;
                     }
                     continue;
@@ -2031,11 +2060,21 @@ namespace Cantops.FlexFab
             return sb.ToString().Trim();
         }
 
-        private static void VlClear(IComm vl, Action<string> log, int maxAttempts = 10)
+        // 스트림 중(초기 과도 데이터 버리기)은 기존대로 최대 maxAttempts줄.
+        // Q2(2026-09-30, SIL 밤샘 1/387): STOP 직후(untilEmpty=true)는 최대 10줄만 읽어 잔여 프레임이 다음 측정에 섞였다
+        //   (+45도 잔여 → -20도 측정에서 센서 차이 65도 FAIL). 줄 수 제한 없이 빈 응답 2회 연속까지 비우되 최대 1.5초.
+        private const int VL_CLEAR_MAX_MS = 1500;
+        private static void VlClear(IComm vl, Action<string> log, int maxAttempts = 10, bool untilEmpty = false)
         {
-            int emptyCount = 0;
-            for (int i = 0; i < maxAttempts; i++)
+            int emptyCount = 0, dropped = 0;
+            var deadline = DateTime.UtcNow.AddMilliseconds(VL_CLEAR_MAX_MS);
+            for (int i = 0; untilEmpty || i < maxAttempts; i++)
             {
+                if (untilEmpty && DateTime.UtcNow >= deadline)
+                {
+                    log($"[VL] 버퍼 비우기 시간 초과 ({VL_CLEAR_MAX_MS}ms, {dropped}줄 버림)");
+                    break;
+                }
                 var resp = vl.Recv(new Dictionary<string, object?>
                 {
                     { "timeout",   100  },
@@ -2048,8 +2087,10 @@ namespace Cantops.FlexFab
                 else
                 {
                     emptyCount = 0;  // 데이터 있으면 카운터 리셋
+                    dropped++;
                 }
             }
+            if (untilEmpty && dropped > 10) log($"[VL] STOP 후 잔여 {dropped}줄 비움");
         }
 
         /// <summary>485 STOP 후 잔류 응답 드레인 (연속 3회 빈 응답 or 200ms 타임아웃)</summary>

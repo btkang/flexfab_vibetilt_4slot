@@ -13,9 +13,9 @@
        원본 v1.1 = 1.1.0.0 에서 이어 셈 (GitLab flexfab_mini VERSION_flexfab.exe.md, pSMC 1.2.0.1~1.6.0.5 다음 번호)
        VibeTilt 4슬롯(vibetilt-4slot 브랜치) 최초 번호 부여 = 1.8.0.7 (2026-09-29, ff_vibetilt 0.2.1.5와 함께) -->
   <PropertyGroup>
-    <Version>1.8.0</Version>
-    <FileVersion>1.8.0.7</FileVersion>
-    <InformationalVersion>1.8.0.7 (260929)</InformationalVersion>
+    <Version>1.8.1</Version>
+    <FileVersion>1.8.1.8</FileVersion>
+    <InformationalVersion>1.8.1.8 (260930)</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

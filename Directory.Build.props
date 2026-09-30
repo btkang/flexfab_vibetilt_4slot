@@ -5,14 +5,14 @@
     <OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
   </PropertyGroup>
 
-  <!-- 공통 버전 메타 (파일 등록정보용) — ff_vl 배포 단위 = ff_vibetilt 버전. 메인툴 flexfab.exe 는 flexfab.csproj 에서 별도 버전(1.8.0.7) -->
+  <!-- 공통 버전 메타 (파일 등록정보용) — ff_vl 배포 단위 = ff_vibetilt 버전. 메인툴 flexfab.exe 는 flexfab.csproj 에서 별도 버전(1.8.1.8) -->
   <!-- 캔탑스 버전·파일명 표준규칙 R1 (2026-09-16): 버전 a.b.c.d(e) = 7페이지, 배포 파일명 이름_Ra.b_날짜 = 8페이지
-       4슬롯은 2슬롯(ff_vl 1.0.x)에서 분기한 미배포 개발본(0.x). 09-18부터 작업 단계를 소급 부여 → 현재 0.2.1.5 (이력은 RELEASE_NOTE_ff_vl.txt)
+       4슬롯은 2슬롯(ff_vl 1.0.x)에서 분기한 미배포 개발본(0.x). 09-18부터 작업 단계를 소급 부여 → 현재 0.2.2.6 (이력은 RELEASE_NOTE_ff_vl.txt)
        개발 중 d(리비전)만 릴리즈마다 +1. 제조 최초 배포 시 1.0.0.0(날짜), 배포 파일명 _R1.0 -->
   <PropertyGroup>
-    <Version>0.2.1</Version>
-    <FileVersion>0.2.1.5</FileVersion>
-    <InformationalVersion>0.2.1.5 (260929)</InformationalVersion>
+    <Version>0.2.2</Version>
+    <FileVersion>0.2.2.6</FileVersion>
+    <InformationalVersion>0.2.2.6 (260930)</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Product>ff_vl 진동기울기센서 검사프로그램</Product>
     <Company>CanTops</Company>
