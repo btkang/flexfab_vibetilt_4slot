@@ -1,0 +1,115 @@
+schema_version: 1
+capture_mode: declared
+
+project:
+  repository_name: sample-host-project
+  display_name: Sample Host Project
+  summary: Python-based API service for curated market data analysis.
+  primary_domain: financial analytics
+
+stack:
+  tech_stack:
+    - Python
+    - FastAPI
+    - PostgreSQL
+
+runtime:
+  primary_runtime: api-service
+  primary_entrypoints:
+    - name: uvicorn src.main:app
+      purpose: serve the HTTP API
+    - name: python -m src.jobs.refresh_market_data
+      purpose: refresh curated market data snapshots
+
+interfaces:
+  contracts:
+    - name: HTTP market data API
+      type: http-api
+      actors: internal dashboards and downstream service clients
+      purpose: serve curated market data and derived analytics to clients
+      stability: experimental
+      inputs:
+        - client requests for curated market data and analytics
+      outputs:
+        - JSON market snapshot payloads and derived analytics payloads
+      errors:
+        - 404 not_found :: symbol is not available in the curated dataset
+        - 503 upstream_unavailable :: refreshed data is temporarily unavailable
+      compatibility_rules:
+        - response payload changes should remain backward compatible within the same API version
+    - name: Refresh job command
+      type: cli
+      actors: operators and scheduled automation
+      purpose: update stored market data snapshots from upstream sources
+      stability: internal
+      inputs:
+        - python -m src.jobs.refresh_market_data :: trigger a refresh of curated market data snapshots
+      outputs:
+        - refreshed local snapshot artifacts persisted for later API reads
+      errors:
+        - non-zero exit code :: refresh failed and data should be treated as stale
+      compatibility_rules:
+        - command arguments and exit-code semantics should remain stable for automation callers
+  shared_constraints:
+    - all interfaces assume symbol identifiers are validated before persistence or response rendering
+    - refresh failures must not silently overwrite previously known-good snapshots
+  current_gaps:
+    - authentication and authorization rules are not defined yet
+    - API versioning strategy is still undecided
+
+structure:
+  planned_top_level_areas:
+    - path: src/
+      responsibility: application code and background jobs
+    - path: scripts/
+      responsibility: developer and operator helper commands
+    - path: tests/
+      responsibility: automated validation and regression coverage
+
+data_model:
+  persistence_backend: PostgreSQL
+  entities:
+    - name: Market Snapshot
+      purpose: represent the latest curated market data for a tracked symbol
+      source_of_truth: PostgreSQL market_snapshots table
+      lifecycle: collected -> normalized -> published -> superseded
+      key_fields:
+        - symbol :: string :: tracked market identifier
+        - captured_at :: timestamp :: time the upstream data snapshot was collected
+        - payload :: json :: normalized market data stored for API responses and analytics inputs
+      relationships:
+        - Analytics Snapshot :: derived from one published Market Snapshot
+      state_rules:
+        - only one published snapshot per symbol should be treated as current
+        - superseded snapshots remain queryable for audit or replay use cases
+    - name: Analytics Snapshot
+      purpose: represent derived metrics computed from a market snapshot
+      source_of_truth: PostgreSQL analytics_snapshots table
+      lifecycle: queued -> computed -> published -> superseded
+      key_fields:
+        - symbol :: string :: tracked market identifier
+        - derived_at :: timestamp :: time analytics were computed
+        - metrics :: json :: derived indicators and summary values
+      relationships:
+        - Market Snapshot :: source snapshot used to compute analytics
+      state_rules:
+        - published analytics must reference an existing published or superseded market snapshot
+        - analytics should be recomputed whenever a new published market snapshot replaces the current one
+  consistency_rules:
+    - symbol identifiers must remain consistent across snapshot and analytics entities
+    - analytics records must not exist without a corresponding source market snapshot
+  persistence_notes:
+    - refresh jobs write Market Snapshot rows before recomputing Analytics Snapshot rows
+    - future retention and archival policies are not defined yet
+  current_gaps:
+    - exact table schema and indexing strategy are still undecided
+    - historical retention policy is still undecided
+
+notes:
+  known_unknowns:
+    - deployment target is undecided
+
+metadata:
+  captured_at_kst: 2026-04-30 16:20
+  source: bootstrap-baseline-questionnaire
+  updated_from: user-answer

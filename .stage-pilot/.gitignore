@@ -1,0 +1,9 @@
+# 루트 전용 무시 (source/ 아래의 .claude·.github 템플릿은 추적해야 하므로 / 앵커 필수)
+/.vscode/
+/.claude/
+/.agents/
+/.github/
+/.stage-pilot/
+/.docs/
+/temp/
+/CLAUDE.md
