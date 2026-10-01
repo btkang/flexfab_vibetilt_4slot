@@ -3,7 +3,7 @@
 실물 지그 없이 **실제 flexfab 프로그램 전체**(화면·판정·저장·pending)를 가짜 장비로 돌린다.
 가짜 장비는 `tools/ff_simulator`, 이 폴더는 그 위에서 **작업자 대신 버튼을 누르고 판정하는 구동기**다.
 
-- 원리·도입 방법: `D:\03.Code\00.개발가이드\SIL_참고키트_VibeTilt4슬롯_R1_261001\참고문서\REF_SIL테스트_도입가이드_20260929_v01.md`
+- 원리·도입 방법: `D:\03.DEVELOPE-RC-GIT\SIL_참고키트_VibeTilt4슬롯_R1_261001\참고문서\REF_SIL테스트_도입가이드_20260929_v01.md`
 - 레드마인: #4901 (SIL 결과 기록)
 - **SIL 통과 ≠ 실기 통과.** 배선·포트·실제 잡음·타이밍·펌웨어 특이 동작은 실기 절차서로
 
@@ -16,6 +16,8 @@
 | `gen_cycles.py` | 사이클 목록 생성 (25종 1블록: 정상·고장·pending 이상·저장 실패·작업자 제외·샘플 부족·재완성) |
 | `scenarios/*.json` | 고장 주입 규칙 (`sim_scenario.json`으로 복사되어 쓰임) |
 | `scan_result.py` | 실행 후 결과 폴더 검사 (잘못된 PASS·중복·보관 경로) |
+| `gen_cycles_2slot.py` | 2슬롯 회귀 사이클 16개 (4슬롯 프로그램으로 2슬롯 운용 확인) |
+| `compare_runs.py` | **두 프로그램 비교** — 같은 사이클을 기준(양산 배포본)과 신규에 돌린 리포트를 사이클별 비교 (팝업·pending·화면 결과·결과 파일) |
 | `rm_watch.py`, `rm.py` | 밤샘 중 2시간마다 레드마인 #4901 자동 요약 (키는 `~/.claude/redmine.env`) |
 
 ## 순서
@@ -45,6 +47,16 @@ python tools/sil_e2e/scan_result.py ../sil_work/runA
 - 4슬롯 1사이클 약 1.5~2.5분, 25사이클 약 45분~1시간. 밤샘은 232·485를 순서대로(마감 시각을 나눠서)
 - 실행 중 PC 절전은 simui가 막는다(화면 꺼짐은 괜찮음, 로그오프·종료는 멈춤)
 - 2슬롯: `SIM_workspace_motion_232_VL10.json` 사용, 사이클의 X1·Y1 칸만 씀 (시리얼 창 2칸 자동 인식)
+
+## 양산본과 비교 (회귀)
+
+```powershell
+# 기준 = 양산 배포본 복사본에 ff_simulator.dll·SIM 워크스페이스·simui 넣고, 신규 = setup_run.py 로 준비
+./simui.exe ../report_B.txt ../cyc.txt     # 기준 실행 폴더에서
+./simui.exe ../report_N.txt ../cyc.txt     # 신규 실행 폴더에서
+python tools/sil_e2e/compare_runs.py report_B.txt report_N.txt <기준 실행폴더> <신규 실행폴더>
+```
+- 의도한 변경(문구 추가 등)만 차이로 나와야 한다
 
 ## 사이클 파일 형식
 
