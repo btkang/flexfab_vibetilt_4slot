@@ -1,0 +1,1 @@
+{"rules":[{"target":"uart_232_y","match":"<VER","action":"fail","times":1,"skip":1,"_comment":"#0 통신검사도 Y1 포트에 VER를 보내므로 첫 번째는 건너뛰고 #8에서 FAIL"}]}

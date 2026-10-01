@@ -1,0 +1,1 @@
+{"rules":[{"target":"uart_232","match":"<OFFSET","action":"fail","times":1,"skip":1}]}

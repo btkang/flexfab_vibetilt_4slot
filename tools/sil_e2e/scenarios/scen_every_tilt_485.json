@@ -1,0 +1,1 @@
+{"rules":[{"target":"uart_485","action":"stream_every","mode":"06","value":60}]}

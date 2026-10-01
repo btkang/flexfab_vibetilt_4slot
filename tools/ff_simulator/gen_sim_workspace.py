@@ -1,7 +1,7 @@
 """
 SIM 워크스페이스 생성 (2026-09-29, 레드마인 #4901)
 
-TEST_workspace_motion_{232_VL10|485_VL20}_4slot.json 을 복사해 SIM_ 워크스페이스를 만든다.
+TEST_workspace_motion_{232_VL10|485_VL20}[_4slot].json 을 복사해 SIM_ 워크스페이스를 만든다.
 바꾸는 것은 아래뿐 — 검사 항목(procs)·판정 기준·slot_layout·slot_uarts 는 원본 그대로 둬야
 검증 대상이 실제 설정과 같아진다.
   - libraries: ff_common Uart/Tcp → ff_simulator UartSim/TcpSim (+ sim_* config)
@@ -16,14 +16,23 @@ import os
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 OUT = os.path.join(ROOT, "output", "Debug", "net8.0-windows")
-SOURCES = ["TEST_workspace_motion_232_VL10_4slot.json", "TEST_workspace_motion_485_VL20_4slot.json"]
+SOURCES = ["TEST_workspace_motion_232_VL10_4slot.json", "TEST_workspace_motion_485_VL20_4slot.json",
+           # 2슬롯 회귀(4슬롯 프로그램으로 2슬롯 지그 운용 대비, 2026-10-01)
+           "TEST_workspace_motion_232_VL10.json", "TEST_workspace_motion_485_VL20.json"]
 DEAD_MONGO = "mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=300&connectTimeoutMS=300&directConnection=true"
 
 
 def expected(procs, prefix, group, key, test_index=0):
-    for p in procs:
+    # 4슬롯: slot_group X/Y로 찾음. 2슬롯(slot_group 없음): 같은 prefix의 첫 항목 = X, 둘째 = Y (APPCFG는 Y만 있음)
+    if not any("slot_group" in p.get("param", {}) for p in procs):
+        cand = [p for p in procs if p["id"].startswith(prefix)]
+        idx = 0 if group == "X" or len(cand) == 1 else 1
+        cand = cand[idx:idx + 1]
+    else:
+        cand = [p for p in procs if p.get("param", {}).get("slot_group") == group and p["id"].startswith(prefix)]
+    for p in cand:
         prm = p.get("param", {})
-        if p["id"].startswith(prefix) and prm.get("slot_group") == group:
+        if True:
             tests = prm.get("tests", [])
             if len(tests) > test_index:
                 return tests[test_index].get(key)

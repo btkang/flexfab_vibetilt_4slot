@@ -19,7 +19,7 @@
     "_log_level_comment": "MP_LOG: 양산용(핵심 로그만) | TEST_LOG: 테스트용(전체 로그 출력) | 양산 권장: MP_LOG",
     "show_log": 0,
     "_show_log_comment": "1: 로그창 표시 | 0: 로그창 숨김 | 양산 권장: 0",
-    "serial_duplicate_check": 1,
+    "serial_duplicate_check": 2,
     "_serial_duplicate_check_comment": "1: 중복 시 경고 팝업 | 2: 차단 | 0: 안 함 | 양산 권장: 2",
     "fail_continue": 0,
     "_fail_continue_comment": "1: 중간 FAIL 시 끝까지 진행 | 0: 중간 FAIL 시 중단 | 양산 권장: 0",

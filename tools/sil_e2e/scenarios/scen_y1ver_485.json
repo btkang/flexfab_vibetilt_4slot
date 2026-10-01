@@ -1,0 +1,1 @@
+{"rules":[{"target":"uart_485_y","match":"<VER","action":"fail","times":1,"skip":1,"_comment":"#0 통신검사 VER 건너뛰고 #8에서 FAIL"}]}
