@@ -74,7 +74,7 @@
 
 ## Next Requirement ID
 
-- Current: `REQ-003`
+- Current: `REQ-004`
 - Rule: `Requirement Register`에 있는 가장 큰 REQ 번호보다 정확히 1 커야 한다.
 
 ## Requirement Register
@@ -83,9 +83,12 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | REQ-001 | FAIL·재완성 이전 결과를 Result/ 밖(Result_보관/)에 저장 | Data | Implemented | High | 강병택 | [req-001](./Data/req-001_fail-and-duplicate-results-outside-result-folder.md) |
 | REQ-002 | FAIL 결과 DB 미업로드 정책·결과 저장 규칙 기준 문서 명시 | Documentation | Implemented | High | 강병택 | [req-002](./Documentation/req-002_fail-result-db-policy-and-baseline-docs.md) |
+| REQ-003 | 화면 로그창 줄 수 상한으로 메모리 증가 차단 | Non-Functional | Implemented | Medium | 강병택 | [req-003](./Non-Functional/req-003_log-window-line-limit.md) |
 
 ## Recent Change Log Summary
 
+- 2026-10-01 REQ-003 Implemented (bat-002)
+- 2026-10-01 REQ-003 생성·Approved (dcy-003)
 - 2026-09-30 REQ-001·REQ-002 Implemented (bat-001)
 - 2026-09-30 REQ-001 생성·Approved (dcy-001 K2)
 - 2026-09-30 REQ-002 생성·Approved (dcy-001 K1)

@@ -23,6 +23,8 @@ namespace flexfab
         internal bool[] _slotFailed = { false, false, false, false }; // 슬롯 단위 FAIL 제외 (라운드마다 리셋, 실행 제어용)
         internal bool[] _slotBlocked = { false, false, false, false }; // v05 F2-4: 사이클 동안 실행 금지(유효 X 기록 없는 Y 등) — fail_continue와 무관하게 Skip
         private bool _clearLogOnRunStart = false;           // clear_log_on_run_start
+        internal const int LOG_MAX_LINES_DEFAULT = 20000;
+        private int _logMaxLines = LOG_MAX_LINES_DEFAULT;   // log_max_lines: 화면 로그 최대 줄 수(0=무제한). 파일 로그는 전부 유지 (전역, 2026-10-01)
         private static readonly JObject?[] _previousPendingSlot = { null, null }; // 레인별 pending (X1→Y1, X2→Y2)
         private static string _lastSerialX2 = "";           // X2 슬롯 이전 시리얼 (Y2 자동 채움)
         private string _prevLastSerialX2 = "";              // 롤백 백업
@@ -49,6 +51,8 @@ namespace flexfab
                 if (dict.TryGetValue("slot_uarts", out var su) && su is IDictionary<string, object> sud)
                     foreach (var kv in sud) _slotUarts[kv.Key] = kv.Value?.ToString() ?? "";
                 _clearLogOnRunStart = dict.TryGetValue("clear_log_on_run_start", out var cl) && Convert.ToInt32(cl) != 0;
+                _logMaxLines = LOG_MAX_LINES_DEFAULT;
+                if (dict.TryGetValue("log_max_lines", out var lm) && int.TryParse(lm?.ToString(), out int lmv) && lmv >= 0) _logMaxLines = lmv;
             }
             catch { }
             if (_slot4)

@@ -1,5 +1,13 @@
 # flexfab_mini CHANGELOG
 
+## 2026-10-01 — 0.2.4.8(261001) / 메인툴 1.8.3.10: 화면 로그창 줄 수 상한 (stage-pilot bat-002) — **전역**
+- 근거: `docs/discovery/dcy-003_…` → `docs/srs/Non-Functional/req-003` → `docs/batches/bat-002_20261001_log-line-limit/`. 레드마인 #4901 (밤샘 SIL 2차 메모리)
+- **FlexfabForm.cs** — `TrimLogLines()` 신설, `AddLogMessage`에서 추가 후 호출. 화면 로그가 상한을 넘으면 오래된 줄을 상한의 10%만큼 일괄 삭제
+  - 사유: `listBox_Log`가 지우지 않고 누적 → 밤샘 232 203사이클 79만 줄, Private 37→296MB (사이클당 ~1.3MB)
+- **FlexfabForm.Slot4.cs** — `ApplySlotLayout`에서 워크스페이스 `log_max_lines` 읽기 (없으면 20000, 0=무제한). 워크스페이스 JSON 무변경
+- 영향: 화면 표시만. 파일 로그(`Log/{proj}/날짜.log`)는 전부 유지. "전체 로그 복사"는 화면에 남은 줄만
+- 하위호환: 키 없으면 기본 20000 — 2슬롯 워크스페이스도 같은 동작(안정성 수정, 전역)
+
 ## 2026-09-30 — 0.2.3.7(260930) / 메인툴 1.8.2.9: FAIL·재완성 기록 보관 경로 분리 (stage-pilot bat-001)
 - 근거: stage-pilot `docs/discovery/dcy-001_…`(K1·K2) → `docs/srs/Data/req-001`, `Documentation/req-002` → `docs/batches/bat-001_20260930_fail-archive-path/`. 레드마인 #4900
 - **FlexfabForm.Report.cs** — `ArchiveRootDir()` = `Result_보관/{프로젝트}` 신설. FAIL 결과·재완성 이전 결과(PASS_DUPLICATE)를 품질모니터링 수집 경로(`Result/`) 밖으로

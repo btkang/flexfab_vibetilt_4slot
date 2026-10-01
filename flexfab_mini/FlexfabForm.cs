@@ -1210,11 +1210,26 @@ namespace flexfab
             }
         }
 
+        // 화면 로그 줄 수 상한(log_max_lines) 초과 시 오래된 줄을 상한의 10%만큼 한 번에 지운다.
+        // 장시간 무재시작 운용에서 ListBox 누적으로 메모리가 사이클당 ~1MB씩 늘던 문제 (SIL 밤샘 2차, 2026-10-01)
+        private void TrimLogLines()
+        {
+            int max = _logMaxLines;
+            int count = listBox_Log.Items.Count;
+            if (max <= 0 || count <= max) return;
+            int remove = count - max + Math.Max(1, max / 10);
+            if (remove > count) remove = count;
+            listBox_Log.BeginUpdate();
+            try { for (int i = 0; i < remove; i++) listBox_Log.Items.RemoveAt(0); }
+            finally { listBox_Log.EndUpdate(); }
+        }
+
         private void AddLogMessage(string message)
         {
             try
             {
                 listBox_Log.Items.Add(message);
+                TrimLogLines();
                 listBox_Log.TopIndex = listBox_Log.Items.Count - 1; // 자동 스크롤
 
                 // 로그 파일 저장 (Log/{프로젝트명}/YYYY-MM-DD.log)

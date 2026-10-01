@@ -10,7 +10,7 @@ namespace Cantops.FlexFab
 {
     public class VibeTilt : ModuleBase, IProcess
     {
-        public const string MODULE_VERSION = "0.2.3.7";
+        public const string MODULE_VERSION = "0.2.4.8";
 
         public VibeTilt()
         {
